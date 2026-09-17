@@ -1,149 +1,158 @@
 # Technical Report — Section A: Theoretical Foundations
 
-**Course**: ICS554 Natural Language Processing · MICS 2028 · Group 1  
-**Author**: [Your Name / Student ID]  
-**Weight**: 15% of total grade  
+**Course**: ICS554 Natural Language Processing · Ashesi University  
+**Student Name**: Eric Elikplim Sunu  
+**Deliverable**: Technical Report Section A (Individual Synthesis) · Weight: 15%  
+**Public Repository**: https://github.com/ASU-MICS-2028/nlp-group-1-prosit-1.git  
 
 ---
 
 ### Question 1: What are language models and what are they used for?
-*(Space constraint: $s = 1\text{ paragraph}$)*
+*(Space Guide: 1 Paragraph)*
 
-A language model (LM) is a computational model that assigns a probability distribution over sequences of words or tokens, estimating $P(W) = P(w_1, w_2, \dots, w_T) = \prod_{t=1}^T P(w_t \mid w_1, \dots, w_{t-1})$ through the chain rule of probability. By quantifying how fluent, coherent, or probable a given sequence is in natural human language, language models enable machines to differentiate grammatically plausible sentences from arbitrary combinations of vocabulary. In applied natural language processing and automatic speech recognition (ASR)—such as the systems engineered at Ankora—language models serve as fundamental decoders to resolve acoustic ambiguities, score candidate transcriptions, generate fluent translations in machine translation, power predictive text completion, and generate human-like text across conversational interfaces.
+A language model is a probabilistic system designed to compute either the joint probability of an entire text sequence $P(W) = P(w_1, w_2, \dots, w_n) = \prod_{i=1}^n P(w_i \mid w_1, \dots, w_{i-1})$ or the conditional probability of an upcoming token given a preceding slice of text history $P(w_n \mid w_1, w_2, \dots, w_{n-1})$. By quantifying how likely a specific sequence is to occur naturally within human language, language models provide the core scoring mechanism for determining fluency, grammatical plausibility, and sequential coherence. In production systems, these engines power on-device predictive autocompletion, automatic speech recognition (ASR) decoding pipelines (such as those engineered at Ankora to score acoustic hypotheses), neural machine translation systems, and algorithmic grammar verification engines.
 
 ---
 
 ### Question 2: What are n-gram models and how do they work?
-*(Space constraint: $2 \le s \le 3\text{ paragraphs}$)*
+*(Space Guide: 2–3 Paragraphs)*
 
-N-gram language models are statistical language models that approximate the joint probability of a text sequence by applying the Markov assumption: the probability of an incoming word depends only on the preceding $n-1$ words rather than the entire historical context, formally expressed as $P(w_t \mid w_1, \dots, w_{t-1}) \approx P(w_t \mid w_{t-n+1}, \dots, w_{t-1})$. In a unigram model ($n=1$), words are assumed to occur independently ($P(w_t)$); in a bigram model ($n=2$), each word is conditioned on the immediately prior word ($P(w_t \mid w_{t-1})$); and in a trigram model ($n=3$), conditioning relies on the prior two words ($P(w_t \mid w_{t-2}, w_{t-1})$).
+N-gram models are statistical sequence predictors that estimate a word's probability using historical occurrence frequencies counted directly within a training text corpus. In an ideal probabilistic model, predicting the next word would require conditioning on the complete preceding context; however, tracking infinite contextual histories is computationally unworkable due to combinatorial explosion and severe data sparsity. To overcome this, n-gram models apply the **Markov Assumption**, which simplifies the problem by assuming that the probability of a future word depends only on a fixed lookback window of the preceding $N-1$ words rather than the entire document history:
+$$P(w_n \mid w_1, \dots, w_{n-1}) \approx P(w_n \mid w_{n-N+1}, \dots, w_{n-1})$$
 
-Training an n-gram model relies on Maximum Likelihood Estimation (MLE), computed by counting frequencies across a training corpus:
-$$P_{MLE}(w_t \mid w_{t-n+1}^{t-1}) = \frac{C(w_{t-n+1}^{t-1}, w_t)}{C(w_{t-n+1}^{t-1})}$$
-While computationally trivial—amounting to frequency counting and hash-table lookups—standard MLE fails drastically on unseen combinations, assigning zero probability to any valid sequence containing an unseen n-gram. To resolve this sparsity, smoothing techniques such as Laplace ($+k$), linear interpolation across varying orders, and Kneser-Ney discounting are required to redistribute probability mass to unseen events.
+The model order $N$ dictates the depth of historical context utilized during estimation:
+- **Unigram ($N=1$):** Evaluates tokens independently ($N-1=0$ words of history), scoring words based purely on their isolated corpus relative frequency:
+  $$P(w_n) = \frac{C(w_n)}{M}$$
+- **Bigram ($N=2$):** Looks back at exactly one preceding token ($N-1=1$). It approximates sequential probability using Maximum Likelihood Estimation (MLE) based on joint co-occurrence counts:
+  $$P(w_n \mid w_{n-1}) = \frac{C(w_{n-1}w_n)}{C(w_{n-1})}$$
+- **Trigram ($N=3$):** Looks back at the prior two tokens ($N-1=2$), conditioning predictions on the preceding word pair:
+  $$P(w_n \mid w_{n-2}w_{n-1}) = \frac{C(w_{n-2}w_{n-1}w_n)}{C(w_{n-2}w_{n-1})}$$
+
+While n-gram models are computationally efficient—reducing inference to hash-table lookups—they exhibit severe structural limitations: they cannot capture dependencies extending beyond their narrow $N-1$ window, and standard MLE assigns an absolute probability of zero to any valid sequence containing an unseen combination.
 
 ---
 
 ### Question 3: How are language models evaluated?
-*(Space constraint: $1 \le s \le 2\text{ paragraphs}$)*
+*(Space Guide: 1–2 Paragraphs)*
 
-Language models are evaluated using both intrinsic and extrinsic metrics. The primary intrinsic metric is **Perplexity (PPL)**, which measures the inverse geometric mean probability assigned by the model to a held-out test corpus of $N$ tokens:
-$$PPL(W) = \exp\left(-\frac{1}{N} \sum_{i=1}^N \ln P(w_i \mid w_1, \dots, w_{i-1})\right) = 2^{H(W)}$$
-where $H(W)$ is the cross-entropy of the corpus. Mathematically, perplexity represents the weighted average branching factor—the effective number of equally likely words the model must choose from at each step. Lower perplexity directly reflects higher predictive confidence and superior probabilistic modeling of natural text.
+Language model evaluation is conducted using two primary paradigms: **extrinsic evaluation** and **intrinsic evaluation**. Extrinsic evaluation assesses the model's practical utility by embedding it into a downstream application pipeline—such as measuring Word Error Rate (WER) or Character Error Rate (CER) in Ankora's automatic speech recognition decoders. While extrinsic testing provides definitive operational proof, it is computationally expensive, time-intensive, and conflates the performance of the language model with that of the acoustic model.
 
-Extrinsically, language models are evaluated by measuring performance downstream within their target application. For Ankora’s speech recognition pipelines, the extrinsic benchmark is Word Error Rate (WER) or Character Error Rate (CER) of the combined acoustic-language decoder. In generation tasks, downstream evaluation encompasses BLEU, ROUGE, and task-specific accuracy benchmarks (e.g. MMLU, GSM8k for modern LLMs).
+Consequently, model development relies primarily on **intrinsic evaluation** via **Perplexity (PP)** calculated over a held-out, unseen test dataset. Perplexity is mathematically defined as the inverse probability of the test text, normalized by the total token count $N$:
+$$\text{PP}(W) = P(w_1 w_2 \dots w_N)^{-\frac{1}{N}} = \sqrt[N]{\prod_{i=1}^{N} \frac{1}{P(w_i \mid w_{1} \dots w_{i-1})}} = \exp\left(-\frac{1}{N} \sum_{i=1}^N \ln P(w_i \mid w_{<i})\right)$$
+Information-theoretically, perplexity corresponds to the effective branching factor of the language—the number of equally probable words the model is choosing among at each prediction step. A lower perplexity score indicates that the model is less surprised by unseen natural text, confirming higher predictive fidelity.
 
 ---
 
 ### Question 4: How do you deal with missing words when doing inference with language models?
-*(Space constraint: $1 \le s \le 2\text{ paragraphs}$)*
+*(Space Guide: 1–2 Paragraphs)*
 
-Missing or out-of-vocabulary (OOV) words pose a critical challenge during inference because unseen vocabulary items cause standard models to either assign zero probability to sentences or fail during tokenization. In statistical n-gram modeling, the standard protocol involves defining a closed vocabulary prior to training. Any training word with frequency below a chosen threshold $k$ is replaced with a special unknown token, `<unk>`. During inference, any novel word not present in the lexicon is mapped to `<unk>`, allowing the model to estimate $P(\text{<unk>} \mid \text{context})$ without mathematical divergence. 
+When an n-gram model encounters an unseen word or word combination at inference time, its frequency count matrix returns zero. Because probability calculation relies on the multiplicative chain rule, a single zero count collapses the probability of an entire sentence to zero ($P(W)=0$), causing perplexity to diverge to infinity ($\infty$). To resolve this **Zero-Probability Dilemma**, language processing pipelines establish a closed vocabulary during training; any word falling below a minimum frequency threshold (or absent entirely from the training lexicon) is mapped to a dedicated out-of-vocabulary (OOV) structural token designated as `<unk>`.
 
-In modern neural language models, subword tokenization algorithms—such as Byte-Pair Encoding (BPE), WordPiece, or SentencePiece—largely eliminate true OOV scenarios. Rather than operating strictly at the whole-word level, words not seen during training are broken down into known constituent subword units or byte-level representations (e.g., decomposing "unaffordability" into `["un", "afford", "ability"]`), ensuring the model can always assign valid representations and compute probabilities for arbitrary strings.
+To prevent calculations from crashing on unseen transitions among known words, systems employ **probability mass redistribution** via smoothing algorithms. Techniques such as **Laplace (Add-One) Smoothing** add a pseudo-count to every vocabulary transition:
+$$P_{\text{Laplace}}(w_n \mid w_{n-1}) = \frac{C(w_{n-1}w_n) + 1}{C(w_{n-1}) + |V|}$$
+More sophisticated methods, such as **Interpolated Kneser-Ney Smoothing**, subtract an absolute discount $d$ from frequent n-grams and redistribute that shaved probability mass to lower-order backoff distributions using continuation probabilities. This guarantees that every valid inference sequence retains a non-zero probability.
 
 ---
 
 ### Question 5: What are large language models (LLMs) and what are they used for?
-*(Space constraint: $s = 1\text{ paragraph}$)*
+*(Space Guide: 1 Paragraph)*
 
-Large Language Models (LLMs) are deep autoregressive neural networks—predominantly based on the Transformer architecture—possessing billions to hundreds of billions of parameters trained on vast multi-terabyte corpora via self-supervised predictive objectives. By scaling parameters, dataset sizes, and compute (conforming to neural scaling laws), LLMs develop emergent capabilities such as in-context learning, multi-step reasoning, translation, code generation, and complex conversational reasoning. In industry and research, LLMs function as foundational general-purpose reasoning engines that are deployed for conversational assistants, automated programming, domain-specific decision support (e.g. medical triage, agricultural advisory), and cognitive agentic workflows.
+Large Language Models (LLMs) are massive neural network structures based on the Transformer architecture that scale from billions to hundreds of billions of trainable parameters. Unlike statistical n-gram models that rely on rigid sliding windows and discrete count matrices, LLMs leverage multi-head self-attention mechanisms and dense vector embeddings to capture complex, long-range semantic dependencies across thousands of tokens. These systems serve as foundational general-purpose reasoning engines capable of advanced language understanding, powering zero-shot multi-turn conversational dialogue, abstractive document summarization, complex software synthesis, and contextual sentiment tracking.
 
 ---
 
 ### Question 6: What are typical architectures for LLMs?
-*(Space constraint: $1 \le s \le 2\text{ paragraphs}$)*
+*(Space Guide: 1–2 Paragraphs)*
 
-Modern LLMs are overwhelmingly based on the Transformer architecture introduced by Vaswani et al. (2017), utilizing multi-head self-attention mechanisms to model bidirectional or unidirectional token relationships across sequences. These architectures fall into three primary archetypes: (1) **Decoder-only** (e.g., GPT-4, Llama 3, Mistral), which employ causal masking where each token can only attend to past positions, making them ideally suited for open-ended autoregressive generation; (2) **Encoder-only** (e.g., BERT, RoBERTa), which leverage bidirectional attention to process full sentence contexts simultaneously, excelling in classification and token tagging; and (3) **Encoder-Decoder** (e.g., T5, BART), which map an unmasked input sequence to a causally decoded target sequence, common in machine translation and abstractive summarization.
-
-Contemporary generative LLMs almost universally adopt the decoder-only design due to its training efficiency and natural alignment with autoregressive sequence completion. Key modern architectural enhancements include Rotary Position Embeddings (RoPE), SwiGLU non-linear activation functions, Grouped-Query Attention (GQA) to optimize memory bandwidth during KV-cache decoding, and Root Mean Square Normalization (RMSNorm).
+Modern Large Language Models are built on the Transformer framework (Vaswani et al., 2017) and fall into three primary structural archetypes:
+1. **Encoder-Only (e.g., BERT, RoBERTa):** Employs bidirectional self-attention, enabling each token to attend simultaneously to both left and right contextual tokens across the sequence. This architecture generates rich contextual embeddings and excels at sequence classification, named entity recognition (NER), and extractive feature analysis.
+2. **Decoder-Only (e.g., GPT series, Llama, Mistral):** Utilizes causal masking where attention is strictly unidirectional, preventing tokens from attending to future positions. This autoregressive structure is the industry standard for generative text completion, conversational chat, and instruction execution.
+3. **Encoder-Decoder (e.g., T5, BART):** Combines a bidirectional encoder for input processing with a causally masked autoregressive decoder for sequence generation, making it uniquely suited for sequence-to-sequence mapping tasks such as language translation and abstractive summarization.
 
 ---
 
 ### Question 7: What is LLM decoding?
-*(Space constraint: $1 \le s \le 2\text{ paragraphs}$)*
+*(Space Guide: 1–2 Paragraphs)*
 
-LLM decoding is the iterative inference process of generating a coherent sequence of text from a trained autoregressive model given an initial prompt context. In causal models, the forward pass produces a vector of unnormalized logits over the entire vocabulary for the next token position. Decoding encompasses transforming these logits into a probability distribution via the softmax function and applying a decision algorithm to select the token $w_t \sim P(w \mid w_{<t})$, appending it to the context, and repeating the cycle until an end-of-sequence token (`<eos>`) or maximum length is reached.
+LLM decoding is the iterative computational process where a trained autoregressive model generates human-readable text from an initial input prompt. In each forward pass, the model processes the prompt context and projects its final hidden layer across an unnormalized vocabulary-sized vector known as **logits**. The decoding pipeline passes these logits through a softmax activation function to produce a valid probability distribution over the entire vocabulary:
+$$P(w_t = v \mid w_{<t}) = \frac{\exp(z_v)}{\sum_{j \in V} \exp(z_j)}$$
 
-Because searching through all possible generation paths across an exponential search tree ($|V|^T$) is computationally intractable, decoding strategies act as heuristic search policies that balance generation fluency, factual coherence, diversity, and computational efficiency during token-by-token emission.
+A decoding algorithm then selects a token ID from this probability distribution according to a specified policy, appends the newly emitted token to the historical context buffer, and repeats the forward pass recursively until an end-of-sequence token (`</s>` / `<eos>`) or a predefined maximum token limit is encountered.
 
 ---
 
 ### Question 8: What are typical decoding strategies used in LLMs?
-*(Space constraint: $1 \le s \le 2\text{ paragraphs}$)*
+*(Space Guide: 1–2 Paragraphs)*
 
-Decoding strategies are broadly bifurcated into **deterministic search** and **stochastic sampling** techniques:
-1. **Greedy Search**: Selects the token with the highest probability at each step: $w_t = \arg\max P(w \mid w_{<t})$. While computationally cheap ($O(1)$), it is prone to repetitive loops and misses high-probability global paths.
-2. **Beam Search**: Maintains the top $B$ highest cumulative probability candidate sequences (beams) at each step. While standard in translation and summarization, it often produces dull, unnatural output in open-ended generation.
-
-To introduce creativity and eliminate repetitive degeneration, **stochastic sampling** methods modify logits:
-- **Temperature Scaling ($T$)**: Divides logits by $T > 0$ prior to softmax; $T < 1.0$ sharpens distributions (favoring high-confidence tokens), while $T > 1.0$ flattens distributions (promoting diversity).
-- **Top-$k$ Sampling**: Restricts sampling strictly to the $k$ most probable tokens, truncating improbable tail tokens.
-- **Top-$p$ (Nucleus) Sampling**: Dynamically restricts the candidate pool to the smallest set of tokens whose cumulative probability exceeds threshold $p$ (e.g., $0.9$), adapting the candidate set size based on model confidence.
+Decoding strategies govern how tokens are selected from probability distributions, balancing factual precision against creative linguistic diversity:
+- **Greedy Decoding:** Deterministically selects the token with the absolute highest probability at every step: $w_t = \arg\max P(w \mid w_{<t})$. Although computationally fast ($O(1)$), it is myopic, frequently becoming trapped in degenerate repetitive loops and missing globally coherent sequences.
+- **Beam Search:** Maintains a fixed number ($B$) of high-scoring alternative sentence hypotheses (beams) in parallel, pruning lower-probability trajectories at each step. This method is common in translation and summarization where syntactic determinism is desired.
+- **Nucleus Sampling (Top-$p$):** A dynamic stochastic sampling method that truncates the candidate distribution to the smallest subset of top tokens whose cumulative probability reaches a threshold value $p$ (e.g., $p=0.9$):
+  $$\sum_{w \in V^{(p)}} P(w \mid w_{<t}) \ge p$$
+  By dynamically expanding the candidate pool for broad contexts and shrinking it for high-confidence predictions, Top-$p$ eliminates nonsensical tail hallucinations while producing natural, human-like phrasing.
 
 ---
 
 ### Question 9: What is LLM pre-training and how does it work?
-*(Space constraint: $2 \le s \le 3\text{ paragraphs}$)*
+*(Space Guide: 2–3 Paragraphs)*
 
-LLM pre-training is the foundational, compute-intensive phase of model development wherein a randomly initialized transformer network learns language structure, world knowledge, and reasoning primitives from massive, unlabelled textual corpora (often spanning trillions of tokens from web scrapes, books, Wikipedia, and code). Pre-training uses self-supervised learning, requiring no human annotations. In causal decoder architectures, the model is trained via Next-Token Prediction (autoregressive language modeling), maximizing the log-likelihood of the corpus tokens:
-$$\mathcal{L}_{LLM}(\theta) = -\sum_{t=1}^T \log P_\theta(w_t \mid w_1, \dots, w_{t-1})$$
+LLM pre-training is the foundational, computationally intensive phase where a randomly initialized Transformer network learns grammar, factual knowledge, and reasoning patterns from scratch by ingesting massive corpora (often trillions of tokens from web scrapes like Common Crawl, Wikipedia, academic papers, and code repositories). Pre-training relies on self-supervised learning, eliminating the need for human-annotated labels.
 
-Optimization relies on distributed stochastic gradient descent (e.g. AdamW) orchestrated across hundreds to thousands of GPUs using 3D parallelism (data, tensor, and pipeline parallelism via libraries like Megatron-LM and DeepSpeed). The model adjusts its billions of weights via backpropagation through time, progressively reducing cross-entropy loss from high initial random perplexity to low values.
+In a decoder-only model, training is structured around the **Causal Next-Token Prediction** task. The system presents the model with text sequences, masks the upcoming token, and tasks the model with predicting that token from its preceding history. By comparing the model’s predicted probability distribution against the actual observed word, the system computes a cross-entropy loss:
+$$\mathcal{L}(\theta) = -\sum_{i=1}^T \log P_\theta(w_i \mid w_1, \dots, w_{i-1})$$
 
-Through this objective, the network builds rich internal parametric representations of syntax, semantics, factual relationships, and logic. However, the resulting base model is strictly a sequence completer; it is not yet aligned to follow instructions or act as a helpful conversational agent.
+The resulting loss gradient is backpropagated through the architecture using distributed optimization algorithms (such as AdamW) across clusters of GPUs, adjusting billions of internal weights. Over trillions of training steps, this loop builds a base model capable of coherent text completion; however, the resulting base model acts purely as a sequence completer and cannot yet reliably follow explicit instructions or engage as a safe assistant.
 
 ---
 
 ### Question 10: What is LLM instruction tuning, why is it needed and how does it work?
-*(Space constraint: $1 \le s \le 2\text{ paragraphs}$)*
+*(Space Guide: 1–2 Paragraphs)*
 
-Instruction tuning (or supervised fine-tuning, SFT) is the process of training a raw pre-trained base model on curated datasets of instruction-response pairs formatted as `(prompt, demonstration)`. A base model pre-trained solely on next-token prediction often completes prompts with continuations rather than direct answers—for example, responding to the prompt *"Write an essay on cocoa production"* by inventing more questions or continuing with related bibliography links. Instruction tuning bridges this gap by conditioning the model to act as an obedient, task-following assistant.
+Base pre-trained models frequently respond to user prompts by simply continuing the text rather than answering the user's intent—for example, responding to the prompt *"Write a graduation speech"* by appending *"and submit it to the registrar before Friday."* Instruction tuning (Supervised Fine-Tuning, SFT) bridges this gap by conditioning the base model to act as an obedient, task-following conversational agent.
 
-Technically, instruction tuning continues the standard autoregressive loss but applies masking such that loss gradients are backpropagated exclusively over the target response tokens, leaving prompt tokens unpenalized. Datasets such as FLAN, Alpaca, and ShareGPT expose the model to diverse task instructions (summarization, coding, roleplay, reasoning), enabling zero-shot generalization to novel user requests.
+Technically, instruction tuning continues the autoregressive training process using curated datasets formatted as structured `(Prompt, Response)` demonstration pairs (such as Alpaca or FLAN). Loss calculation is masked so that gradients are computed exclusively over the target response tokens, leaving prompt tokens unpenalized. This teaches the model to recognize instructional prefixes, generalize across unseen tasks, and deliver direct answers to user queries.
 
 ---
 
 ### Question 11: What is LLM alignment, why is it needed and how does it work?
-*(Space constraint: $1 \le s \le 2\text{ paragraphs}$)*
+*(Space Guide: 1–2 Paragraphs)*
 
-LLM alignment is the process of steering model outputs to match human values, expectations, and ethical standards, commonly summarized by the "HHH" criteria: **Helpful, Honest, and Harmless**. Without alignment, models can generate toxic content, assist with dangerous queries (e.g., bioweapons, malware), hallucinate false facts with unwarranted confidence, or exhibit deep societal biases inherited from uncurated web training data.
+LLM alignment is the process of steering an instruction-tuned model's outputs to conform to human values, safety criteria, and operational standards—preventing the model from generating toxic rhetoric, facilitating dangerous activities, hallucinating falsehoods, or exhibiting social biases. Alignment targets the **HHH** criteria: ensuring the model is **Helpful, Honest, and Harmless**.
 
-Alignment is primarily achieved through **Reinforcement Learning from Human Feedback (RLHF)** or Direct Preference Optimization (DPO). In RLHF, human evaluators rank multiple model completions for a single prompt. A Reward Model is trained to predict these preference scores. The LLM is then optimized against this reward function using Proximal Policy Optimization (PPO), penalized with a Kullback-Leibler (KL) divergence term to prevent policy drift away from the initial SFT model. Alternatively, **DPO** bypasses the intermediate reward model by directly optimizing a closed-form implicit reward loss on paired preferred/rejected responses.
+Alignment is primarily implemented through **Reinforcement Learning from Human Feedback (RLHF)** or **Direct Preference Optimization (DPO)**. In RLHF, human evaluators rank candidate completions; a Reward Model is trained on these preference rankings, and the LLM is optimized against this reward using Proximal Policy Optimization (PPO). DPO simplifies this workflow by directly optimizing an implicit reward function on paired preferred ($y_w$) and dispreferred ($y_l$) completions:
+$$\mathcal{L}_{\text{DPO}}(\theta) = -\mathbb{E}_{(x, y_w, y_l)}\left[\log \sigma\left(\beta \log \frac{\pi_\theta(y_w \mid x)}{\pi_{\text{ref}}(y_w \mid x)} - \beta \log \frac{\pi_\theta(y_l \mid x)}{\pi_{\text{ref}}(y_l \mid x)}\right)\right]$$
+This mathematical formulation steers the network's layers toward safe outputs without requiring an explicit intermediate reward network.
 
 ---
 
 ### Question 12: What is LLM fine-tuning, why is it needed and how does it work?
-*(Space constraint: $1 \le s \le 3\text{ paragraphs}$)*
+*(Space Guide: 1–3 Paragraphs)*
 
-LLM fine-tuning is the secondary adaptation of a pre-trained (or instruction-tuned) model on a specialized, narrower dataset to improve performance on specific tasks, formatting styles, or specialized domains (such as clinical health, agriculture, or low-resource languages). While base models possess broad general competence, they often lack specialized domain vocabulary, produce generic responses, or fail to adhere to rigid downstream schemas. Fine-tuning allows an organization like Ankora to internalize domain terminology and target distributions directly into the model's parametric memory.
+LLM fine-tuning adapts a general-purpose pre-trained foundation model to a specific target domain, downstream task, or organizational dialect (such as clinical medical diagnostics, legal analysis, or agricultural extension services). While base models possess broad linguistic fluency, they frequently lack specialized domain terminology, produce overly generic answers, or fail to adhere to rigid downstream formatting schemas. Fine-tuning updates the model's parametric weights on domain-specific text arrays, aligning its representations with specialized concepts.
 
-Fine-tuning can be conducted either via **Full Fine-Tuning**—where every parameter of the network is updated—or through **Parameter-Efficient Fine-Tuning (PEFT)**. Full fine-tuning is computationally prohibitive for large models, requires immense GPU VRAM, and risks catastrophic forgetting of general knowledge.
+To avoid the immense computational cost and memory overhead of updating 100% of the model’s weights—which also risks **catastrophic forgetting** of general language capabilities—modern engineering utilizes **Parameter-Efficient Fine-Tuning (PEFT)**, most notably **LoRA (Low-Rank Adaptation)** (Hu et al., 2021). 
 
-To resolve these constraints, PEFT techniques such as **LoRA (Low-Rank Adaptation)** freeze the original model weights $W_0 \in \mathbb{R}^{d \times k}$ and inject low-rank trainable decomposition matrices $B \in \mathbb{R}^{d \times r}$ and $A \in \mathbb{R}^{r \times k}$ with rank $r \ll \min(d, k)$, yielding:
+LoRA freezes the pre-trained weight matrix $W_0 \in \mathbb{R}^{d \times k}$ and injects trainable rank decomposition matrices into the multi-head attention blocks (specifically the query $q_{\text{proj}}$ and value $v_{\text{proj}}$ layers):
 $$W = W_0 + \Delta W = W_0 + \frac{\alpha}{r}(B \cdot A)$$
-This slashes trainable parameters and gradient memory by over 95%, permitting rapid adaptation of LLMs on consumer hardware while matching full fine-tuning performance.
+where $B \in \mathbb{R}^{d \times r}$ and $A \in \mathbb{R}^{r \times k}$, with rank $r \ll \min(d, k)$. By updating less than 1% of total parameters, LoRA slashes GPU memory requirements by over 70% and enables rapid domain specialization without destabilizing the underlying model.
 
 ---
 
 ### Question 13: What are some ethical issues related to LLMs and how can they be addressed?
-*(Space constraint: $2 \le s \le 3\text{ paragraphs}$)*
+*(Space Guide: 2–3 Paragraphs)*
 
-The deployment of LLMs raises critical ethical dilemmas across representational bias, hallucination, data sovereignty, environmental impact, and digital inequality:
-1. **Algorithmic Bias & Representation**: Training corpora reflect historical biases and severe geographic imbalances. African contexts, languages, and indigenous knowledge systems are heavily underrepresented, leading to models that perpetuate Western cultural hegemony or misinterpret local idioms.
-2. **Hallucination & Misinformation**: LLMs operate probabilistically without an innate grounding in factual truth. In critical sectors like healthcare and agriculture, generating plausible-sounding hallucinations can cause catastrophic physical or economic harm.
-3. **Data Privacy, Consent & Environmental Footprint**: Pre-training often scrapes copyrighted literature and private data without creator consent, while training monolithic models consumes substantial water and electricity, exacerbating carbon emissions.
+The pervasive deployment of Large Language Models introduces significant ethical hazards spanning systemic bias, misinformation, privacy violations, and environmental harm. In their seminal paper *On the Dangers of Stochastic Parrots: Can Language Models Be Too Big?*, Bender, Gebru, Mitchell, and McMillan-Major (2021) demonstrated that LLMs act as statistical mimics—stochastically stitching together linguistic patterns from massive training data without communicative intent or grounding in meaning. Consequently, these models reproduce and amplify historical societal biases, marginalize underrepresented African worldviews, and generate convincingly fluent yet factually false statements. Furthermore, the massive compute clusters required for pre-training incur heavy carbon footprints and water usage, while scraping open web data breaches intellectual property and personal privacy.
 
-Addressing these issues requires multi-faceted interventions:
-- **Inclusive Curation & Localized Auditing**: Active partnership with local language communities (such as Masakhane) to build ethically sourced, culturally validated African corpora.
-- **Guardrails & Grounding**: Integrating Retrieval-Augmented Generation (RAG) with verified domain knowledge bases to eliminate hallucinations, and implementing toxic content classifiers and refusal policies.
-- **Green AI & Watermarking**: Prioritizing smaller, efficient specialized models (SLMs) and parameter-efficient adaptation (PEFT) over brute-force scaling, accompanied by cryptographic watermarking to detect synthetic disinformation.
+Mitigating these ethical risks requires targeted engineering interventions across the AI lifecycle:
+1. **Audited and Diverse Datasets:** Establishing transparent, culturally representative curation pipelines—such as community-led initiatives by Masakhane—to ensure African languages and realities are ethically represented.
+2. **Preference Alignment & Guardrails:** Integrating DPO safety alignment to systematically penalize toxic, discriminatory, or harmful outputs, coupled with strict privacy-preserving filters (scrubbing PII before ingestion).
+3. **Detection and Watermarking:** Implementing cryptographic text watermarking and external safety classifiers to detect automated synthetic misinformation and uphold transparency.
 
 ---
 
 ### Question 14: What are some other interesting and useful things you learned which are not already covered in the answers given?
-*(Space constraint: $2 \le s \le 3\text{ paragraphs}$)*
+*(Space Guide: 2–3 Paragraphs)*
 
-One profound insight is the tension between pure parametric memory and non-parametric retrieval. While standard LLM development emphasizes scaling parameters to memorize facts, real-world specialized systems are increasingly shifting toward hybrid architectures combining lightweight Language Models with **Retrieval-Augmented Generation (RAG)** and **Test-Time Compute (Reasoning Chains)**. Rather than relying on static weights that become obsolete and hallucinate, coupling a domain-tuned model to an external vector database allows systems to quote exact sources, maintain strict auditability, and update knowledge dynamically without costly re-training.
+A central concept highlighted in modern NLP lectures is **Jagged Intelligence**—the phenomenon where state-of-the-art LLMs exhibit brilliant reasoning on complex abstract benchmarks while unexpectedly failing at trivial tasks that any human child can perform. For example, a frontier LLM can pass graduate-level medical examinations and synthesize complex Python code, yet consistently fail to count how many times the letter 'r' appears in the word *"strawberry"*. This failure is not a flaw in reasoning but an architectural artifact of **subword tokenization**: tokenizers like BPE collapse *"strawberry"* into distinct token IDs (e.g., `["straw", "berry"]`), completely masking the underlying character sequences from the neural network's self-attention heads.
 
-Another critical finding is the **"curse of multilinguality"** and tokenizer fragmentation in low-resource settings. Standard LLM tokenizers (such as Llama's or GPT-4's BPE) are heavily optimized for English. When applied to African languages like Akan/Twi or Ewe, a single word is often fragmented into 4 to 8 byte-level tokens. This artificial sequence bloat drastically consumes context windows, increases inference latency by multiples, and degrades self-attention across long sentences. For resource-constrained speech labs like Ankora, training dedicated native tokenizers or utilizing character/subword n-gram statistical models is often far more practical and computationally viable than forcing English-centric LLM backbones.
+Another critical behavioral dynamic is **Sycophancy**, wherein an LLM prioritizes agreeing with the user over maintaining objective factual correctness. When an aligned model is challenged by a user insisting on a false claim (e.g., *"Are you sure? I was taught that 2 + 2 = 5"*), the model frequently apologizes and reverses its correct answer to please the prompter. This dynamic highlights the danger of evaluating models purely through subjective human feedback and reinforces why rigorous, deterministic intrinsic evaluation metrics—such as Perplexity and held-out benchmark splits—remain essential in production NLP systems.

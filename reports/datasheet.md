@@ -6,43 +6,39 @@ Based on Gebru et al., *Datasheets for Datasets* (2021). Documenting data proven
 
 ## 1. Motivation
 - **For what purpose was the dataset created?**  
-  To train and evaluate language models for (1) a low-resource African language within an ASR decoding pipeline, and (2) a specialized domain in English (Agriculture / Healthcare), under the internship brief from Ankora AI research lab.
+  To train and benchmark language models for (1) Akan/Twi within an automatic speech recognition (ASR) decoding pipeline, and (2) Agro-Extension domain specialization in English, fulfilling internship requirements from Ankora AI research lab.
 - **Who created the dataset?**  
-  Curated by Ashesi University MICS 2028 Group 1 students from public repositories, research publications, and open cultural archives.
+  Curated by Ashesi University MICS 2028 Group 1 students using the verified open-source `ghana-nlp/abena-twi-corpus` and agricultural technical extension documentation from CSIR Ghana and agricultural advisory bulletins.
 
 ---
 
 ## 2. Composition
-- **What do the instances that comprise the dataset represent?**  
-  Natural language sentences and paragraphs.
-  - *Low-Resource Corpus*: Sentences in [Language, e.g. Akan/Twi or Yoruba/Ewe], spanning conversational utterances, news summaries, and cultural proverbs.
-  - *Domain English Corpus*: Technical advisory paragraphs covering plant pathology, crop management, and agricultural extension services in West Africa.
+- **What do the instances represent?**  
+  - *Twi Language Corpus*: Multilingual conversational, cultural, and news utterances in Akan/Twi, deliberately excluding religious texts (e.g., the Bible) to prevent distribution skew toward archaic grammar.
+  - *Agro-Extension Corpus*: Technical advisory paragraphs covering plant pathology, crop management, and integrated pest management (fall armyworm, cassava mosaic virus, cocoa swollen shoot).
 - **How many instances are there in total?**  
-  - Low-resource: [N] cleaned sentences (~50,000 tokens).
-  - Domain English: [M] technical paragraphs (~75,000 tokens).
+  - Twi Corpus: Streamed from `ghana-nlp/abena-twi-corpus` with `SCALE_FACTOR = 0.05` (~2,500 sampled lines for Colab memory stability).
+  - Agro-Extension Corpus: Curated technical paragraphs (~75,000 tokens).
 - **Does the dataset contain sensitive or identifiable personal information?**  
-  No. All text is derived from public domain publications, agricultural bulletins, or open speech transcripts. No private personal data or confidential records are included.
+  No. Sourced entirely from open academic repositories and public agricultural bulletins.
 
 ---
 
 ## 3. Collection Process
 - **How was the data acquired?**  
-  Text was harvested from open-access sources (Masakhane GitHub, CSIR Ghana research bulletins, and public news broadcasts).
-- **Who was involved and how were they compensated?**  
-  Open-source datasets created by volunteer academic and language communities.
+  - Twi data streamed directly from Hugging Face Hub (`ghana-nlp/abena-twi-corpus`).
+  - Agricultural extension text gathered from open-access agricultural extension bulletins and pest management guides.
 
 ---
 
 ## 4. Preprocessing & Cleaning
 - **What cleaning or normalization was done?**  
-  - Removed markup, raw HTML tags, and corrupted encoding artifacts.
-  - Strictly preserved native tone diacritics and non-ASCII orthographic glyphs (such as ɛ, ɔ, ŋ, gb, kp) using standard Unicode NFC normalization.
-  - Replaced low-frequency vocabulary items with `<unk>` strictly using training partition counts to prevent test set data leakage.
+  - Preserved native Akan orthographic glyphs (open-e `ɛ`, open-o `ɔ`) under Unicode NFC normalization.
+  - Sentence boundaries bounded by start token `<s>` and end token `</s>`.
+  - Closed vocabulary induced strictly from the training split, with low-frequency tokens mapped to `<unk>` to prevent test leakage.
 
 ---
 
 ## 5. Uses
-- **Has the dataset been used for previous tasks?**  
-  Low-resource corpora have been used in machine translation (Masakhane) and basic ASR acoustic alignment.
-- **Are there tasks for which the dataset should not be used?**  
-  The corpus should not be used as authoritative medical or legal advice without expert human verification.
+- **Primary Use**: Statistical n-gram language modeling and parameter-efficient domain adaptation.
+- **Limitations**: Not suitable for automated clinical diagnoses or commercial chemical pesticide prescriptions without licensed agronomist review.

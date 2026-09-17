@@ -38,6 +38,30 @@ Field notes:
 
 ---
 
+## 2026-09-17 · 16:30–16:45 GMT · Eric Elikplim Sunu
+
+**Branch:** feature/repo-setup
+**Assistant:** Gemini (Gemini 3.8 Flash), to integrate the course lecture master blueprint and Gemini notebook context into the repository. Updated theoretical report Section A with lecture concepts (Jagged Intelligence, Sycophancy, Stochastic Parrots), aligned Section B to `ghana-nlp/abena-twi-corpus` with cloud streaming and sample scaling (`SCALE_FACTOR = 0.05`), aligned Section C to the Agro-Extension agricultural corpus with LoRA attention adapters (`["q_proj", "v_proj"]`), created `reports/quiz_revision_guide.md` for the automated AI Viva Quiz on `clenam.ai`, and updated the course-level `SOLUTION_PLAN.md`.
+**Did:**
+- Enhanced `src/preprocessing.py` with `load_twi_streaming_corpus()` to stream lines directly from Hugging Face Hub using `SCALE_FACTOR = 0.05` to avoid Google Colab/local system crashes.
+- Updated `reports/section_a_theory.md` with complete technical formulations, exact mathematical formulas, and insights on Jagged Intelligence (character masking via subword tokenization) and Sycophancy.
+- Updated `reports/section_b_low_resource_lm.md` to document the Twi corpus selection, explicitly avoiding religious texts (Bible) to prevent liturgical skew, and defending the n-gram vs. neural model trade-off.
+- Updated `reports/section_c_domain_adaptation.md` to detail the Agro-Extension text array corpus, evaluating the three approaches (from scratch, RAG, PEFT/LoRA) and justifying LoRA on attention layers.
+- Created `reports/quiz_revision_guide.md` providing complete derivations and study answers for all 6 self-check questions from Section 6 of the course blueprint.
+- Updated `notebooks/01_low_resource_ngram_lm.ipynb` and `notebooks/02_domain_specific_llm_adaptation.ipynb` to match the python blueprint specifications.
+- Updated `reports/claims_table.md`, `reports/datasheet.md`, and course-level `SOLUTION_PLAN.md`.
+**Decided:**
+- Target low-resource language confirmed as Akan/Twi (`ghana-nlp/abena-twi-corpus`) using cloud streaming with `SCALE_FACTOR = 0.05` to prevent RAM bottlenecks.
+- Target domain confirmed as Agriculture (Agro-Extension text array) using LoRA ($r=8, \alpha=16$) targeting `["q_proj", "v_proj"]`.
+- The Viva Quiz platform is verified as `clenam.ai` (Ashesi automated oral defense).
+**Blocked / open questions:**
+- None. Scaffolding, pipelines, and revision guides are fully aligned with course blueprints.
+**Next:**
+- Push `main` and `feature/repo-setup` to GitHub.
+- Open Pull Request on GitHub from `feature/repo-setup` into `main`.
+
+---
+
 ## 2026-09-17 · 13:55–14:20 GMT · Eric Elikplim Sunu
 
 **Branch:** feature/repo-setup
