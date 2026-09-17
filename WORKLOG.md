@@ -36,6 +36,26 @@ Field notes:
 - **Decided** — only real decisions, the kind someone might otherwise reverse without knowing. Leave it out if nothing was decided.
 - **Blocked** — this is the field that saves the project. Write it even when it feels like admitting you're stuck. Especially then.
 
+## 2026-09-17 · 20:35–20:55 GMT · Eric Elikplim Sunu
+
+**Branch:** eric
+**Assistant:** Gemini (Gemini 3.8 Flash), to implement an experimental exploration suite for deep learning: 5 tokenization strategies (Whitespace, Unicode NFC Word, Character, Ewe Rule Stemmer, Byte-Pair Encoding BPE), N-gram scaling ablation from $N=1$ to $N=6$, multi-source dataset harmonization pipeline (`src/data_pipeline.py`) supporting 4+ datasets, interactive laboratory notebook (`04_tokenization_and_ngram_ablation.ipynb`), and the master reflective journal (`reports/LEARNING_JOURNAL.md`).
+**Did:**
+- Built `src/tokenizers.py` containing 5 tokenization implementations: `WhitespaceTokenizer`, `UnicodeWordTokenizer` (with combining diacritic regex `[\w\u0300-\u036f]+`), `CharacterTokenizer`, `EweRuleStemmerTokenizer` (stripping Ewe affixes), and `SimpleBPETokenizer` (native Byte-Pair Encoding subword learner).
+- Discovered and resolved the Combining Diacritic Tokenization Trap where standard `\w+` split `"Nusrɔ̃lawo"` into 3 pieces (`['Nusrɔ', '̃', 'lawo']`), solving it with Unicode NFC normalization and explicit `\u0300-\u036f` range matching.
+- Built `src/experiment_runner.py` with `run_ngram_experiment()` measuring vocabulary size $|V|$, total tokens, zero-count test sparsity rate (%), test perplexity, and text generation across $N \in [1, 2, 3, 4, 5, 6]$.
+- Built `src/data_pipeline.py` with `merge_and_harmonize_datasets()` to ingest up to 4 disparate Ewe datasets, normalize to Unicode NFC, remove URLs/markup, deduplicate via normalized sentence hashing, and generate leak-free stratified splits (`train.txt`, `val.txt`, `test.txt`).
+- Created `reports/LEARNING_JOURNAL.md` documenting the full PBL reflective learning cycle, breaking point analysis ($|V|^N$ combinatorial explosion at $N \ge 4$), problems encountered, and circumventions.
+- Created `notebooks/04_tokenization_and_ngram_ablation.ipynb` as an interactive visual laboratory.
+**Decided:**
+- Identified $N=3$ as the empirical sweet spot for low-resource Ewe text: $N \ge 4$ causes test sparsity to exceed 92–99%, where Laplace smoothing degrades rapidly due to pseudo-count over-allocation.
+- Multi-source Ewe datasets will be staged in `data/raw/low_resource/` and unified using `merge_and_harmonize_datasets()`.
+**Next:**
+- Drop the user's 4 Ewe datasets into `data/raw/low_resource/` and run the harmonization pipeline.
+- Run the full tokenization and N-gram sweep on the unified corpus and populate final figures in `figures/`.
+
+---
+
 ## 2026-09-17 · 19:55–20:05 GMT · Eric Elikplim Sunu
 
 **Branch:** eric

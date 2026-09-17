@@ -45,8 +45,8 @@ def basic_tokenize(text: str, lowercase: bool = True) -> List[str]:
     if lowercase:
         text = text.lower()
 
-    # Regex capturing unicode words (including all extended Latin Ewe letters) and punctuation
-    tokens = re.findall(r"\w+|[^\w\s]", text, re.UNICODE)
+    # Regex capturing unicode words (including all extended Latin Ewe letters and combining diacritics \u0300-\u036f) and punctuation
+    tokens = re.findall(r"[\w\u0300-\u036f]+|[^\w\s]", text, re.UNICODE)
     return tokens
 
 
