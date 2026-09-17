@@ -36,11 +36,22 @@ Field notes:
 - **Decided** — only real decisions, the kind someone might otherwise reverse without knowing. Leave it out if nothing was decided.
 - **Blocked** — this is the field that saves the project. Write it even when it feels like admitting you're stuck. Especially then.
 
+## 2026-09-17 · 19:55–20:05 GMT · Eric Elikplim Sunu
+
+**Branch:** eric
+**Assistant:** Gemini (Gemini 3.8 Flash), to rename the active working branch from `feature/repo-setup` to `eric` as the primary development playground branch.
+**Did:**
+- Renamed branch to `eric` (`git branch -m eric`).
+**Decided:**
+- Working playground and experimental development will live on personal branch `eric`.
+**Next:**
+- Place Ewe text dataset in `data/raw/low_resource/` and begin exploratory modeling.
+
 ---
 
 ## 2026-09-17 · 16:40–16:55 GMT · Eric Elikplim Sunu
 
-**Branch:** feature/repo-setup
+**Branch:** eric
 **Assistant:** Gemini (Gemini 3.8 Flash), to adapt low-resource language modeling pipeline for Ewe (Èʋegbe). Updated unicode tokenization and NFC normalization in `src/preprocessing.py` to preserve Ewe glyphs (`ɖ`, `ƒ`, `ɣ`, `ŋ`, `ɔ`, `ɛ`, `ʋ`) and tone markers. Updated `notebooks/01_low_resource_ngram_lm.ipynb`, `reports/section_b_low_resource_lm.md`, `reports/claims_table.md`, and `reports/datasheet.md` to center on Ewe.
 **Did:**
 - Enhanced `src/preprocessing.py` with `normalize_ewe_text()` and updated `basic_tokenize()` using Unicode NFC normalization, ensuring tone diacritics and distinct Ewe characters (`ɖ`, `ƒ`, `ɣ`, `ŋ`, `ɔ`, `ɛ`, `ʋ`) remain fused to base vowels without splitting into broken accent tokens.
