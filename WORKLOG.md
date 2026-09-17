@@ -36,6 +36,24 @@ Field notes:
 - **Decided** — only real decisions, the kind someone might otherwise reverse without knowing. Leave it out if nothing was decided.
 - **Blocked** — this is the field that saves the project. Write it even when it feels like admitting you're stuck. Especially then.
 
+## 2026-09-17 · 21:30–21:42 GMT · Eric Elikplim Sunu
+
+**Branch:** eric
+**Assistant:** Gemini (Gemini 3.8 Flash), to configure the dedicated Python 3.14 virtual environment, install dev and analysis dependencies (`ruff`, `black`, `ipykernel`), register the Jupyter kernel `nlp-prosit-1`, and create workspace settings for Zed IDE (`.zed/settings.json`, `pyrightconfig.json`).
+**Did:**
+- Created and validated `.venv` virtual environment in `nlp-group-1-prosit-1/` using Python 3.14.
+- Installed code formatting and linting utilities (`ruff`, `black`) and interactive execution support (`ipykernel`).
+- Registered system-wide Jupyter kernelspec: `Python (NLP Prosit 1 - Ewe)` (`nlp-prosit-1`).
+- Configured Zed IDE workspace settings in `.zed/settings.json` and parent directory, binding Python LSP (`pyright`) directly to `.venv/bin/python` with `extraPaths: ["src"]` and format-on-save via `ruff`.
+- Created `pyrightconfig.json` defining `venvPath: "."` and `venv: ".venv"`.
+**Decided:**
+- Use Zed's native Pyright LSP integration pointing to the project's local `.venv` to ensure zero import errors and seamless intellisense across `src/` modules.
+**Next:**
+- Begin interactive step-by-step masterclass: Step 2 Zero-Probability Dilemma & Smoothing with live Ewe examples.
+- Drop in the 4 Ewe datasets and run the harmonization pipeline.
+
+---
+
 ## 2026-09-17 · 20:35–20:55 GMT · Eric Elikplim Sunu
 
 **Branch:** eric
