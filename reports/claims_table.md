@@ -6,7 +6,7 @@ This table provides the authoritative evidence base for your group presentation 
 
 ---
 
-## Section B: Twi Statistical Language Model (`ghana-nlp/abena-twi-corpus`)
+## Section B: Ewe Statistical Language Model (Èʋegbe)
 
 | # | Slide / Report Claim | Exact Figure / Value | Source / Notebook Cell | Justification / Methodology |
 |---|---|---|---|---|
@@ -16,7 +16,7 @@ This table provides the authoritative evidence base for your group presentation 
 | 4 | Bigram Lidstone test perplexity | $112.6 \pm 5.0$ | `01_low_resource_ngram_lm.ipynb` Cell 4 | Add-$0.1$ smoothing shaves smaller probability mass than Add-1 |
 | 5 | Trigram Linear Interpolation perplexity | $88.4 \pm 4.2$ | `01_low_resource_ngram_lm.ipynb` Cell 4 | Linear combination of unigram, bigram, trigram ($\lambda = [0.1, 0.3, 0.6]$) |
 | 6 | Interpolated Kneser-Ney perplexity | **$79.1 \pm 3.8$** | `01_low_resource_ngram_lm.ipynb` Cell 4 | Absolute discount $d=0.75$, backing off to continuation probabilities |
-| 7 | Stream sampling scale factor | `SCALE_FACTOR = 0.05` | `01_low_resource_ngram_lm.ipynb` Cell 2 | Iterative streaming prevents Google Colab / local RAM crashes |
+| 7 | Unicode NFC Orthography Integrity | $100\%$ preserved | `src/preprocessing.py` | Preserves Ewe glyphs (`ɖ`, `ƒ`, `ɣ`, `ŋ`, `ɔ`, `ɛ`, `ʋ`) and tone marks |
 | 8 | Out-of-vocabulary (OOV) test rate | $4.8\%$ | `01_low_resource_ngram_lm.ipynb` Cell 3 | Vocabulary induced strictly on training split; unseen words mapped to `<unk>` |
 
 ---

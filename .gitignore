@@ -53,10 +53,15 @@ hf_cache/
 
 # Data files (keep raw & processed data local/untracked if large or licensed)
 data/raw/*
-!data/raw/.gitkeep
+!data/raw/**/.gitkeep
+!data/raw/**/README.md
 data/processed/*
-!data/processed/.gitkeep
+!data/processed/**/.gitkeep
+!data/processed/**/README.md
 *.csv
 *.tsv
 *.parquet
 *.jsonl
+*.txt
+!data/**/README.md
+!requirements.txt

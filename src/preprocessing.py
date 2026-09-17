@@ -1,64 +1,38 @@
 """
-Preprocessing, tokenization, and dataset streaming utilities for low-resource
-African language corpora (e.g., Twi) and specialized domain datasets.
+Preprocessing, tokenization, and dataset loading utilities for low-resource
+African language corpora (specifically Ewe / Èʋegbe) and domain datasets.
 """
 
 from collections import Counter
+from pathlib import Path
 import random
 import re
-from typing import List, Tuple, Set, Dict, Optional, Iterator
+from typing import List, Tuple, Set, Dict, Optional
+import unicodedata
 
 
 SPECIAL_BOS = "<s>"
 SPECIAL_EOS = "</s>"
 SPECIAL_UNK = "<unk>"
 
+# Ewe specific orthographic glyphs:
+# Vowels: a, e, ɛ, i, o, ɔ, u (plus nasal accents)
+# Consonants with unique unicode: ɖ, ƒ, ɣ, ŋ, ʋ (and uppercase Ɖ, Ƒ, Ɣ, Ŋ, Ʋ)
+EWE_SPECIAL_CHARS = set("ɖƒɣŋɔɛʋƉƑƔŊƆƐƲ")
 
-def load_twi_streaming_corpus(
-    dataset_name: str = "ghana-nlp/abena-twi-corpus",
-    split: str = "train",
-    scale_factor: float = 0.05,
-    seed: int = 42,
-    max_samples: Optional[int] = None,
-) -> List[str]:
+
+def normalize_ewe_text(text: str) -> str:
     """
-    Streams the Twi language corpus directly from Hugging Face hub to prevent
-    system/Colab memory crashes, applying a scale factor sampling filter.
-
-    Args:
-        dataset_name: Hugging Face dataset ID (default: 'ghana-nlp/abena-twi-corpus').
-        split: Dataset split to stream.
-        scale_factor: Fraction of the stream to sample (e.g., 0.05 for 5%).
-        seed: Random seed for reproducible sampling.
-        max_samples: Optional hard cap on sampled lines.
-
-    Returns:
-        List of text strings.
+    Applies Unicode NFC normalization to ensure combining tone marks and diacritics
+    remain fused to their base vowels in Ewe (e.g., preventing 'ɛ' + accent from decomposing).
     """
-    from datasets import load_dataset
-
-    random.seed(seed)
-    print(f"Connecting to Hugging Face cloud database for '{dataset_name}'...")
-    raw_stream = load_dataset(dataset_name, split=split, streaming=True)
-
-    sampled_lines = []
-    print(f"Sampling stream with scale factor: {scale_factor * 100:.1f}%...")
-    for row in raw_stream:
-        # Extract text field from corpus record
-        text = row.get("text", "")
-        if text and random.random() < scale_factor:
-            sampled_lines.append(text.strip())
-            if max_samples and len(sampled_lines) >= max_samples:
-                break
-
-    print(f"Successfully processed {len(sampled_lines)} lines for model training.")
-    return sampled_lines
+    return unicodedata.normalize("NFC", text.strip())
 
 
 def basic_tokenize(text: str, lowercase: bool = True) -> List[str]:
     """
-    Tokenizes text into words and punctuation while preserving special characters
-    common in African languages (e.g., tone markers, open-o 'ɔ', open-e 'ɛ', 'ŋ').
+    Tokenizes text into words and punctuation while strictly preserving
+    Ewe orthography (e.g. 'ɖ', 'ŋ', 'ɔ', 'ɛ', 'ʋ', 'ƒ', 'ɣ' and tone diacritics).
 
     Args:
         text: Input string to tokenize.
@@ -67,11 +41,68 @@ def basic_tokenize(text: str, lowercase: bool = True) -> List[str]:
     Returns:
         List of string tokens.
     """
+    text = normalize_ewe_text(text)
     if lowercase:
         text = text.lower()
-    # Match words (including unicode characters for African orthographies) and punctuation
+
+    # Regex capturing unicode words (including all extended Latin Ewe letters) and punctuation
     tokens = re.findall(r"\w+|[^\w\s]", text, re.UNICODE)
     return tokens
+
+
+def load_corpus_from_file_or_hf(
+    source_path_or_id: str,
+    split: str = "train",
+    scale_factor: float = 1.0,
+    seed: int = 42,
+    max_samples: Optional[int] = None,
+) -> List[str]:
+    """
+    Loads text lines either from a local file (e.g. data/raw/low_resource/ewe.txt)
+    or streams from a Hugging Face dataset ID.
+
+    Args:
+        source_path_or_id: File path or Hugging Face dataset identifier.
+        split: Dataset split to use if streaming from Hugging Face.
+        scale_factor: Sampling fraction (between 0.0 and 1.0).
+        seed: Random seed for reproducible sampling.
+        max_samples: Maximum number of lines to retain.
+
+    Returns:
+        List of normalized text sentences.
+    """
+    random.seed(seed)
+    path = Path(source_path_or_id)
+
+    if path.exists() and path.is_file():
+        print(f"Loading local corpus from: {path}...")
+        with open(path, "r", encoding="utf-8") as f:
+            lines = [normalize_ewe_text(line) for line in f if line.strip()]
+        if scale_factor < 1.0:
+            lines = [line for line in lines if random.random() < scale_factor]
+        if max_samples:
+            lines = lines[:max_samples]
+        print(f"Loaded {len(lines)} lines from local file.")
+        return lines
+
+    # Otherwise, attempt Hugging Face streaming
+    try:
+        from datasets import load_dataset
+
+        print(f"Connecting to Hugging Face cloud database for '{source_path_or_id}'...")
+        raw_stream = load_dataset(source_path_or_id, split=split, streaming=True)
+        sampled_lines = []
+        for row in raw_stream:
+            text = row.get("text", "") or row.get("translation", {}).get("ee", "") or row.get("sentence", "")
+            if text and (scale_factor >= 1.0 or random.random() < scale_factor):
+                sampled_lines.append(normalize_ewe_text(text))
+                if max_samples and len(sampled_lines) >= max_samples:
+                    break
+        print(f"Streamed {len(sampled_lines)} lines from Hugging Face.")
+        return sampled_lines
+    except Exception as e:
+        print(f"Notice: Could not stream from '{source_path_or_id}': {e}")
+        return []
 
 
 def build_vocabulary(

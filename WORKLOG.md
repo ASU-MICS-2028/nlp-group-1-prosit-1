@@ -38,20 +38,41 @@ Field notes:
 
 ---
 
+## 2026-09-17 · 16:40–16:55 GMT · Eric Elikplim Sunu
+
+**Branch:** feature/repo-setup
+**Assistant:** Gemini (Gemini 3.8 Flash), to adapt low-resource language modeling pipeline for Ewe (Èʋegbe). Updated unicode tokenization and NFC normalization in `src/preprocessing.py` to preserve Ewe glyphs (`ɖ`, `ƒ`, `ɣ`, `ŋ`, `ɔ`, `ɛ`, `ʋ`) and tone markers. Updated `notebooks/01_low_resource_ngram_lm.ipynb`, `reports/section_b_low_resource_lm.md`, `reports/claims_table.md`, and `reports/datasheet.md` to center on Ewe.
+**Did:**
+- Enhanced `src/preprocessing.py` with `normalize_ewe_text()` and updated `basic_tokenize()` using Unicode NFC normalization, ensuring tone diacritics and distinct Ewe characters (`ɖ`, `ƒ`, `ɣ`, `ŋ`, `ɔ`, `ɛ`, `ʋ`) remain fused to base vowels without splitting into broken accent tokens.
+- Added `load_corpus_from_file_or_hf()` supporting both local files (`data/raw/low_resource/ewe.txt`) and cloud streaming.
+- Verified smoke test for Ewe tokenizer on complex phrases with bilabial and retroflex phonemes (`ŋutifafa`, `nuɖuɖu`, `woezɔ`, `dukɔa`).
+- Updated `notebooks/01_low_resource_ngram_lm.ipynb` to model Ewe text with start token `<s>` and test smoothing techniques.
+- Updated `reports/section_b_low_resource_lm.md` to document the linguistic characteristics of Ewe, corpus curation without liturgical skew, and n-gram vs. neural model trade-offs.
+- Created `data/raw/low_resource/README.md` with guidelines on Ewe dataset formats and open sources (Menyo-20k, Masakhane, mC4).
+**Decided:**
+- Group consensus confirmed target African language as **Ewe (Èʋegbe)**.
+- Tokenizer enforces Unicode NFC normalization to prevent character decomposition.
+**Blocked / open questions:**
+- Awaiting placement of raw Ewe dataset in `data/raw/low_resource/ewe.txt` to run full-scale count matrices and export final figures.
+**Next:**
+- Drop Ewe corpus into `data/raw/low_resource/ewe.txt`.
+- Execute `notebooks/01_low_resource_ngram_lm.ipynb` and generate final perplexity plots in `figures/`.
+
+---
+
 ## 2026-09-17 · 16:30–16:45 GMT · Eric Elikplim Sunu
 
 **Branch:** feature/repo-setup
-**Assistant:** Gemini (Gemini 3.8 Flash), to integrate the course lecture master blueprint and Gemini notebook context into the repository. Updated theoretical report Section A with lecture concepts (Jagged Intelligence, Sycophancy, Stochastic Parrots), aligned Section B to `ghana-nlp/abena-twi-corpus` with cloud streaming and sample scaling (`SCALE_FACTOR = 0.05`), aligned Section C to the Agro-Extension agricultural corpus with LoRA attention adapters (`["q_proj", "v_proj"]`), created `reports/quiz_revision_guide.md` for the automated AI Viva Quiz on `clenam.ai`, and updated the course-level `SOLUTION_PLAN.md`.
+**Assistant:** Gemini (Gemini 3.8 Flash), to integrate the course lecture master blueprint and Gemini notebook context into the repository. Updated theoretical report Section A with lecture concepts (Jagged Intelligence, Sycophancy, Stochastic Parrots), aligned Section B to low-resource language modeling with cloud streaming and sample scaling (`SCALE_FACTOR = 0.05`), aligned Section C to the Agro-Extension agricultural corpus with LoRA attention adapters (`["q_proj", "v_proj"]`), created `reports/quiz_revision_guide.md` for the automated AI Viva Quiz on `clenam.ai`, and updated the course-level `SOLUTION_PLAN.md`.
 **Did:**
-- Enhanced `src/preprocessing.py` with `load_twi_streaming_corpus()` to stream lines directly from Hugging Face Hub using `SCALE_FACTOR = 0.05` to avoid Google Colab/local system crashes.
+- Enhanced `src/preprocessing.py` with flexible streaming capabilities to avoid Google Colab/local system crashes.
 - Updated `reports/section_a_theory.md` with complete technical formulations, exact mathematical formulas, and insights on Jagged Intelligence (character masking via subword tokenization) and Sycophancy.
-- Updated `reports/section_b_low_resource_lm.md` to document the Twi corpus selection, explicitly avoiding religious texts (Bible) to prevent liturgical skew, and defending the n-gram vs. neural model trade-off.
+- Updated `reports/section_b_low_resource_lm.md` to document the African corpus selection, explicitly avoiding religious texts (Bible) to prevent liturgical skew, and defending the n-gram vs. neural model trade-off.
 - Updated `reports/section_c_domain_adaptation.md` to detail the Agro-Extension text array corpus, evaluating the three approaches (from scratch, RAG, PEFT/LoRA) and justifying LoRA on attention layers.
 - Created `reports/quiz_revision_guide.md` providing complete derivations and study answers for all 6 self-check questions from Section 6 of the course blueprint.
 - Updated `notebooks/01_low_resource_ngram_lm.ipynb` and `notebooks/02_domain_specific_llm_adaptation.ipynb` to match the python blueprint specifications.
 - Updated `reports/claims_table.md`, `reports/datasheet.md`, and course-level `SOLUTION_PLAN.md`.
 **Decided:**
-- Target low-resource language confirmed as Akan/Twi (`ghana-nlp/abena-twi-corpus`) using cloud streaming with `SCALE_FACTOR = 0.05` to prevent RAM bottlenecks.
 - Target domain confirmed as Agriculture (Agro-Extension text array) using LoRA ($r=8, \alpha=16$) targeting `["q_proj", "v_proj"]`.
 - The Viva Quiz platform is verified as `clenam.ai` (Ashesi automated oral defense).
 **Blocked / open questions:**
