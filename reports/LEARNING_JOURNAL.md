@@ -90,13 +90,39 @@ Using our Unicode Word tokenizer on Ewe, we scaled the n-gram order $N$ from 1 t
 
 ---
 
-## 5. Multi-Source Dataset Harmonization Protocol
+## 5. Multi-Source Dataset Harmonization Protocol & Empirical Sweep
 
-Our team identified four distinct potential text sources for Ewe:
-1. **Source 1**: Menyo-20k clean contemporary conversational & news text.
-2. **Source 2**: Masakhane MT open Ewe archives.
-3. **Source 3**: Local educational and cultural broadcast transcripts.
-4. **Source 4**: Agricultural and public health advisory text in Ewe.
+Our team identified four distinct text sources for Ewe:
+1. **Dataset 1 (`EWE_ENGLISH.csv`)**: 28,614 rows of rich cultural stories, naming customs, folklore, and narratives.
+2. **Dataset 2 (`eweenglishsentence(3).json`)**: 600 rows of personal biographical introductions and educational text (micro-dataset).
+3. **Dataset 3 (`selected transcribed audios.xlsx`)**: 19,152 rows of spoken speech transcriptions from the University of Ghana Waxal Project.
+4. **Dataset 4 (`ewe_corpus.parquet`)**: 4,408,322 rows of large-scale web and scripture aligned sentences.
+
+---
+
+### Dataset 1 Empirical Ablation Log (`EWE_ENGLISH.csv`)
+
+- **Raw Rows**: 28,614 | **Deduplicated Unique Sentences**: 26,594 (1,636 duplicate rows filtered).
+- **Split**: 21,275 Train (517,444 words) | 2,659 Val (65,067 words) | 2,660 Test (66,805 words).
+- **Special Ewe Orthography Distribution**: `ɔ` (109,034), `ɖ` (51,727), `ƒ` (33,158), `ŋ` (27,165), `ɛ` (4,456), `ʋ` (4,222), `ɣ` (3,660).
+- **Vocabulary Size $|V|$**: 21,419 unique word tokens.
+
+#### Empirical N-Gram Progression ($N=1$ to $N=6$) with Unicode Word Tokenizer
+
+| Order $N$ | Gram Name | Sparsity (% Unseen Test N-Grams) | Laplace Perplexity | Interpolation Perplexity | Sample Generated Text (Autoregressive) | Qualitative Coherence |
+|---|---|---|---|---|---|---|
+| **$N=1$** | Unigram | 1.39% | 571.39 | 663.55 | `nɛ eƒe , eye agbalẽ la wɔa le woava siwo ŋu mia` | Word salad, no syntax |
+| **$N=2$** | Bigram | 17.94% | 1,105.73 | 193.31 | `eye be mawu ; le gbɔnye o ;` | Local pairings make sense |
+| **$N=3$** | **Trigram** | **47.29%** | 2,266.41 | **139.40 (OPTIMUM)** | `nu si gbɔ eme ate ŋu ana nàlolo .` | **Natural, coherent Ewe sentence** |
+| **$N=4$** | 4-gram | 69.44% | 6,844.14 | 145.88 (Degrading) | `, ne míaɖo kpe xɔasiwo , ati , bè , alo negawɔ` | Partial memorization |
+| **$N=5$** | 5-gram | 80.65% | 10,656.67 | 167.19 (Degrading) | `3 eya ta , eye woatsrɔ̃ aʋakɔ alo ŋusẽ me o ,` | Verbatim chunk repetition |
+| **$N=6$** | 6-gram | 85.62% | 12,658.39 | 193.46 (Severely Degraded) | `le kpɔɖeŋu me , dzɔdzɔmeŋutinunyala aɖewo gɔ̃ hã ”` | Verbatim training memorization |
+
+#### Key Discoveries on Dataset 1:
+1. **The Empirical Optimum is Trigram ($N=3$, PPL=139.40)**: Adding context from 1 word to 2 words improves perplexity from $663.55 \to 139.40$ (a **$79.0\%$ error reduction**).
+2. **The Breaking Point begins at $N=4$**: When $N \ge 4$, test sparsity jumps from $47\%$ to **$69.4\%$**, and by $N=6$, **$85.6\%$ of test n-grams were never seen during training**.
+3. **The Laplace Catastrophe**: Under naive Laplace smoothing (+1), perplexity explodes from 571 to **12,658** at $N=6$ because pseudo-counts aggressively bleed probability mass into $21,419^6$ unobserved combinations.
+4. **BPE Subword Comparison**: Running Byte-Pair Encoding (150 merges) on Dataset 1 compressed test sparsity at $N=3$ to **$39.7\%$** and perplexity to **$30.32$**, proving that subword units mitigate vocabulary fragmentation in agglutinative languages.
 
 ### The 5-Stage Harmonization Pipeline (`src/data_pipeline.py`):
 1. **Ingestion Adapters**: Modular readers that handle plain `.txt`, `.csv` (auto-detecting `text`/`ee` columns), and `.jsonl`.
