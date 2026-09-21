@@ -50,13 +50,9 @@ python3 -c "import torch, transformers, datasets, nltk, peft; print('Environment
 │   └── README.md             # Dataset documentation & provenance
 ├── notebooks/
 │   ├── 01_low_resource_ngram_lm.ipynb         # Section B pipeline & experiments
-│   ├── 01_low_resource_ngram_lm.py            # Zed percent script (# %%)
 │   ├── 02_domain_specific_llm_adaptation.ipynb # Section C LoRA fine-tuning
-│   ├── 02_domain_specific_llm_adaptation.py   # Zed percent script (# %%)
 │   ├── 03_evaluation_and_comparisons.ipynb     # Benchmarks & comparison tables
-│   ├── 03_evaluation_and_comparisons.py       # Zed percent script (# %%)
-│   ├── 04_tokenization_and_ngram_ablation.ipynb # Comprehensive 5-tokenizer sweep
-│   └── 04_tokenization_and_ngram_ablation.py   # Zed percent script (# %%)
+│   └── 04_tokenization_and_ngram_ablation.ipynb # Comprehensive 5-tokenizer sweep
 ├── src/
 │   ├── __init__.py
 │   ├── data_pipeline.py      # Unified multi-source corpus loader & normalizer

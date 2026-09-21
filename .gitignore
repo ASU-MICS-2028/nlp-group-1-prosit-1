@@ -38,6 +38,7 @@ env/
 .DS_Store
 .vscode/
 .idea/
+.zed/
 
 # Large model checkpoints, weights, datasets
 *.pt
