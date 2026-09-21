@@ -167,6 +167,33 @@ Our team identified four distinct text sources for Ewe:
 | **BPE Subword Sweet Spot** | **5-gram ($N=5$, PPL=14.0)** | **Trigram ($N=3$, PPL=40.8)** | BPE consistently gives +2 orders of headroom before breaking! |
 | **Character Sweet Spot** | **6-gram ($N=6$, PPL=7.0)** | **5-gram ($N=5$, PPL=9.8)** | Characters require high orders ($N \ge 5$) to capture word-level meaning. |
 
+---
+
+### Dataset 3 Empirical Ablation Log (`selected transcribed audios.xlsx`)
+
+- **Raw Rows**: 19,152 | **Non-Null Transcriptions**: 19,151 | **Unique**: 19,151 (0 duplicates).
+- **Split**: 15,320 Train (508,655 words) | 1,915 Val (63,264 words) | 1,916 Test (63,490 words).
+- **Domain**: Spoken audio transcriptions from the University of Ghana Waxal Project (scene descriptions).
+- **Characteristics**: Conversational syntax, spontaneous repetitions (`ee ee ee`), non-standard orthography and lengthened vowels (`t̄ɔwo`, `gā`, `hā`).
+- **Vocabulary Size $|V|$**: 35,298 raw tokens.
+
+#### Comprehensive Multi-Tokenizer Matrix for Dataset 3 (Spoken Oral Domain - 15,320 Train Sents)
+*Values shown as: Perplexity (Sparsity % Unseen in Test Set)*
+
+| Order $N$ | Whitespace | Unicode Word | Ewe Stemmer | BPE (Subwords) | Character |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Unigram ($N=1$)** | 1,140.0 (3.8%) | 492.7 (2.4%) | 421.7 (2.1%) | 121.0 (0.0%) | 23.4 (0.0%) |
+| **Bigram ($N=2$)** | 403.7 (25.5%) | 178.8 (16.9%) | 158.1 (15.7%) | 39.7 (0.4%) | 11.6 (0.1%) |
+| **Trigram ($N=3$)** | **390.0** (58.2%) | **157.5** (46.0%) | **137.5** (44.1%) | 22.3 (8.7%) | 8.6 (0.7%) |
+| **4-gram ($N=4$)** | 460.9 (80.2%) | 176.4 (71.1%) | 152.4 (69.5%) | 17.9 (30.8%) | 6.8 (3.7%) |
+| **5-gram ($N=5$)** | 558.5 (89.8%) | 208.6 (85.3%) | 179.4 (84.3%) | **17.8** (53.6%) | 5.9 (10.8%) |
+| **6-gram ($N=6$)** | 664.4 (92.6%) | 245.8 (91.1%) | 210.9 (90.6%) | 19.1 (70.3%) | **5.5** (21.4%) |
+
+#### 3-Way Cross-Domain Discoveries (Written vs. Micro-Bio vs. Spoken Speech):
+1. **The Oral Language Concentration Effect**: Spoken transcriptions exhibit **lower Unigram Perplexity** (Unicode Word: **492.7** on Dataset 3 vs. **663.5** on Dataset 1). Spoken descriptions reuse high-frequency spatial anchors (*"le mɔ to"*, *"wole kpɔm"*), concentrating probability mass in fewer core lexical choices.
+2. **Orthographic Noise in Transcriptions**: Speech transcriptions contain non-standard elongations (e.g. macron accents `t̄ɔwo`, `gā`, `hā`). The Ewe Stemmer provided the largest absolute perplexity reduction on Dataset 3 ($157.5 \to 137.5$ at Trigram), effectively normalizing phonetic and dialectal variance!
+3. **Consistent Subword Advantage Across Domains**: Across all three corpora, BPE subwords consistently shifted the optimal sweet spot rightward by **+2 orders** (from Trigram to 5-gram on Datasets 1 & 3; from Bigram to Trigram on Dataset 2).
+
 ### The 5-Stage Harmonization Pipeline (`src/data_pipeline.py`):
 1. **Ingestion Adapters**: Modular readers that handle plain `.txt`, `.csv` (auto-detecting `text`/`ee` columns), and `.jsonl`.
 2. **Standardized Normalization**: Stripping HTML/XML tags, removing web URLs, and applying Unicode NFC normalization.

@@ -36,6 +36,22 @@ Field notes:
 - **Decided** — only real decisions, the kind someone might otherwise reverse without knowing. Leave it out if nothing was decided.
 - **Blocked** — this is the field that saves the project. Write it even when it feels like admitting you're stuck. Especially then.
 
+## 2026-09-21 · 12:40–12:50 GMT · Eric Elikplim Sunu
+
+**Branch:** eric
+**Assistant:** Gemini (Gemini 3.8 Flash), to preprocess Dataset 3 (`selected transcribed audios.xlsx` — 19,152 spoken audio transcriptions from Univ of Ghana Waxal project), run the 5-tokenizer ablation sweep ($N=1\dots 6$), document the oral domain perplexity dynamics in `reports/LEARNING_JOURNAL.md`, and output `reports/results_dataset_3_all_tokenizers.json`.
+**Did:**
+- Extracted, normalized (NFC), and deduplicated 19,151 spoken Ewe transcriptions into `data/processed/dataset_3_speech/` (15,320 train / 1,916 test / 508k train words).
+- Updated `scripts/run_multi_tokenizer_ablation.py` with `--dataset 3` configuration.
+- Executed full 5-tokenizer ablation ($N=1\dots 6$) on Dataset 3: Whitespace (Trigram PPL 390.0), Unicode Word (Trigram PPL 157.5), Ewe Stemmer (Trigram PPL 137.5), BPE (5-gram PPL 17.8), Character (6-gram PPL 5.5).
+- Logged cross-domain analysis in `reports/LEARNING_JOURNAL.md` comparing written literary language (Dataset 1) vs oral descriptive speech (Dataset 3).
+**Decided:**
+- Identified that oral speech has a more concentrated high-frequency core vocabulary, yielding lower Unigram perplexity (492.7 vs 663.5), while phonetic transcriptions benefit heavily from morphological stemming ($157.5 \to 137.5$ PPL reduction).
+**Next:**
+- Run Phase 4: Dataset 4 (`ewe_corpus.parquet` — 4.4M web/aligned sentences).
+
+---
+
 ## 2026-09-21 · 12:05–12:15 GMT · Eric Elikplim Sunu
 
 **Branch:** eric
