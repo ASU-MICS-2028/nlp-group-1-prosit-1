@@ -50,24 +50,43 @@ python3 -c "import torch, transformers, datasets, nltk, peft; print('Environment
 │   └── README.md             # Dataset documentation & provenance
 ├── notebooks/
 │   ├── 01_low_resource_ngram_lm.ipynb         # Section B pipeline & experiments
+│   ├── 01_low_resource_ngram_lm.py            # Zed percent script (# %%)
 │   ├── 02_domain_specific_llm_adaptation.ipynb # Section C LoRA fine-tuning
-│   └── 03_evaluation_and_comparisons.ipynb     # Benchmarks & comparison tables
+│   ├── 02_domain_specific_llm_adaptation.py   # Zed percent script (# %%)
+│   ├── 03_evaluation_and_comparisons.ipynb     # Benchmarks & comparison tables
+│   ├── 03_evaluation_and_comparisons.py       # Zed percent script (# %%)
+│   ├── 04_tokenization_and_ngram_ablation.ipynb # Comprehensive 5-tokenizer sweep
+│   └── 04_tokenization_and_ngram_ablation.py   # Zed percent script (# %%)
 ├── src/
 │   ├── __init__.py
+│   ├── data_pipeline.py      # Unified multi-source corpus loader & normalizer
 │   ├── ngram.py              # Statistical LM: MLE, Laplace, Interpolation, Kneser-Ney
 │   ├── preprocessing.py      # Unicode tokenization, OOV handling, vocabulary split
+│   ├── tokenizers.py         # 5 tokenizers: Whitespace, Word, Stemmer, BPE, Char
 │   ├── domain_adaptation.py  # HuggingFace & PEFT/LoRA fine-tuning utilities
 │   ├── evaluation.py         # Perplexity, cross-entropy, markdown table formatting
+│   ├── experiment_runner.py  # Automated ablation experiment harness
 │   └── viz.py                # Perplexity & frequency distribution plotting
 ├── figures/                  # Exported plots for reports and presentation slides
 ├── reports/
 │   ├── section_a_theory.md   # Theoretical foundations (14 questions with space constraints)
-│   ├── section_b_low_resource_lm.md  # Team report on African LM
+│   ├── section_b_low_resource_lm.md  # Team report on African LM (Ewe / Èʋegbe)
 │   ├── section_c_domain_adaptation.md # Team report on domain-adapted English LM
-│   └── presentation_outline.md        # 10-minute presentation slide outline
+│   ├── claims_table.md       # Claims traceability table (14 claims verified)
+│   ├── datasheet.md          # Gebru et al. datasheet for Ewe Mega-Corpus
+│   ├── presentation_outline.md # 10-minute presentation slide outline (6 slides)
+│   ├── quiz_revision_guide.md # Viva quiz revision guide for klenam.ai
+│   └── LEARNING_JOURNAL.md   # Detailed experimental journal & reflections
+├── scripts/
+│   ├── launch_notebook.sh    # 1-click browser JupyterLab launcher
+│   └── run_multi_tokenizer_ablation.py # Headless multi-tokenizer benchmark runner
+├── tests/
+│   └── test_pipeline.py      # Automated unit tests (13 tests passing)
+├── METHODOLOGY_GUIDE.md      # Best practices playbook & instructions
 ├── WORKLOG.md                # Shared AI-use and contribution log
 ├── RULES.md                  # Team working agreement & code standards
 ├── CLAUDE.md                 # AI assistant constraints & context
+├── pytest.ini                # Pytest configuration
 ├── requirements.txt
 └── README.md
 ```
