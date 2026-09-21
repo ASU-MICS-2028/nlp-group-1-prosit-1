@@ -124,6 +124,36 @@ Our team identified four distinct text sources for Ewe:
 3. **The Laplace Catastrophe**: Under naive Laplace smoothing (+1), perplexity explodes from 571 to **12,658** at $N=6$ because pseudo-counts aggressively bleed probability mass into $21,419^6$ unobserved combinations.
 4. **BPE Subword Comparison**: Running Byte-Pair Encoding (150 merges) on Dataset 1 compressed test sparsity at $N=3$ to **$39.7\%$** and perplexity to **$30.32$**, proving that subword units mitigate vocabulary fragmentation in agglutinative languages.
 
+---
+
+### Dataset 2 Empirical Ablation Log (`eweenglishsentence(3).json`)
+
+- **Raw Rows**: 600 | **Valid Non-Empty**: 540 | **Deduplicated Sentences**: 526.
+- **Split**: 420 Train (9,642 words) | 52 Val (1,182 words) | 54 Test (1,086 words).
+- **Domain**: Personal introductions, biographies, dates, family relationships.
+- **Vocabulary Size $|V|$**: 3,114 unique word tokens.
+
+#### Empirical N-Gram Progression ($N=1$ to $N=6$) on Micro-Data (Unicode Word Tokenizer)
+
+| Order $N$ | Gram Name | Sparsity (% Unseen Test N-Grams) | Laplace Perplexity | Interpolation Perplexity | Sample Generated Text (Autoregressive) | Qualitative Coherence |
+|---|---|---|---|---|---|---|
+| **$N=1$** | Unigram | **17.61%** | 629.05 | 4,263.56 | `me` | Extreme OOV rate; single-word babble |
+| **$N=2$** | Bigram | **61.64%** | 1,233.06 | **3,098.13 (Peak)** | `.` | Severe sparsity; loses continuity |
+| **$N=3$** | Trigram | **85.60%** | 1,631.91 | 3,881.66 (Degrading) | `xɔ asi boo wu` | 85.6% unseen contexts |
+| **$N=4$** | 4-gram | **93.51%** | 2,122.65 | 5,121.86 (Severe) | `ebɔbɔ nɔ lã wɔadã dzẽ si ta adre kple dzo ewo li` | Verbatim training memorization |
+| **$N=5$** | 5-gram | **95.37%** | 2,260.10 | 6,459.68 (Severe) | `ne dukɔ la ɖoe koŋ ŋe aɖaba ƒu mawu ƒe nuxlɔ̃amewo dzi` | Verbatim training parrot |
+| **$N=6$** | 6-gram | **96.04%** | 2,324.64 | 7,855.71 (Collapsed) | `le kpɔɖeŋu me ne wobe woade dzesi vovototo si le ade kple` | Pure verbatim reproduction |
+
+#### Cross-Dataset Comparison: Dataset 1 vs. Dataset 2 (The Data Starvation Threshold)
+
+| Metric | Dataset 1 (21,275 Train Sents) | Dataset 2 (420 Train Sents) | Scientific Takeaway |
+|---|---|---|---|
+| **Unigram Sparsity ($N=1$)** | **1.39%** | **17.61%** | A 98% drop in data volume increases out-of-vocabulary test words by **12.6x**! |
+| **Bigram Sparsity ($N=2$)** | **17.94%** | **61.64%** | On micro-data, over 60% of common 2-word pairs never appeared in training. |
+| **Trigram Sparsity ($N=3$)** | **47.29%** | **85.60%** | Trigrams are usable on Dataset 1, but completely starved on Dataset 2. |
+| **Empirical Sweet Spot** | **Trigram ($N=3$, PPL=139.40)** | **Bigram ($N=2$, PPL=3,098)** | The breaking point shifts **leftward** from $N=4$ to $N=3$ under data scarcity. |
+| **BPE Rescue Effect** | PPL: $139 \to 30$ | PPL: $3,098 \to 31.82$ (Sparsity: $85\% \to 49\%$) | Subword tokenization is exponentially more impactful on small corpora. |
+
 ### The 5-Stage Harmonization Pipeline (`src/data_pipeline.py`):
 1. **Ingestion Adapters**: Modular readers that handle plain `.txt`, `.csv` (auto-detecting `text`/`ee` columns), and `.jsonl`.
 2. **Standardized Normalization**: Stripping HTML/XML tags, removing web URLs, and applying Unicode NFC normalization.
