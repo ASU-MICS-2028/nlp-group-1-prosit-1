@@ -194,6 +194,42 @@ Our team identified four distinct text sources for Ewe:
 2. **Orthographic Noise in Transcriptions**: Speech transcriptions contain non-standard elongations (e.g. macron accents `t̄ɔwo`, `gā`, `hā`). The Ewe Stemmer provided the largest absolute perplexity reduction on Dataset 3 ($157.5 \to 137.5$ at Trigram), effectively normalizing phonetic and dialectal variance!
 3. **Consistent Subword Advantage Across Domains**: Across all three corpora, BPE subwords consistently shifted the optimal sweet spot rightward by **+2 orders** (from Trigram to 5-gram on Datasets 1 & 3; from Bigram to Trigram on Dataset 2).
 
+---
+
+### Dataset 4 Empirical Ablation Log (`ewe_corpus.parquet`)
+
+- **Raw Rows Sampled**: 200,000 | **Deduplicated Sentences**: 80,385 (55,126 duplicates filtered).
+- **Split**: 64,308 Train (867,455 words) | 8,038 Val (108,613 words) | 8,039 Test (108,495 words).
+- **Domain**: Large-Scale Web and Scripture Aligned Sentences (HuggingFace corpus).
+- **Vocabulary Size $|V|$**: 67,097 raw tokens.
+
+#### Comprehensive Multi-Tokenizer Matrix for Dataset 4 (Large-Scale Web Domain - 64,308 Train Sents)
+*Values shown as: Perplexity (Sparsity % Unseen in Test Set)*
+
+| Order $N$ | Whitespace | Unicode Word | Ewe Stemmer | BPE (Subwords) | Character |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Unigram ($N=1$)** | 2,138.4 (3.6%) | 667.6 (1.3%) | 592.7 (1.2%) | 137.2 (0.0%) | 28.0 (0.0%) |
+| **Bigram ($N=2$)** | 585.7 (25.9%) | 195.2 (15.9%) | 180.5 (14.8%) | 45.0 (0.2%) | 14.1 (0.3%) |
+| **Trigram ($N=3$)** | **486.6** (56.4%) | **140.3** (43.1%) | **128.6** (41.9%) | 22.3 (5.3%) | 10.8 (2.5%) |
+| **4-gram ($N=4$)** | 547.2 (74.0%) | 145.9 (64.5%) | 132.7 (63.7%) | 15.7 (21.6%) | 8.9 (10.0%) |
+| **5-gram ($N=5$)** | 647.8 (81.0%) | 166.4 (75.9%) | 150.8 (75.4%) | **14.0** (39.3%) | 7.9 (23.5%) |
+| **6-gram ($N=6$)** | 761.0 (83.5%) | 191.8 (80.7%) | 173.5 (80.4%) | **14.0** (53.2%) | **7.6** (39.3%) |
+
+---
+
+### The 4-Dataset Grand Comparison: The Empirical Scaling Laws of Low-Resource NLP
+
+| Feature / Metric | Dataset 1 (`.csv`) | Dataset 2 (`.json`) | Dataset 3 (`.xlsx`) | Dataset 4 (`.parquet`) | Scientific Discovery |
+|---|---|---|---|---|---|
+| **Domain** | Cultural Folklore | Biographies (Micro) | Waxal Speech (Oral) | Web & Scripture | Covers all major linguistic registers |
+| **Train Sentences** | 21,275 | 420 | 15,320 | **64,308** | $150\times$ range in corpus scale |
+| **Train Words** | 517,444 | 9,642 | 508,655 | **867,455** | Scaling from 9k to ~1M tokens |
+| **Unigram Sparsity (Word)** | 1.4% | **17.6%** | 2.4% | **1.3%** | Micro-data suffers extreme OOV |
+| **Trigram Sparsity (Word)** | 47.3% | 85.6% | 46.0% | **43.1%** | More data drives down sparsity |
+| **Optimal Word Order** | Trigram ($N=3$) | Bigram ($N=2$) | Trigram ($N=3$) | Trigram ($N=3$) | Word models plateau at $N=3$ |
+| **Best Word PPL** | 127.4 (Stemmer) | 2,539.1 (Stemmer) | 137.5 (Stemmer) | **128.6 (Stemmer)** | Stemmer wins in every domain |
+| **Best BPE PPL** | 14.0 ($N=5$) | 40.8 ($N=3$) | 17.8 ($N=5$) | **14.0 ($N=5,6$)** | BPE breaks the $N=3$ ceiling |
+
 ### The 5-Stage Harmonization Pipeline (`src/data_pipeline.py`):
 1. **Ingestion Adapters**: Modular readers that handle plain `.txt`, `.csv` (auto-detecting `text`/`ee` columns), and `.jsonl`.
 2. **Standardized Normalization**: Stripping HTML/XML tags, removing web URLs, and applying Unicode NFC normalization.

@@ -36,6 +36,22 @@ Field notes:
 - **Decided** — only real decisions, the kind someone might otherwise reverse without knowing. Leave it out if nothing was decided.
 - **Blocked** — this is the field that saves the project. Write it even when it feels like admitting you're stuck. Especially then.
 
+## 2026-09-21 · 13:00–13:08 GMT · Eric Elikplim Sunu
+
+**Branch:** eric
+**Assistant:** Gemini (Gemini 3.8 Flash), to preprocess Dataset 4 (`ewe_corpus.parquet` — 4.4M web/aligned sentences, sampling 200k rows yielding 64,308 train sentences / 867k words), execute the full 5-tokenizer ablation sweep ($N=1\dots 6$), and construct the 4-Dataset Grand Comparison Matrix in `reports/LEARNING_JOURNAL.md`.
+**Did:**
+- Extracted and deduplicated 80,385 clean unique sentences (filtered 55,126 duplicates) from 200,000 parquet rows into `data/processed/dataset_4_parquet/` (64,308 train / 8,039 test / 867,455 train words).
+- Updated `scripts/run_multi_tokenizer_ablation.py` with `--dataset 4` configuration.
+- Executed full 5-tokenizer ablation ($N=1\dots 6$) on Dataset 4: Whitespace (Trigram PPL 486.6), Unicode Word (Trigram PPL 140.3), Ewe Stemmer (Trigram PPL 128.6), BPE (5-gram & 6-gram PPL 14.0), Character (6-gram PPL 7.6).
+- Documented empirical scaling laws in `reports/LEARNING_JOURNAL.md`: 150x increase in training data reduces test sparsity across all orders and enables BPE subwords to sustain $N=6$ with zero perplexity degradation.
+**Decided:**
+- Verified that on large-scale corpora, BPE subwords break the word-level $N=3$ ceiling and maintain flat, robust performance across orders 5 and 6 without overfitting.
+**Next:**
+- Phase 5: Corpus Fusion & Multi-Source Harmonization (merging all 4 datasets into the Grand Unified Ewe Corpus).
+
+---
+
 ## 2026-09-21 · 12:40–12:50 GMT · Eric Elikplim Sunu
 
 **Branch:** eric

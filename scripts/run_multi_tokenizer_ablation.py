@@ -115,7 +115,7 @@ def run_dataset_sweep(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", choices=["1", "2", "3", "all"], default="all")
+    parser.add_argument("--dataset", choices=["1", "2", "3", "4", "all"], default="all")
     args = parser.parse_args()
 
     if args.dataset in ["2", "all"]:
@@ -146,4 +146,15 @@ if __name__ == "__main__":
             max_order=6,
             subsample_for_char=4000,
         )
+
+    if args.dataset in ["4", "all"]:
+        run_dataset_sweep(
+            train_path="data/processed/dataset_4_parquet/train.txt",
+            test_path="data/processed/dataset_4_parquet/test.txt",
+            dataset_name="Dataset 4 (Large-Scale Web & Scripture Corpus - 64k Sents)",
+            output_json_path="reports/results_dataset_4_all_tokenizers.json",
+            max_order=6,
+            subsample_for_char=4000,
+        )
+
 
