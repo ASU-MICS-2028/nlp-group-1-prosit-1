@@ -77,6 +77,15 @@ class NGramLM:
                         self.ngram_counts[order][context][word] += 1
                         self.context_totals[order][context] += 1
 
+        # Precompute continuation counts and total bigram types for O(1) Kneser-Ney evaluation
+        self.continuation_counts = Counter()
+        self.total_bigram_types = max(1, len(self.vocab))
+        if 2 in self.ngram_counts:
+            for words in self.ngram_counts[2].values():
+                for w in words:
+                    self.continuation_counts[w] += 1
+            self.total_bigram_types = max(1, sum(len(words) for words in self.ngram_counts[2].values()))
+
         return self
 
     def set_interpolation_weights(self, lambdas: List[float]):
@@ -144,13 +153,11 @@ class NGramLM:
         d = self.discount
         V = len(self.vocab)
 
-        # Continuation count for lower orders
+        # Continuation count for lower orders (O(1) precomputed lookup)
         def continuation_prob(w: str) -> float:
-            num_contexts = sum(
-                1 for ctx, words in self.ngram_counts[2].items() if w in words
-            )
-            total_bigram_types = max(1, sum(len(words) for words in self.ngram_counts[2].values()))
-            return max(num_contexts, 1e-5) / total_bigram_types
+            cnt = getattr(self, "continuation_counts", {}).get(w, 0)
+            total_types = getattr(self, "total_bigram_types", max(1, len(self.vocab)))
+            return max(cnt, 1e-5) / total_types
 
         if self.n == 2:
             ctx_count = self.context_totals[2].get(context, 0)
@@ -210,8 +217,18 @@ class NGramLM:
         result = list(tokens)
 
         for _ in range(max_length):
-            context = tuple(result[-(self.n - 1) :])
-            candidates = list(self.vocab - {SPECIAL_BOS})
+            if self.n > 1:
+                context = tuple(result[-(self.n - 1) :])
+                candidates = list(self.ngram_counts[self.n].get(context, {}).keys())
+                if not candidates:
+                    # Backoff to unigram high-frequency continuations
+                    candidates = [w for w, _ in self.ngram_counts[1][()].most_common(100) if w != SPECIAL_BOS]
+            else:
+                context = ()
+                candidates = [w for w, _ in self.ngram_counts[1][()].most_common(200) if w != SPECIAL_BOS]
+
+            if not candidates:
+                break
             probs = [self.probability(w, context) for w in candidates]
 
             if temperature != 1.0 and temperature > 0:
