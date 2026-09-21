@@ -1,0 +1,347 @@
+{
+  "dataset": "Dataset 1 (EWE_ENGLISH.csv - Cultural Stories)",
+  "train_sentences": 21275,
+  "test_sentences": 2660,
+  "results": {
+    "Whitespace": [
+      {
+        "order": 1,
+        "order_name": "Unigram",
+        "tokenizer": "Whitespace",
+        "vocab_size": 37314,
+        "train_tokens": 517444,
+        "test_tokens": 66805,
+        "sparsity_pct": 3.85,
+        "perplexity": 2044.11,
+        "sample_generation": "\u0256e 1:1-27 nu"
+      },
+      {
+        "order": 2,
+        "order_name": "Bigram",
+        "tokenizer": "Whitespace",
+        "vocab_size": 37314,
+        "train_tokens": 517444,
+        "test_tokens": 66805,
+        "sparsity_pct": 28.58,
+        "perplexity": 568.85,
+        "sample_generation": "be: le \u0192e m\u0254 na Mawu la gb\u0254 la, egbl\u0254 na le"
+      },
+      {
+        "order": 3,
+        "order_name": "Trigram",
+        "tokenizer": "Whitespace",
+        "vocab_size": 37314,
+        "train_tokens": 517444,
+        "test_tokens": 66805,
+        "sparsity_pct": 61.45,
+        "perplexity": 476.95,
+        "sample_generation": ""
+      },
+      {
+        "order": 4,
+        "order_name": "4-gram",
+        "tokenizer": "Whitespace",
+        "vocab_size": 37314,
+        "train_tokens": 517444,
+        "test_tokens": 66805,
+        "sparsity_pct": 79.12,
+        "perplexity": 540.84,
+        "sample_generation": "25 Ke esi Yesu le Yeriko le Yordan \u0192e a\u0192e la na"
+      },
+      {
+        "order": 5,
+        "order_name": "5-gram",
+        "tokenizer": "Whitespace",
+        "vocab_size": 37314,
+        "train_tokens": 517444,
+        "test_tokens": 66805,
+        "sparsity_pct": 85.91,
+        "perplexity": 643.53,
+        "sample_generation": "23 Ke esi w\u00f2yi gbedox\u0254a me kpli wo le m\u0254 w\u0254d\u0254\u0256eamedzi nu"
+      },
+      {
+        "order": 6,
+        "order_name": "6-gram",
+        "tokenizer": "Whitespace",
+        "vocab_size": 37314,
+        "train_tokens": 517444,
+        "test_tokens": 66805,
+        "sparsity_pct": 88.61,
+        "perplexity": 758.08,
+        "sample_generation": "15 m\u00eda A\u0192et\u0254 Yesu Kristo \u0192e fuw\u0254ameti la \u014buti ko, ame si"
+      }
+    ],
+    "Unicode Word": [
+      {
+        "order": 1,
+        "order_name": "Unigram",
+        "tokenizer": "Unicode Word",
+        "vocab_size": 20837,
+        "train_tokens": 604767,
+        "test_tokens": 78267,
+        "sparsity_pct": 1.39,
+        "perplexity": 663.55,
+        "sample_generation": ""
+      },
+      {
+        "order": 2,
+        "order_name": "Bigram",
+        "tokenizer": "Unicode Word",
+        "vocab_size": 20837,
+        "train_tokens": 604767,
+        "test_tokens": 78267,
+        "sparsity_pct": 17.94,
+        "perplexity": 193.31,
+        "sample_generation": "\u00f0e ."
+      },
+      {
+        "order": 3,
+        "order_name": "Trigram",
+        "tokenizer": "Unicode Word",
+        "vocab_size": 20837,
+        "train_tokens": 604767,
+        "test_tokens": 78267,
+        "sparsity_pct": 47.29,
+        "perplexity": 139.4,
+        "sample_generation": "32 ne mew\u0254 nu v\u0254\u0303 w\u0254lae menye vav\u00e3 , vav\u00e3 mele egbl\u0254m"
+      },
+      {
+        "order": 4,
+        "order_name": "4-gram",
+        "tokenizer": "Unicode Word",
+        "vocab_size": 20837,
+        "train_tokens": 604767,
+        "test_tokens": 78267,
+        "sparsity_pct": 69.44,
+        "perplexity": 145.88,
+        "sample_generation": "wo dzina h\u00e3 be : \u2018 va \u0256u fia la le tsitre"
+      },
+      {
+        "order": 5,
+        "order_name": "5-gram",
+        "tokenizer": "Unicode Word",
+        "vocab_size": 20837,
+        "train_tokens": 604767,
+        "test_tokens": 78267,
+        "sparsity_pct": 80.65,
+        "perplexity": 167.19,
+        "sample_generation": "mele be n\u00e0v\u0254\u0303 be hehe si m\u00edex\u0254 , m\u00eda\u0192e agbemenute\u0192ekp\u0254kp\u0254wo kple nu"
+      },
+      {
+        "order": 6,
+        "order_name": "6-gram",
+        "tokenizer": "Unicode Word",
+        "vocab_size": 20837,
+        "train_tokens": 604767,
+        "test_tokens": 78267,
+        "sparsity_pct": 85.62,
+        "perplexity": 193.46,
+        "sample_generation": "ale si n\u0254n\u0254mea le kakam \u0256e eme ."
+      }
+    ],
+    "Ewe Stemmer": [
+      {
+        "order": 1,
+        "order_name": "Unigram",
+        "tokenizer": "Ewe Stemmer",
+        "vocab_size": 18472,
+        "train_tokens": 604767,
+        "test_tokens": 78267,
+        "sparsity_pct": 1.23,
+        "perplexity": 593.89,
+        "sample_generation": "to yerusalem be la be be w\u00f2 yehowa le me , ,"
+      },
+      {
+        "order": 2,
+        "order_name": "Bigram",
+        "tokenizer": "Ewe Stemmer",
+        "vocab_size": 18472,
+        "train_tokens": 604767,
+        "test_tokens": 78267,
+        "sparsity_pct": 16.76,
+        "perplexity": 178.24,
+        "sample_generation": "w\u00f2 towo dzi la , ."
+      },
+      {
+        "order": 3,
+        "order_name": "Trigram",
+        "tokenizer": "Ewe Stemmer",
+        "vocab_size": 18472,
+        "train_tokens": 604767,
+        "test_tokens": 78267,
+        "sparsity_pct": 46.2,
+        "perplexity": 127.37,
+        "sample_generation": "\" [ ado ] go tso dzi\u0192o ."
+      },
+      {
+        "order": 4,
+        "order_name": "4-gram",
+        "tokenizer": "Ewe Stemmer",
+        "vocab_size": 18472,
+        "train_tokens": 604767,
+        "test_tokens": 78267,
+        "sparsity_pct": 68.82,
+        "perplexity": 132.31,
+        "sample_generation": "ne mele nu siwo mes\u0254 o ."
+      },
+      {
+        "order": 5,
+        "order_name": "5-gram",
+        "tokenizer": "Ewe Stemmer",
+        "vocab_size": 18472,
+        "train_tokens": 604767,
+        "test_tokens": 78267,
+        "sparsity_pct": 80.37,
+        "perplexity": 151.25,
+        "sample_generation": "le kp\u0254\u0256e\u014bu me , mawu na \u014bk\u0254 666 l\u00e3 w\u0254ad\u00e3 la ts\u0254"
+      },
+      {
+        "order": 6,
+        "order_name": "6-gram",
+        "tokenizer": "Ewe Stemmer",
+        "vocab_size": 18472,
+        "train_tokens": 604767,
+        "test_tokens": 78267,
+        "sparsity_pct": 85.46,
+        "perplexity": 174.83,
+        "sample_generation": ", , 25 ) etsr\u0254\u0303 \" dzi\u0192o \" w\u00f2nyea v\u0254\u0303 me ,"
+      }
+    ],
+    "Character": [
+      {
+        "order": 1,
+        "order_name": "Unigram",
+        "tokenizer": "Character",
+        "vocab_size": 128,
+        "train_tokens": 384890,
+        "test_tokens": 50411,
+        "sparsity_pct": 0.0,
+        "perplexity": 27.22,
+        "sample_generation": "k d e e s m a w a e e w"
+      },
+      {
+        "order": 2,
+        "order_name": "Bigram",
+        "tokenizer": "Character",
+        "vocab_size": 128,
+        "train_tokens": 384890,
+        "test_tokens": 50411,
+        "sparsity_pct": 0.11,
+        "perplexity": 13.84,
+        "sample_generation": "w o d e n a k l a h i e"
+      },
+      {
+        "order": 3,
+        "order_name": "Trigram",
+        "tokenizer": "Character",
+        "vocab_size": 128,
+        "train_tokens": 384890,
+        "test_tokens": 50411,
+        "sparsity_pct": 1.4,
+        "perplexity": 10.55,
+        "sample_generation": "a l a f i a w e d o m a"
+      },
+      {
+        "order": 4,
+        "order_name": "4-gram",
+        "tokenizer": "Character",
+        "vocab_size": 128,
+        "train_tokens": 384890,
+        "test_tokens": 50411,
+        "sparsity_pct": 6.69,
+        "perplexity": 8.57,
+        "sample_generation": "n y \u0254 a d o a w o k a h"
+      },
+      {
+        "order": 5,
+        "order_name": "5-gram",
+        "tokenizer": "Character",
+        "vocab_size": 128,
+        "train_tokens": 384890,
+        "test_tokens": 50411,
+        "sparsity_pct": 18.01,
+        "perplexity": 7.43,
+        "sample_generation": "l e k p \u0254 e n y e e v e"
+      },
+      {
+        "order": 6,
+        "order_name": "6-gram",
+        "tokenizer": "Character",
+        "vocab_size": 128,
+        "train_tokens": 384890,
+        "test_tokens": 50411,
+        "sparsity_pct": 33.1,
+        "perplexity": 6.97,
+        "sample_generation": "l e m e a n \u0254 \u014b k e k e"
+      }
+    ],
+    "Byte-Pair Encoding (BPE)": [
+      {
+        "order": 1,
+        "order_name": "Unigram",
+        "tokenizer": "Byte-Pair Encoding (BPE)",
+        "vocab_size": 302,
+        "train_tokens": 1234279,
+        "test_tokens": 159658,
+        "sparsity_pct": 0.0,
+        "perplexity": 134.86,
+        "sample_generation": "k le</w> ne</w> e</w> \u0254</w> .</w> :</w> \u0256 </w> e wo</w> e"
+      },
+      {
+        "order": 2,
+        "order_name": "Bigram",
+        "tokenizer": "Byte-Pair Encoding (BPE)",
+        "vocab_size": 302,
+        "train_tokens": 1234279,
+        "test_tokens": 159658,
+        "sparsity_pct": 0.21,
+        "perplexity": 45.14,
+        "sample_generation": "na</w> d u</w> me</w> .</w>"
+      },
+      {
+        "order": 3,
+        "order_name": "Trigram",
+        "tokenizer": "Byte-Pair Encoding (BPE)",
+        "vocab_size": 302,
+        "train_tokens": 1234279,
+        "test_tokens": 159658,
+        "sparsity_pct": 7.0,
+        "perplexity": 22.21,
+        "sample_generation": "1 4</w> e sia</w> w\u0254 m</w> .</w>"
+      },
+      {
+        "order": 4,
+        "order_name": "4-gram",
+        "tokenizer": "Byte-Pair Encoding (BPE)",
+        "vocab_size": 302,
+        "train_tokens": 1234279,
+        "test_tokens": 159658,
+        "sparsity_pct": 26.12,
+        "perplexity": 15.48,
+        "sample_generation": "3 0 </w> a z \u0254</w> ,</w> eye</w> w\u00f2 w\u0254</w> nu</w> .</w>"
+      },
+      {
+        "order": 5,
+        "order_name": "5-gram",
+        "tokenizer": "Byte-Pair Encoding (BPE)",
+        "vocab_size": 302,
+        "train_tokens": 1234279,
+        "test_tokens": 159658,
+        "sparsity_pct": 45.44,
+        "perplexity": 14.02,
+        "sample_generation": "me do</w> gbe</w> \u0256 a</w> na</w> mawu</w> h e do</w> dzi ku</w>"
+      },
+      {
+        "order": 6,
+        "order_name": "6-gram",
+        "tokenizer": "Byte-Pair Encoding (BPE)",
+        "vocab_size": 302,
+        "train_tokens": 1234279,
+        "test_tokens": 159658,
+        "sparsity_pct": 59.67,
+        "perplexity": 14.24,
+        "sample_generation": "9 </w> x \u0254 se t\u0254 wo</w> kple</w> awo</w> do me t\u0254</w>"
+      }
+    ]
+  }
+}

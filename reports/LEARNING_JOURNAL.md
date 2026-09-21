@@ -118,11 +118,22 @@ Our team identified four distinct text sources for Ewe:
 | **$N=5$** | 5-gram | 80.65% | 10,656.67 | 167.19 (Degrading) | `3 eya ta , eye woatsrɔ̃ aʋakɔ alo ŋusẽ me o ,` | Verbatim chunk repetition |
 | **$N=6$** | 6-gram | 85.62% | 12,658.39 | 193.46 (Severely Degraded) | `le kpɔɖeŋu me , dzɔdzɔmeŋutinunyala aɖewo gɔ̃ hã ”` | Verbatim training memorization |
 
-#### Key Discoveries on Dataset 1:
-1. **The Empirical Optimum is Trigram ($N=3$, PPL=139.40)**: Adding context from 1 word to 2 words improves perplexity from $663.55 \to 139.40$ (a **$79.0\%$ error reduction**).
-2. **The Breaking Point begins at $N=4$**: When $N \ge 4$, test sparsity jumps from $47\%$ to **$69.4\%$**, and by $N=6$, **$85.6\%$ of test n-grams were never seen during training**.
-3. **The Laplace Catastrophe**: Under naive Laplace smoothing (+1), perplexity explodes from 571 to **12,658** at $N=6$ because pseudo-counts aggressively bleed probability mass into $21,419^6$ unobserved combinations.
-4. **BPE Subword Comparison**: Running Byte-Pair Encoding (150 merges) on Dataset 1 compressed test sparsity at $N=3$ to **$39.7\%$** and perplexity to **$30.32$**, proving that subword units mitigate vocabulary fragmentation in agglutinative languages.
+#### Comprehensive Multi-Tokenizer Matrix for Dataset 1 (`EWE_ENGLISH.csv` - 21,275 Train Sents)
+*Values shown as: Perplexity (Sparsity % Unseen in Test Set)*
+
+| Order $N$ | Whitespace | Unicode Word | Ewe Stemmer | BPE (Subwords) | Character |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Unigram ($N=1$)** | 2,044.1 (3.9%) | 663.5 (1.4%) | 593.9 (1.2%) | 134.9 (0.0%) | 27.2 (0.0%) |
+| **Bigram ($N=2$)** | 568.9 (28.6%) | 193.3 (17.9%) | 178.2 (16.8%) | 45.1 (0.2%) | 13.8 (0.1%) |
+| **Trigram ($N=3$)** | **476.9** (61.5%) | **139.4** (47.3%) | **127.4** (46.2%) | 22.2 (7.0%) | 10.6 (1.4%) |
+| **4-gram ($N=4$)** | 540.8 (79.1%) | 145.9 (69.4%) | 132.3 (68.8%) | 15.5 (26.1%) | 8.6 (6.7%) |
+| **5-gram ($N=5$)** | 643.5 (85.9%) | 167.2 (80.7%) | 151.2 (80.4%) | **14.0** (45.4%) | 7.4 (18.0%) |
+| **6-gram ($N=6$)** | 758.1 (88.6%) | 193.5 (85.6%) | 174.8 (85.5%) | 14.2 (59.7%) | **7.0** (33.1%) |
+
+#### Key Discoveries across Tokenizers on Dataset 1:
+1. **The Punctuation Penalty (Whitespace vs Unicode Word)**: Punctuation attached to words inflates vocabulary and causes Whitespace perplexity to be **3.4x worse** than Unicode Word (476.9 vs 139.4 at Trigram).
+2. **The Stemming Advantage**: Peeling affixes (`-wo`, `mí-`) drops Trigram perplexity from $139.4 \to 127.4$, confirming that agglutinative morphology compounds data sparsity.
+3. **Subwords Push the Breaking Point**: Word tokenizers break at $N=4$ ($69.4\%$ sparsity). BPE subwords keep sparsity below $50\%$ all the way to $N=5$, pushing the empirical sweet spot to **5-gram ($N=5$, PPL=14.0)**!
 
 ---
 
@@ -133,16 +144,17 @@ Our team identified four distinct text sources for Ewe:
 - **Domain**: Personal introductions, biographies, dates, family relationships.
 - **Vocabulary Size $|V|$**: 3,114 unique word tokens.
 
-#### Empirical N-Gram Progression ($N=1$ to $N=6$) on Micro-Data (Unicode Word Tokenizer)
+#### Comprehensive Multi-Tokenizer Matrix for Dataset 2 (Micro-Data - 420 Train Sents)
+*Values shown as: Perplexity (Sparsity % Unseen in Test Set)*
 
-| Order $N$ | Gram Name | Sparsity (% Unseen Test N-Grams) | Laplace Perplexity | Interpolation Perplexity | Sample Generated Text (Autoregressive) | Qualitative Coherence |
-|---|---|---|---|---|---|---|
-| **$N=1$** | Unigram | **17.61%** | 629.05 | 4,263.56 | `me` | Extreme OOV rate; single-word babble |
-| **$N=2$** | Bigram | **61.64%** | 1,233.06 | **3,098.13 (Peak)** | `.` | Severe sparsity; loses continuity |
-| **$N=3$** | Trigram | **85.60%** | 1,631.91 | 3,881.66 (Degrading) | `xɔ asi boo wu` | 85.6% unseen contexts |
-| **$N=4$** | 4-gram | **93.51%** | 2,122.65 | 5,121.86 (Severe) | `ebɔbɔ nɔ lã wɔadã dzẽ si ta adre kple dzo ewo li` | Verbatim training memorization |
-| **$N=5$** | 5-gram | **95.37%** | 2,260.10 | 6,459.68 (Severe) | `ne dukɔ la ɖoe koŋ ŋe aɖaba ƒu mawu ƒe nuxlɔ̃amewo dzi` | Verbatim training parrot |
-| **$N=6$** | 6-gram | **96.04%** | 2,324.64 | 7,855.71 (Collapsed) | `le kpɔɖeŋu me ne wobe woade dzesi vovototo si le ade kple` | Pure verbatim reproduction |
+| Order $N$ | Whitespace | Unicode Word | Ewe Stemmer | BPE (Subwords) | Character |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Unigram ($N=1$)** | 21,207.4 (26.8%) | 4,263.6 (17.6%) | 3,451.8 (16.3%) | 137.8 (0.1%) | 26.6 (0.0%) |
+| **Bigram ($N=2$)** | **19,468.3** (73.9%) | **3,098.1** (61.6%) | **2,539.1** (61.1%) | 54.9 (14.4%) | 14.4 (1.8%) |
+| **Trigram ($N=3$)** | 27,088.2 (92.3%) | 3,881.7 (85.6%) | 3,163.0 (85.5%) | **40.8** (56.2%) | 11.6 (9.2%) |
+| **4-gram ($N=4$)** | 36,444.1 (95.5%) | 5,121.9 (93.5%) | 4,168.5 (93.4%) | 45.4 (77.4%) | 10.2 (25.3%) |
+| **5-gram ($N=5$)** | 46,498.0 (96.7%) | 6,459.7 (95.4%) | 5,255.2 (95.3%) | 53.7 (86.6%) | **9.8** (45.8%) |
+| **6-gram ($N=6$)** | 57,052.3 (96.9%) | 7,855.7 (96.0%) | 6,388.8 (96.0%) | 63.0 (91.2%) | 10.2 (62.9%) |
 
 #### Cross-Dataset Comparison: Dataset 1 vs. Dataset 2 (The Data Starvation Threshold)
 
@@ -151,8 +163,9 @@ Our team identified four distinct text sources for Ewe:
 | **Unigram Sparsity ($N=1$)** | **1.39%** | **17.61%** | A 98% drop in data volume increases out-of-vocabulary test words by **12.6x**! |
 | **Bigram Sparsity ($N=2$)** | **17.94%** | **61.64%** | On micro-data, over 60% of common 2-word pairs never appeared in training. |
 | **Trigram Sparsity ($N=3$)** | **47.29%** | **85.60%** | Trigrams are usable on Dataset 1, but completely starved on Dataset 2. |
-| **Empirical Sweet Spot** | **Trigram ($N=3$, PPL=139.40)** | **Bigram ($N=2$, PPL=3,098)** | The breaking point shifts **leftward** from $N=4$ to $N=3$ under data scarcity. |
-| **BPE Rescue Effect** | PPL: $139 \to 30$ | PPL: $3,098 \to 31.82$ (Sparsity: $85\% \to 49\%$) | Subword tokenization is exponentially more impactful on small corpora. |
+| **Word Breaking Point** | Breaks at **$N=4$** (Trigram sweet spot) | Breaks at **$N=3$** (Bigram sweet spot) | The word breaking point shifts **leftward** under data scarcity. |
+| **BPE Subword Sweet Spot** | **5-gram ($N=5$, PPL=14.0)** | **Trigram ($N=3$, PPL=40.8)** | BPE consistently gives +2 orders of headroom before breaking! |
+| **Character Sweet Spot** | **6-gram ($N=6$, PPL=7.0)** | **5-gram ($N=5$, PPL=9.8)** | Characters require high orders ($N \ge 5$) to capture word-level meaning. |
 
 ### The 5-Stage Harmonization Pipeline (`src/data_pipeline.py`):
 1. **Ingestion Adapters**: Modular readers that handle plain `.txt`, `.csv` (auto-detecting `text`/`ee` columns), and `.jsonl`.

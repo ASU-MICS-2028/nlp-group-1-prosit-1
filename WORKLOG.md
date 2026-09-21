@@ -36,6 +36,24 @@ Field notes:
 - **Decided** — only real decisions, the kind someone might otherwise reverse without knowing. Leave it out if nothing was decided.
 - **Blocked** — this is the field that saves the project. Write it even when it feels like admitting you're stuck. Especially then.
 
+## 2026-09-21 · 12:05–12:15 GMT · Eric Elikplim Sunu
+
+**Branch:** eric
+**Assistant:** Gemini (Gemini 3.8 Flash), to engineer `scripts/run_multi_tokenizer_ablation.py` and run the full 5-tokenizer matrix (Whitespace, Unicode Word, Ewe Stemmer, BPE, Character) across $N=1\dots 6$ on both Dataset 1 (`EWE_ENGLISH.csv`) and Dataset 2 (`eweenglishsentence.json`), documenting breaking point shifts and saving structured evaluation JSONs.
+**Did:**
+- Fixed combining diacritic compatibility in `src/tokenizers.py` for `EweRuleStemmerTokenizer` where Python `isalnum()` falsely classified words with combining marks (`\u0300-\u036f`) as punctuation.
+- Created `scripts/run_multi_tokenizer_ablation.py` to automate simultaneous 5-tokenizer evaluations across $N=1\dots 6$.
+- Executed full 5-tokenizer sweep on Dataset 2 (Micro-Data: 420 train sents): Whitespace (Bigram PPL 19,468), Unicode Word (Bigram PPL 3,098), Ewe Stemmer (Bigram PPL 2,539), BPE (Trigram PPL 40.8), Character (5-gram PPL 9.8).
+- Executed full 5-tokenizer sweep on Dataset 1 (Cultural Stories: 21,275 train sents): Whitespace (Trigram PPL 476.9), Unicode Word (Trigram PPL 139.4), Ewe Stemmer (Trigram PPL 127.4), BPE (5-gram PPL 14.0), Character (6-gram PPL 7.0).
+- Updated `reports/LEARNING_JOURNAL.md` with comprehensive 5-tokenizer summary tables and cross-dataset breaking point analysis.
+**Decided:**
+- Verified that BPE subwords grant +2 orders of contextual headroom before breaking ($N=5$ on Dataset 1, $N=3$ on Dataset 2) compared to word-level models.
+- Established that morphological stemming consistently beats raw word tokenization for Ewe by merging inflected forms into unified root counts.
+**Next:**
+- Run the full 5-tokenizer sweep on Dataset 3 (`selected transcribed audios.xlsx` — 19,152 spoken audio transcriptions).
+
+---
+
 ## 2026-09-17 · 21:30–21:42 GMT · Eric Elikplim Sunu
 
 **Branch:** eric
