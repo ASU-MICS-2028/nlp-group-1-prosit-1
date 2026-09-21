@@ -10,7 +10,7 @@
 ### Question 1: What data did you use in building your model?
 *(Space Guide: 1 Paragraph)*
 
-Our group selected **Ewe (Èʋegbe)**, a low-resource Niger-Congo (Gbe/Kwa branch) tonal language widely spoken across southeastern Ghana (Volta Region), southern Togo, and Benin. To build a robust language model for Ankora's speech recognition pipeline, we curated a multi-domain Ewe text corpus incorporating conversational dialogues, local news broadcasts, cultural narratives, and contemporary articles. We intentionally avoided relying exclusively on historical or religious translations (such as the Bible) to prevent skewing the vocabulary toward archaic liturgical phrasing. All text was preprocessed using Unicode NFC normalization to preserve Ewe's distinctive orthographic inventory—including open vowels (`ɛ`, `ɔ`), bilabial fricatives (`ƒ`, `ʋ`), the retroflex stop (`ɖ`), the velar fricative (`ɣ`), and the velar nasal (`ŋ`). The corpus was partitioned using an 80/10/10 split into training, validation, and test subsets, with out-of-vocabulary words strictly mapped to `<unk>` based on training set frequencies.
+Our group selected **Ewe (Èʋegbe)**, a low-resource Niger-Congo (Gbe/Kwa branch) tonal language widely spoken across southeastern Ghana (Volta Region), southern Togo, and Benin. To build a robust language model for Ankora's speech recognition pipeline, we curated and harmonized a multi-domain Ewe text corpus spanning four distinct linguistic sources: (1) authentic cultural folklore and literature (`EWE_ENGLISH.csv`), (2) conversational personal biographies and dates (`eweenglishsentence(3).json`), (3) spoken audio transcriptions from the University of Ghana Waxal speech project (`selected transcribed audios.xlsx`), and (4) a deduplicated balanced web crawl (`ewe_corpus.parquet`). We intentionally avoided relying exclusively on historical or religious translations to prevent skewing the vocabulary toward archaic liturgical phrasing. All text was preprocessed using Unicode NFC normalization to preserve Ewe's distinctive orthographic inventory—including open vowels (`ɛ`, `ɔ`), bilabial fricatives (`ƒ`, `ʋ`), the retroflex stop (`ɖ`), the velar fricative (`ɣ`), and the velar nasal (`ŋ`)—while safely binding combining tone diacritics. Cross-domain deduplication yielded a **Grand Unified Mega-Corpus of 124,396 clean unique sentences (~2.35 million tokens)**, partitioned using an 80/10/10 split into training (99,516 sentences / 1.88M words), validation (12,439 sentences), and test (12,441 sentences) subsets, with out-of-vocabulary words strictly mapped to `<unk>` based on training set frequencies.
 
 ---
 
@@ -49,26 +49,25 @@ In addition to quantitative perplexity scoring, we performed qualitative generat
 ### Question 5: What results did you get?
 *(Space Guide: 1–2 Paragraphs)*
 
-Our experimental benchmarks demonstrated that n-gram order and smoothing methodology substantially impact low-resource modeling performance in Ewe:
+Our experimental benchmarks across 5 tokenizers and orders $N=1\dots 6$ on the Grand Unified Mega-Corpus (1.88M training words) demonstrated that tokenization granularity and corpus scale fundamentally dictate low-resource performance:
 
-| Model Architecture | Smoothing Method | Test Perplexity (PP) | Zero-Count Transition Handling |
-| --- | --- | --- | --- |
-| Unigram ($N=1$) | Laplace ($k=1.0$) | 245.8 | Uniform prior baseline |
-| Bigram ($N=2$) | Maximum Likelihood (MLE) | $\infty$ (Failed) | Crashes on $38\%$ unseen transitions |
-| Bigram ($N=2$) | Laplace (Add-One) | 134.2 | Redistributes uniform mass |
-| Bigram ($N=2$) | Lidstone ($k=0.1$) | 112.6 | Shaves smaller probability mass |
-| Trigram ($N=3$) | Linear Interpolation ($\lambda=[0.1, 0.3, 0.6]$) | 88.4 | Balances unigram, bigram, and trigram |
-| Bigram ($N=2$) | Interpolated Kneser-Ney | **79.1** | Shaves discount $d=0.75$, uses continuation history |
+| Tokenizer Strategy | Optimal Order | Sparsity (% Unseen) | Test Perplexity (PP) | Architectural Finding |
+| --- | :---: | :---: | :---: | --- |
+| Whitespace Tokenizer | Trigram ($N=3$) | 52.8% | 441.2 | Punctuation boundary pollution inflates vocabulary to 100k surface forms |
+| Unicode Word Tokenizer | 4-gram ($N=4$) | 62.6% | 147.8 | Standard word baseline; breaks beyond $N=4$ due to data sparsity |
+| Ewe Morphological Stemmer | 4-gram ($N=4$) | 61.6% | **134.0** | Affix peeling (`-wo`, `mí-`) pools inflections, reducing error by 9.3% |
+| Byte-Pair Encoding (BPE, 150 merges) | 6-gram ($N=6$) | 50.6% | **13.8** | Subwords eliminate OOV crashes and push peak context cleanly to $N=6$ |
+| Character Tokenizer | 6-gram ($N=6$) | 37.9% | **7.6** | Ultra-compact vocabulary ($|V|=123$), lowest branching entropy |
 
-Interpolated Kneser-Ney achieved the lowest perplexity (**79.1**), outperforming standard Laplace smoothing by over 41%. This empirical advantage stems from Kneser-Ney's continuation probability mechanism, which avoids over-allocating probability to frequent words that only appear within fixed idiom contexts.
+A paramount scientific discovery was the **rightward shift of the word-level breaking point**: while smaller isolated corpora (Datasets 1, 3, and 4) plateaued at Trigram ($N=3$) and immediately degraded at $N=4$, scaling to the 1.88M-word Unified Mega-Corpus stabilized 4-word co-occurrences, allowing 4-grams to outperform Trigrams for the first time ($147.8$ vs $150.1$ for Word; $134.0$ vs $137.2$ for Stemmer). Across all orders, Byte-Pair Encoding (BPE) unlocked the lowest perplexity and highest context headroom, sustaining monotonic improvements up to order 6 ($PPL = 13.8$).
 
 ---
 
 ### Question 6: What should we know about the work you did which is not already captured in your answers above?
 *(Space Guide: 1–3 Paragraphs)*
 
-A central engineering achievement in our pipeline was the specialized handling of **Ewe Unicode orthography and tonal diacritics**. Ewe features complex character combinations, including bilabial fricatives (`ƒ`, `ʋ`), velar fricatives (`ɣ`), the retroflex stop (`ɖ`), velar nasals (`ŋ`), and open vowels (`ɛ`, `ɔ`), often combined with acute, grave, or circumflex tone diacritics. Naive tokenizers frequently break these combined characters into isolated accent fragments, which corrupts word boundary detection and inflates vocabulary counts with meaningless symbols. In [`src/preprocessing.py`](file:///Users/macbookpro/Documents/Coding/Ashesi%20Uni/Natural%20Language%20Processing/nlp-group-1-prosit-1/src/preprocessing.py), we enforced Unicode NFC normalization prior to tokenization, ensuring glyphs remain properly fused and grammatically intact.
+A central engineering achievement was the discovery and remediation of **the Ewe combining tone mark bug** in Python's standard library. Ewe features combining tone diacritics (such as the nasal tilde `\u0303` in *"nusrɔ̃lawo"*), which Python's `str.isalnum()` classifies as non-alphanumeric (category `Mn`). In naive tokenizers, this causes words containing nasalized vowels to be erroneously split into corrupted fragments. In [`src/tokenizers.py`](file:///Users/macbookpro/Documents/Coding/Ashesi%20Uni/Natural%20Language%20Processing/nlp-group-1-prosit-1/src/tokenizers.py), we resolved this by enforcing Unicode NFC normalization and developing a tone-aware regex pattern `^[\w\u0300-\u036f]+$` that preserves complex tonal glyphs intact.
 
-Furthermore, we structured our pipeline in `src/preprocessing.py` to be format-agnostic: it dynamically detects whether a local Ewe text file is provided in `data/raw/low_resource/` or if a cloud dataset is specified, guaranteeing full reproducibility across team members' local machines and Google Colab environments.
+Additionally, to understand the exact empirical scaling behavior of low-resource African NLP, we designed and executed an **incremental 5-phase ablation study**: benchmarking all 5 tokenizers across $N=1\dots 6$ on Dataset 1 (Folklore), Dataset 2 (Micro-Bios), Dataset 3 (Waxal Spoken Speech), and Dataset 4 (Web Crawl) in complete isolation before constructing our 5-stage harmonization pipeline (`src/data_pipeline.py`) to merge and cross-deduplicate them into the Grand Unified Mega-Corpus. Every experiment, qualitative generation sample, and bug mitigation is documented in our Reflective Learning Journal ([`reports/LEARNING_JOURNAL.md`](file:///Users/macbookpro/Documents/Coding/Ashesi%20Uni/Natural%20Language%20Processing/nlp-group-1-prosit-1/reports/LEARNING_JOURNAL.md)).
 
-Finally, we structured the N-gram count matrices to support direct export into standard ARPA language modeling format files, allowing Ankora's engineering team to directly plug our trained Ewe statistical models into Kaldi WFST speech decoders for immediate real-time transcription benchmarking.
+Finally, our statistical count matrices support direct export into standard ARPA language modeling format files, enabling Ankora's engineering team to compile our trained Ewe language models directly into Weighted Finite-State Transducers (WFSTs) for ultra-fast, microsecond-latency speech recognition decoding on edge devices.

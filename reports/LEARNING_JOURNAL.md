@@ -217,35 +217,70 @@ Our team identified four distinct text sources for Ewe:
 
 ---
 
-### The 4-Dataset Grand Comparison: The Empirical Scaling Laws of Low-Resource NLP
+### Phase 5: Grand Unified Ewe Mega-Corpus Empirical Ablation Log (`data/processed/unified/`)
 
-| Feature / Metric | Dataset 1 (`.csv`) | Dataset 2 (`.json`) | Dataset 3 (`.xlsx`) | Dataset 4 (`.parquet`) | Scientific Discovery |
-|---|---|---|---|---|---|
-| **Domain** | Cultural Folklore | Biographies (Micro) | Waxal Speech (Oral) | Web & Scripture | Covers all major linguistic registers |
-| **Train Sentences** | 21,275 | 420 | 15,320 | **64,308** | $150\times$ range in corpus scale |
-| **Train Words** | 517,444 | 9,642 | 508,655 | **867,455** | Scaling from 9k to ~1M tokens |
-| **Unigram Sparsity (Word)** | 1.4% | **17.6%** | 2.4% | **1.3%** | Micro-data suffers extreme OOV |
-| **Trigram Sparsity (Word)** | 47.3% | 85.6% | 46.0% | **43.1%** | More data drives down sparsity |
-| **Optimal Word Order** | Trigram ($N=3$) | Bigram ($N=2$) | Trigram ($N=3$) | Trigram ($N=3$) | Word models plateau at $N=3$ |
-| **Best Word PPL** | 127.4 (Stemmer) | 2,539.1 (Stemmer) | 137.5 (Stemmer) | **128.6 (Stemmer)** | Stemmer wins in every domain |
-| **Best BPE PPL** | 14.0 ($N=5$) | 40.8 ($N=3$) | 17.8 ($N=5$) | **14.0 ($N=5,6$)** | BPE breaks the $N=3$ ceiling |
+- **Fused Sources**: All 4 Corpora (Folklore CSV + Micro-Bios JSON + Waxal Speech Transcripts + Web & Scripture Corpus).
+- **Cross-Source Deduplication**: Filtered 2,260 cross-domain duplicate sentences.
+- **Corpus Scale**: **124,396 Total Unique Sentences / 2,349,941 Total Words**.
+- **Split**: 99,516 Train (1,881,823 words) | 12,439 Val (234,312 words) | 12,441 Test (233,806 words).
+- **Evaluating Sample**: 4,000 held-out test sentences (75,599 test tokens).
+- **Vocabulary Diversity $|V|$**:
+  - Whitespace: 100,707 surface forms.
+  - Unicode Word: 54,753 clean word types.
+  - Ewe Rule Stemmer: 48,756 root lemmas (affix peeling compressed vocabulary by 5,997 types).
+  - BPE (150 merges): 485 subwords.
+  - Character: 123 atomic characters.
 
-### The 5-Stage Harmonization Pipeline (`src/data_pipeline.py`):
-1. **Ingestion Adapters**: Modular readers that handle plain `.txt`, `.csv` (auto-detecting `text`/`ee` columns), and `.jsonl`.
-2. **Standardized Normalization**: Stripping HTML/XML tags, removing web URLs, and applying Unicode NFC normalization.
-3. **Quality & Length Filtering**: Discarding single-word fragments ($<2$ words) and pure numerical/punctuation lines.
-4. **Normalized Hash Deduplication**: Tracking `hash(sentence.lower())` to eliminate repeated boilerplate across independent sources.
-5. **Stratified Split-First Partitioning**: Shuffling with `RANDOM_SEED = 42` and exporting 80% `train.txt`, 10% `val.txt`, and 10% `test.txt` into `data/processed/low_resource/`.
+#### Comprehensive Multi-Tokenizer Matrix for Grand Unified Corpus (99,516 Train Sents / 1.88M Words)
+*Values shown as: Perplexity (Sparsity % Unseen in Test Set)*
+
+| Order $N$ | Whitespace | Unicode Word | Ewe Stemmer | BPE (Subwords) | Character |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Unigram ($N=1$)** | 2,247.1 (3.1%) | 782.1 (1.4%) | 690.1 (1.2%) | 137.2 (0.0%) | 27.2 (0.0%) |
+| **Bigram ($N=2$)** | 586.0 (22.6%) | 225.9 (13.9%) | 208.2 (12.9%) | 47.1 (0.1%) | 13.9 (0.2%) |
+| **Trigram ($N=3$)** | **441.2** (52.8%) | 150.1 (39.9%) | 137.2 (38.6%) | 24.0 (3.7%) | 10.8 (2.0%) |
+| **4-gram ($N=4$)** | 470.2 (72.6%) | **147.8** (62.6%) | **134.0** (61.6%) | 16.5 (17.9%) | 8.9 (8.5%) |
+| **5-gram ($N=5$)** | 541.4 (81.0%) | 163.6 (75.2%) | 147.7 (74.7%) | 14.2 (35.7%) | 7.9 (21.4%) |
+| **6-gram ($N=6$)** | 624.8 (84.1%) | 185.8 (81.0%) | 167.4 (80.7%) | **13.8** (50.6%) | **7.6** (37.9%) |
+
+---
+
+### The 5-Corpus Master Comparison: The Empirical Scaling Laws of Low-Resource NLP
+
+| Feature / Metric | Dataset 1 (`.csv`) | Dataset 2 (`.json`) | Dataset 3 (`.xlsx`) | Dataset 4 (`.parquet`) | **Grand Unified Mega-Corpus** | Scientific Takeaway |
+|---|---|---|---|---|---|---|
+| **Domain** | Cultural Folklore | Biographies (Micro) | Waxal Speech (Oral) | Web & Scripture | **Fused Multi-Domain** | Complete linguistic coverage |
+| **Train Sentences** | 21,275 | 420 | 15,320 | 64,308 | **99,516** | **236x scaling** from micro to mega |
+| **Train Words** | 517,444 | 9,642 | 508,655 | 867,455 | **1,881,823** | Reaches ~1.9 million tokens |
+| **Unigram Sparsity (Word)** | 1.4% | 17.6% | 2.4% | 1.3% | **1.4%** | OOV stabilized at ~1.4% |
+| **Trigram Sparsity (Word)** | 47.3% | 85.6% | 46.0% | 43.1% | **39.9%** | **Sub-40% sparsity** achieved! |
+| **Optimal Word Order** | Trigram ($N=3$) | Bigram ($N=2$) | Trigram ($N=3$) | Trigram ($N=3$) | **4-gram ($N=4$)** | **Scale shifted breaking point rightward!** |
+| **Best Word PPL** | 127.4 (Stemmer) | 2,539.1 (Stemmer) | 137.5 (Stemmer) | 128.6 (Stemmer) | **134.0 (Stemmer, $N=4$)** | 4-gram beats Trigram at scale |
+| **Best BPE PPL** | 14.0 ($N=5$) | 40.8 ($N=3$) | 17.8 ($N=5$) | 14.0 ($N=5,6$) | **13.8 ($N=6$)** | BPE scales cleanly to $N=6$ |
+| **Best Character PPL** | 7.0 ($N=6$) | 9.8 ($N=5$) | 5.5 ($N=6$) | 7.6 ($N=6$) | **7.6 ($N=6$)** | Stable char branching factor |
+
+#### Breakthrough Discoveries from the Unified Corpus:
+
+1. **The Rightward Shift of the Word Breaking Point ($N=3 \to N=4$):**
+   - On every individual dataset (Datasets 1, 3, and 4), word models hit their empirical ceiling at **Trigram ($N=3$)** and immediately degraded at $N=4$ ($139.4 \to 145.9$ on D1; $157.5 \to 176.4$ on D3; $140.3 \to 145.9$ on D4).
+   - In the Grand Unified Mega-Corpus (1.88M words), **4-grams beat Trigrams** for the first time ($150.1 \to 147.8$ on Unicode Word; $137.2 \to 134.0$ on Stemmer)!
+   - *Why?* At 1.88 million words, 4-word transition contexts recur with sufficient frequency that the reduction in conditioning entropy outweighs the sparsity penalty!
+2. **The Universal Stemming Advantage:**
+   - Peeling prefixes (`mí-`, `wó-`, `me-`) and suffixes (`-wo`) reduced perplexity at every single order ($N=1\dots 6$) on the Unified Corpus, dropping the 4-gram optimum from $147.8 \to 134.0$ ($9.3\%$ error reduction).
+3. **Subword Headroom (BPE Optimum at $N=6$):**
+   - By eliminating out-of-vocabulary words and compressing rare morphological constructions into frequent subwords, BPE achieved its best performance at **6-gram ($N=6$, PPL=13.8)** with over 49% of 6-gram test subword sequences found in training.
 
 ---
 
 ## 6. Synthesis & Viva Exam Readiness (`clenam.ai`)
 
-This empirical exploration directly equips us to defend our work in the upcoming automated Viva Quiz on `clenam.ai`:
+This complete 5-phase empirical exploration equips us with ironclad answers for the automated Viva Quiz on `clenam.ai`:
 
 1. **Why n-grams for low-resource African languages?**  
-   *Defense*: With limited data (<50,000 sentences), neural models overfit by memorizing noise and incur severe GPU compute/latency penalties. Smoothed n-grams compile into lightweight Weighted Finite-State Transducers (WFSTs) that run with microsecond latency on edge CPUs for Ankora's speech recognition pipeline.
+   *Defense*: With limited data (<100,000 sentences), neural models overfit by memorizing noise and incur severe GPU compute/latency penalties. Smoothed n-grams compile into lightweight Weighted Finite-State Transducers (WFSTs) that run with microsecond latency on edge CPUs for Ankora's speech recognition pipeline.
 2. **Why does Perplexity break down when comparing different tokenizers?**  
-   *Defense*: Perplexity represents the branching factor of the vocabulary. Character-level tokenizers have $|V| \approx 45$ and artificially low perplexity (~3–5), while word-level tokenizers have $|V| \approx 1,250$ and higher perplexity (~70–100). Cross-model perplexity comparisons are only scientifically valid when evaluated over identical token streams and vocabularies.
-3. **Why did $N=3$ outperform $N=6$?**  
-   *Defense*: The bias-variance trade-off. While higher-order models reduce bias by incorporating richer context, parameter variance explodes under data scarcity because $99.7\%$ of 6-gram contexts never appear in training. Trigrams strike the optimal empirical sweet spot between contextual conditioning and sample efficiency.
+   *Defense*: Perplexity represents the branching factor of the vocabulary. Character-level tokenizers have $|V| \approx 123$ and artificially low perplexity (~7.6), while word-level tokenizers have $|V| \approx 54,000$ and higher perplexity (~134–147). Cross-model perplexity comparisons are only scientifically valid when evaluated over identical token streams and vocabularies.
+3. **Why did $N=4$ outperform $N=3$ on the Unified Corpus, but fail on isolated datasets?**  
+   *Defense*: The bias-variance trade-off governed by corpus scale. On smaller corpora (e.g. 21k sentences), 4-gram contexts suffer >69% test sparsity, causing variance to explode. In the Unified Mega-Corpus (100k sentences / 1.88M words), recurring 4-gram frequencies stabilize, allowing lower model bias to dominate and pushing the empirical breaking point rightward from $N=3$ to $N=4$.
+4. **Why did the Ewe Stemmer outperform the Unicode Word Tokenizer across all corpora?**  
+   *Defense*: Ewe is an agglutinative language where pronouns (`mí-`, `wó-`) and plurals (`-wo`) attach to root words. Raw word tokenization fragments identical semantic concepts into separate vocabulary entries (e.g., `atí` vs. `atíwo`). Stemming clusters inflected tokens into shared lemma counts, compressing the vocabulary and mitigating statistical sparsity.

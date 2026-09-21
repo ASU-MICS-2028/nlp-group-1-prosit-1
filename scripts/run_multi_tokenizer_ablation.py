@@ -40,26 +40,28 @@ def run_dataset_sweep(
     with open(test_path, "r", encoding="utf-8") as f:
         test_lines = [l.strip() for l in f if l.strip()]
 
-    print(f"Loaded {len(train_lines)} train sentences, {len(test_lines)} test sentences.")
+    eval_test = test_lines[:4000] if len(test_lines) > 4000 else test_lines
+    print(f"Loaded {len(train_lines)} train sentences, {len(test_lines)} test sentences (evaluating on {len(eval_test)}).")
 
     # 1. Initialize tokenizers
     tokenizers = [
-        ("Whitespace", WhitespaceTokenizer(), train_lines, test_lines),
-        ("Unicode Word", UnicodeWordTokenizer(), train_lines, test_lines),
-        ("Ewe Stemmer", EweRuleStemmerTokenizer(), train_lines, test_lines),
+        ("Whitespace", WhitespaceTokenizer(), train_lines, eval_test),
+        ("Unicode Word", UnicodeWordTokenizer(), train_lines, eval_test),
+        ("Ewe Stemmer", EweRuleStemmerTokenizer(), train_lines, eval_test),
         (
             "Character",
             CharacterTokenizer(),
             train_lines[:subsample_for_char] if len(train_lines) > subsample_for_char else train_lines,
-            test_lines[:subsample_for_char // 8] if len(test_lines) > subsample_for_char // 8 else test_lines,
+            eval_test[:subsample_for_char // 8] if len(eval_test) > subsample_for_char // 8 else eval_test,
         ),
     ]
+
 
     # BPE requires training first
     print("Training BPE tokenizer (150 merges)...")
     bpe = SimpleBPETokenizer(num_merges=150)
     bpe.train(train_lines[:3000] if len(train_lines) > 3000 else train_lines)
-    tokenizers.append(("Byte-Pair Encoding (BPE)", bpe, train_lines, test_lines))
+    tokenizers.append(("Byte-Pair Encoding (BPE)", bpe, train_lines, eval_test))
 
     sweep_results = {}
 
@@ -115,7 +117,7 @@ def run_dataset_sweep(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", choices=["1", "2", "3", "4", "all"], default="all")
+    parser.add_argument("--dataset", choices=["1", "2", "3", "4", "unified", "all"], default="all")
     args = parser.parse_args()
 
     if args.dataset in ["2", "all"]:
@@ -156,5 +158,16 @@ if __name__ == "__main__":
             max_order=6,
             subsample_for_char=4000,
         )
+
+    if args.dataset in ["unified"]:
+        run_dataset_sweep(
+            train_path="data/processed/unified/train.txt",
+            test_path="data/processed/unified/test.txt",
+            dataset_name="Grand Unified Ewe Mega-Corpus (100k Sents / 1.9M Words)",
+            output_json_path="reports/results_unified_all_tokenizers.json",
+            max_order=6,
+            subsample_for_char=4000,
+        )
+
 
 

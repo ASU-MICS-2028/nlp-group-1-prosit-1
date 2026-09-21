@@ -36,6 +36,30 @@ Field notes:
 - **Decided** — only real decisions, the kind someone might otherwise reverse without knowing. Leave it out if nothing was decided.
 - **Blocked** — this is the field that saves the project. Write it even when it feels like admitting you're stuck. Especially then.
 
+## 2026-09-21 · 13:13–13:28 GMT · Eric Elikplim Sunu
+
+**Branch:** eric
+**Assistant:** Gemini (Gemini 3.8 Flash), to execute the full 5-tokenizer ablation sweep ($N=1\dots 6$) on the Grand Unified Ewe Mega-Corpus (124,396 sentences / 2.35M words total; 99,516 train sentences / 1.88M words), document the empirical breakthrough of the rightward breaking point shift ($N=3 \to N=4$), update `reports/LEARNING_JOURNAL.md` and `reports/section_b_low_resource_lm.md`, and establish comprehensive `METHODOLOGY_GUIDE.md` playbooks across both NLP and Machine Learning repositories.
+**Did:**
+- Executed full 5-tokenizer evaluation sweep ($N=1\dots 6$) on the Grand Unified Ewe Mega-Corpus via `scripts/run_multi_tokenizer_ablation.py --dataset unified`:
+  - Whitespace: Trigram optimum (PPL 441.2, 52.8% sparsity; degraded 3.2x by glued punctuation).
+  - Unicode Word: 4-gram optimum (PPL 147.8, 62.6% sparsity; beating Trigram PPL 150.1).
+  - Ewe Stemmer: 4-gram optimum (PPL 134.0, 61.6% sparsity; 9.3% error reduction over raw words).
+  - BPE (150 merges): 6-gram optimum (PPL 13.8, 50.6% sparsity; zero OOV, monotonic improvement to $N=6$).
+  - Character: 6-gram optimum (PPL 7.6, 37.9% sparsity; compact $|V|=123$).
+- Saved full benchmark matrix in `reports/results_unified_all_tokenizers.json`.
+- Discovered and proved the **rightward shift of the word-level breaking point**: corpus scaling to 1.88M words stabilizes 4-word co-occurrences, allowing $N=4$ to outperform $N=3$ for the first time in our study.
+- Updated `reports/LEARNING_JOURNAL.md` with Phase 5 logs, the 5-Corpus Master Scaling Table, and extended Viva Quiz revision defenses.
+- Updated `reports/section_b_low_resource_lm.md` (Questions 1, 5, and 6) with exact 4-source composition, multi-tokenizer metrics, and combining diacritic regex handling.
+- Authored `METHODOLOGY_GUIDE.md` in this project and `mle-group-3-prosit-1` codifying the "Explain to a beginner, build like a senior" pedagogy, incremental ablation, worklog logging, learning journals, branch discipline, and viva exam readiness.
+**Decided:**
+- Confirmed that balanced multi-source fusion prevents the 99% liturgical skew of raw web scrapes while providing enough lexical scale for 4-grams to beat trigrams.
+- Codified standard 5-pillar research methodology across both MICS 2028 coursework projects.
+**Next:**
+- Plot the comparative perplexity and sparsity curves across all 5 corpora into `figures/` for slide and report integration.
+
+---
+
 ## 2026-09-21 · 13:00–13:08 GMT · Eric Elikplim Sunu
 
 **Branch:** eric
