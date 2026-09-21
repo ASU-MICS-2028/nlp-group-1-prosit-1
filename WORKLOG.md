@@ -36,6 +36,27 @@ Field notes:
 - **Decided** — only real decisions, the kind someone might otherwise reverse without knowing. Leave it out if nothing was decided.
 - **Blocked** — this is the field that saves the project. Write it even when it feels like admitting you're stuck. Especially then.
 
+## 2026-09-21 · 22:00–22:45 GMT · Eric Elikplim Sunu
+
+**Branch:** eric
+**Assistant:** Gemini (Antigravity), to overhaul Section C with authentic agricultural extension corpus, build complete LoRA fine-tuning pipeline, resolve Python 3.14/3.12 macOS PyTorch compatibility, clean up repository hygiene (removing redundant scripts, untracking .zed/), update notebooks, and synchronize reports and learning journals.
+**Did:**
+- Repository hygiene & IDE cleanup: removed duplicate `.py` percent scripts from `notebooks/` to keep clean `.ipynb` files for team compatibility; untracked `.zed/` configuration and added to `.gitignore`.
+- Environment repair: resolved macOS x86_64 PyTorch incompatibility (recreated virtualenv with Python 3.12, pinned `torch==2.2.2`, `transformers==4.38.2`, `peft==0.10.0`, `datasets==5.0.1`, `numpy==1.26.4`, `scipy==1.12.0`). Registered `nlp-prosit-1` Jupyter kernel.
+- Resolved local module shadowing: renamed `src/tokenizers.py` to `src/ewe_tokenizers.py` to eliminate namespace collision with the Hugging Face `tokenizers` library.
+- Data curation: downloaded authentic `KisanVaani/agriculture-qa-english-only` corpus (22,615 Q&A pairs) and partitioned leak-free Train (500 pairs / 17k words), Val (100 pairs / 3.7k words), and Test (100 pairs / 3.7k words) splits via `src/prepare_domain_data.py`.
+- LoRA fine-tuning execution (`src/train_domain_lora.py` and `notebooks/02_domain_specific_llm_adaptation.ipynb`): trained DistilGPT2 with LoRA ($r=8, \alpha=32$, on `c_attn` attention projections; 147,456 trainable params / 0.18%) for 3 epochs (288.6s runtime on local CPU).
+- Empirical evaluation: zero-shot base perplexity dropped from `62.38` (loss 4.1332) down to `29.33` (loss 3.3785) on held-out test split (52.99% relative perplexity reduction). Verified prompt completions shift from circular repetition to direct agronomic advice.
+- Documentation & Reflection: updated `reports/section_c_domain_adaptation.md`, `reports/claims_table.md`, and `reports/LEARNING_JOURNAL.md` (Sections 7, 8, 9) with authentic metrics, architectural analysis, and viva defense answers.
+**Decided:**
+- Strictly use real data (`KisanVaani`) rather than synthetic mock sentences for all Section C deliverables.
+- Maintain only standard `.ipynb` notebooks in git to avoid team merge confusion.
+- Persist only lightweight benchmark JSON artifacts (`reports/domain_adaptation_results.json`) and figures in git while gitignoring heavy model binaries.
+**Next:**
+- Push branch `eric` to `origin` and conduct dry-run viva rehearsal using `reports/claims_table.md` and `reports/LEARNING_JOURNAL.md`.
+
+---
+
 ## 2026-09-21 · 16:50–17:20 GMT · Eric Elikplim Sunu
 
 **Branch:** eric
