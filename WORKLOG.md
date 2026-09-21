@@ -36,6 +36,24 @@ Field notes:
 - **Decided** — only real decisions, the kind someone might otherwise reverse without knowing. Leave it out if nothing was decided.
 - **Blocked** — this is the field that saves the project. Write it even when it feels like admitting you're stuck. Especially then.
 
+## 2026-09-21 · 16:50–17:20 GMT · Eric Elikplim Sunu
+
+**Branch:** eric
+**Assistant:** Gemini (Gemini 3.8 Flash), to resolve Zed IDE language server configuration (installed `pyright` in `.venv`, configured explicit LSP paths in `.zed/settings.json`), create Zed-compatible percent scripts (`.py` with `# %%` markers) for all notebooks, install JupyterLab with a 1-click launcher (`scripts/launch_notebook.sh`), optimize Kneser-Ney continuation precomputation in `src/ngram.py`, build and verify a 13-test unit test suite (`tests/test_pipeline.py`), and synchronize `reports/claims_table.md`, `reports/datasheet.md`, and `reports/presentation_outline.md`.
+**Did:**
+- Resolved Zed IDE LSP tooling: installed `pyright` in `.venv`, updated `.zed/settings.json` to point directly to `.venv/bin/pyright` and `.venv/bin/ruff`, and validated fast autocomplete and format-on-save.
+- Provided dual notebook execution paths: converted all 4 `.ipynb` notebooks into Zed-native percent scripts (`.py` with `# %%` blocks) and created `scripts/launch_notebook.sh` for full browser-based JupyterLab rendering.
+- Optimized Kneser-Ney smoothing in `src/ngram.py`: precomputed continuation counts during `fit()` to reduce complexity from $O(N \times |V|)$ down to $O(1)$ table lookup, accelerating evaluation by >100x.
+- Created unit test suite in `tests/test_pipeline.py` (13 tests passing in 0.07s) covering Unicode NFC normalization, combining tone diacritics, all 5 tokenizers, probability conservation ($\sum P = 1.0$), and perplexity math.
+- Synchronized `reports/claims_table.md`, `reports/datasheet.md`, and `reports/presentation_outline.md` with the Grand Unified Mega-Corpus benchmarks and ASR WFST architecture.
+**Decided:**
+- Supported both Zed interactive REPL workflow (`.py` with `# %%`) and browser JupyterLab workflow (`.ipynb`) for maximum development flexibility.
+- Refined Ewe morphological stemmer to support common 2-character root lemmas (`wɔ`, `yi`, `va`, `ɖu`).
+**Next:**
+- Review the presentation slide outline and rehearse the 10-minute slide deck and viva oral defense questions.
+
+---
+
 ## 2026-09-21 · 13:13–13:28 GMT · Eric Elikplim Sunu
 
 **Branch:** eric
