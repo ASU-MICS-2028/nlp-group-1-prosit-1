@@ -1,0 +1,42 @@
+{
+  "domain": "Tropical Agriculture (Agro-Extension / KisanVaani QA)",
+  "base_model": "distilgpt2",
+  "lora_parameters": {
+    "rank": 8,
+    "alpha": 32,
+    "dropout": 0.05,
+    "target_layer": "Conv1D (attention projections)",
+    "trainable_params": 147456,
+    "total_params": 82060032,
+    "trainable_pct": 0.1797
+  },
+  "dataset_split_sizes": {
+    "train": 500,
+    "val": 100,
+    "test": 100
+  },
+  "training_metrics": {
+    "epochs": 3,
+    "total_runtime_seconds": 288.62,
+    "final_train_loss": 3.5823
+  },
+  "evaluation_metrics": {
+    "base_zero_shot_loss": 4.1332,
+    "base_zero_shot_perplexity": 62.38,
+    "lora_adapted_loss": 3.3785,
+    "lora_adapted_perplexity": 29.33,
+    "relative_perplexity_reduction_pct": 52.99
+  },
+  "qualitative_completions": [
+    {
+      "prompt": "Question: why is crop rotation important in farming?\nAnswer:",
+      "base_completion": "Question: why is crop rotation important in farming?\nAnswer: because crop rotation is a popular part of farming, and it has a very long history of being associated with crop rotation.\nThe question is: why does crop rotation matter? Why does it matter?",
+      "adapted_completion": "Question: why is crop rotation important in farming?\nAnswer: crop rotation is a key component in agriculture.\nAnswer: the rotation of a crop is important for the health of the crop. The root of the crop, called the root, is the root of"
+    },
+    {
+      "prompt": "Question: What farming practice helps prevent soil erosion?\nAnswer:",
+      "base_completion": "Question: What farming practice helps prevent soil erosion?\nAnswer: The answer to that question is: Do you have a practice that has an impact on soil erosion?\nAnswer: The answer to that question is: Do you have a practice that has an impact on",
+      "adapted_completion": "Question: What farming practice helps prevent soil erosion?\nAnswer: It helps to keep soil level down and keep soil level down. It also helps to prevent erosion.\nAnswer: It helps to keep soil level down and keep soil level down. It also helps to"
+    }
+  ]
+}

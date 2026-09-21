@@ -7,7 +7,7 @@ and N-gram smoothing algorithms.
 import math
 import pytest
 from src.preprocessing import normalize_ewe_text, basic_tokenize, build_vocabulary, replace_oov_tokens
-from src.tokenizers import (
+from src.ewe_tokenizers import (
     WhitespaceTokenizer,
     UnicodeWordTokenizer,
     CharacterTokenizer,

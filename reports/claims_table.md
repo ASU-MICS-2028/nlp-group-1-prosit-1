@@ -17,17 +17,17 @@ This table provides the authoritative evidence base for your group presentation 
 | 5 | Byte-Pair Encoding (BPE) Peak Context | **6-gram ($N=6$): PPL = 13.8** | `reports/results_unified_all_tokenizers.json` | Subwords eliminate OOV crashes (0.0% unigram sparsity) and sustain $N=6$ context |
 | 6 | Whitespace Glued Punctuation Penalty | **3.2x degradation** (PPL 470.2 vs 147.8) | `reports/results_unified_all_tokenizers.json` | Punctuation attached to words pollutes surface forms, inflating $|V|$ to 100,707 |
 | 7 | Character Model Branching Baseline | **6-gram ($N=6$): PPL = 7.6** | `reports/results_unified_all_tokenizers.json` | Compact character alphabet ($|V|=123$); proves Viva Perplexity Invariance Rule |
-| 8 | Combining Tone Mark Bug Resolution | **100% diacritic preservation** | `src/tokenizers.py` | Overcomes Python `isalnum()` failure on `\u0303` via regex `^[\w\u0300-\u036f]+$` |
+| 8 | Combining Tone Mark Bug Resolution | **100% diacritic preservation** | `src/ewe_tokenizers.py` | Overcomes Python `isalnum()` failure on `\u0303` via regex `^[\w\u0300-\u036f]+$` |
 | 9 | Bigram Kneser-Ney vs Laplace Advantage | **PPL: 327.7 vs 1,879.6 (82.6% drop)** | `notebooks/01_low_resource_ngram_lm.ipynb` Cell 9 | Continuation probabilities discount fixed-idiom words on held-out test split |
 
 ---
 
 ## Section C: Agro-Extension Domain Adaptation (LoRA)
 
-| # | Slide / Report Claim | Exact Figure / Value | Source / Notebook Cell | Justification / Methodology |
+| # | Slide / Report Claim | Exact Figure / Value | Source / Benchmark Artifact | Justification / Methodology |
 |---|---|---|---|---|
-| 10 | Base model zero-shot domain perplexity | $85.6 \pm 3.2$ | `02_domain_specific_llm_adaptation.ipynb` Cell 2 | Unadapted base model on held-out Agro-Extension test split |
-| 11 | Post-LoRA domain test perplexity | **$27.9 \pm 1.5$** | `02_domain_specific_llm_adaptation.ipynb` Cell 4 | 5 epochs, $r=8, \alpha=16$, AdamW ($\text{lr} = 5 \times 10^{-4}$) |
-| 12 | Relative perplexity reduction | **$67.4\%$ improvement** | `02_domain_specific_llm_adaptation.ipynb` Cell 4 | $\frac{85.6 - 27.9}{85.6} = 67.4\%$ drop in prediction uncertainty |
-| 13 | Trainable parameter percentage | **$0.72\%$** ($0.59\text{M} / 82\text{M}$) | `02_domain_specific_llm_adaptation.ipynb` Cell 3 | LoRA attached exclusively to `target_modules=["q_proj", "v_proj"]` |
-| 14 | General English degradation check | $< 3.8\%$ change | `02_domain_specific_llm_adaptation.ipynb` Cell 4 | Verifies complete absence of catastrophic forgetting on out-of-domain benchmarks |
+| 10 | Base model zero-shot domain perplexity | **62.38** (Loss: 4.1332) | `reports/domain_adaptation_results.json` | Pretrained DistilGPT2 evaluated on 100 held-out agricultural Q&A test pairs |
+| 11 | Post-LoRA domain test perplexity | **29.33** (Loss: 3.3785) | `reports/domain_adaptation_results.json` | 3 epochs, $r=8, \alpha=32$, AdamW ($\text{lr} = 5 \times 10^{-4}$), 189 steps |
+| 12 | Relative perplexity reduction | **52.99% improvement** | `reports/domain_adaptation_results.json` | $\frac{62.38 - 29.33}{62.38} = 52.99\%$ drop in prediction uncertainty |
+| 13 | Trainable parameter percentage | **0.18%** (147,456 / 82,060,032) | `reports/domain_adaptation_results.json` | LoRA attached exclusively to attention projections (`c_attn` Conv1D) |
+| 14 | Training compute efficiency | **288.6 seconds** (~4.8 min) | `reports/domain_adaptation_results.json` | Parameter efficiency enables rapid fine-tuning on standard local CPU |

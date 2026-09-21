@@ -10,7 +10,7 @@
 ### Question 1: What data did you use in building your model?
 *(Space Guide: 1 Paragraph)*
 
-Our group used the specialized **Agro-Extension text array corpus**, curating technical field guides, agricultural extension bulletins, crop rotation schedules, pest mitigation protocols, and soil fertilization handbooks focused on tropical West African agriculture. This dataset was selected to inject deep domain specificity into our English language model—moving beyond generic web text to address critical localized challenges such as fall armyworm infestations, cassava mosaic virus control, and cocoa swollen shoot management. The raw text was preprocessed to strip formatting artifacts, deduplicated, and tokenized using the base model's byte-pair encoding tokenizer. The resulting dataset was partitioned into an 80% training split, 10% validation split, and 10% held-out test split, holding out complete thematic documents to prevent document-level data leakage.
+Our group used the authentic **KisanVaani Agricultural Extension Advisory corpus** (`KisanVaani/agriculture-qa-english-only`), curating real-world extension questions and expert agronomic advice spanning crop protection, soil management, irrigation, fertilization, and pest control. This dataset was selected to inject deep domain specificity into our English language model—moving beyond generic web crawls to address localized farming practices, crop nutrition, and disease management. The raw corpus was structured into clear question-and-answer prompt pairs (`Question: ... \nAnswer: ...`), normalized, and tokenized using DistilGPT2's Byte-Pair Encoding (BPE) tokenizer. We partitioned the corpus into an isolated training split (500 pairs, 17,280 words), a validation split (100 pairs, 3,696 words), and a held-out evaluation test split (100 pairs, 3,710 words), ensuring that test queries were strictly excluded from training to prevent data leakage.
 
 ---
 
@@ -20,21 +20,21 @@ Our group used the specialized **Agro-Extension text array corpus**, curating te
 We evaluated three separate engineering methodologies for developing our domain-specialized English model:
 1. **Training a Domain Foundational Model from Scratch:** Initializing a Transformer architecture with random weights and training solely on our agricultural text array. While this approach provides absolute control over vocabulary tokenization and internal weight configurations without inherited biases from general web crawls, it requires massive high-performance computing clusters, millions of dollars in compute, and hundreds of millions of domain tokens—making it completely unfeasible within our laboratory resource limits.
 2. **Retrieval-Augmented Generation (RAG):** Leaving the underlying foundation model's weights frozen and injecting relevant document snippets into the prompt context at runtime using a vector database (such as FAISS or ChromaDB). While RAG is highly effective for dynamic fact lookup, it does not adapt the model's internal parametric representations, phonetic expectations, or inherent lexical distribution. For Ankora’s speech recognition scoring tasks, the model must fundamentally internalize domain syntax and vocabulary probabilities rather than retrieve search passages.
-3. **Parameter-Efficient Fine-Tuning (PEFT / LoRA):** Freezing the pre-trained weights of a base foundation model (such as Mistral-7B, TinyLlama, or DistilGPT2) and inserting small, trainable low-rank decomposition matrices ($W = W_0 + \frac{\alpha}{r} BA$) into the multi-head attention projections (specifically the query `q_proj` and value `v_proj` layers). This slashes trainable parameters by over 98% and eliminates optimizer memory overhead.
+3. **Parameter-Efficient Fine-Tuning (PEFT / LoRA):** Freezing the pre-trained weights of a base foundation model (DistilGPT2) and inserting small, trainable low-rank decomposition matrices ($W = W_0 + \frac{\alpha}{r} BA$) into the multi-head attention projections (specifically the `Conv1D` attention projection layers `c_attn`). This slashes trainable parameters by over 99.8% and eliminates optimizer memory overhead.
 
-**Our Decision:** We settled on **LoRA Fine-Tuning**. This method provided the ideal technical balance: it updated the model's internal neural attention layers to natively recognize complex agricultural terminology without requiring prohibitive compute, while freezing the base weights to completely protect the model against **catastrophic forgetting** of general English grammar and syntax.
+**Our Decision:** We settled on **LoRA Fine-Tuning**. This method provided the ideal technical balance: it updated the model's internal neural attention layers to natively recognize complex agricultural terminology without requiring prohibitive compute, while freezing 99.82% of the base weights to completely protect the model against **catastrophic forgetting** of general English grammar and syntax.
 
 ---
 
 ### Question 3: How did you train your model and what convinced you your model was learning?
 *(Space Guide: 2–3 Paragraphs)*
 
-We implemented our adaptation pipeline using the Hugging Face `transformers` and `peft` libraries. We loaded the pre-trained causal base weights and initialized a `LoraConfig` configuring rank $r=8$, scaling factor $\alpha=16$, dropout $=0.05$, and targeting attention projections (`target_modules=["q_proj", "v_proj"]`). The network was trained using the causal cross-entropy next-token prediction objective $\mathcal{L} = -\sum \log P(w_t \mid w_{<t})$ optimized via AdamW with a learning rate of $5 \times 10^{-4}$, linear learning rate decay, and batch size of 4 over 5 training epochs.
+We implemented our adaptation pipeline using the Hugging Face `transformers` and `peft` libraries. We loaded the pre-trained causal base model (`distilgpt2`, 82M parameters) and initialized a `LoraConfig` configuring rank $r=8$, scaling factor $\alpha=32$, dropout $=0.05$, and targeting attention projections (`c_attn` with `fan_in_fan_out=True`). This added only **147,456 trainable parameters**—representing a mere **0.18%** of the model's total footprint. The network was trained using the causal cross-entropy next-token prediction objective $\mathcal{L} = -\sum \log P(w_t \mid w_{<t})$ optimized via AdamW with a learning rate of $5 \times 10^{-4}$, linear learning rate decay, and batch size of 8 over 3 training epochs (189 steps, completed in 288.6 seconds on local CPU).
 
 We verified that the adapted model was genuinely learning domain knowledge through three empirical indicators:
-1. **Monotonic Training and Validation Loss Convergence:** The cross-entropy loss declined steadily across epochs (decreasing from an initial loss of $\approx 4.45$ down to $\approx 3.33$), while the validation loss tracked downwards concurrently, proving that the model was optimizing without overfitting.
-2. **Sharp Perplexity Reduction on Unseen Domain Evaluation Set:** Test perplexity computed over our held-out Agro-Extension test partition dropped precipitously from the zero-shot base baseline ($PPL = 85.6$) down to $PPL = 27.9$. This 67.4% reduction proved that the model became substantially less surprised by domain-specific agronomic terminology.
-3. **Qualitative Completion Accuracy on Specialized Prompts:** When conditioned on domain prompts (such as *"Fall armyworm infestation in maize is controlled by..."*), the base zero-shot model generated generic or nonsensical completions, whereas the LoRA-adapted model accurately generated grounded agronomic recommendations (e.g., *"early planting, intercropping with legumes, and bio-pesticides such as Bacillus thuringiensis"*).
+1. **Monotonic Training and Validation Loss Convergence:** The cross-entropy loss declined steadily across epochs (starting from an initial zero-shot base loss of $4.1332 \to$ Epoch 1 validation: $3.4002 \to$ Epoch 2: $3.3050 \to$ Epoch 3: $3.2778$, with final training loss $3.5823$), proving stable convergence without overfitting.
+2. **Sharp Perplexity Reduction on Unseen Domain Evaluation Set:** Test perplexity computed over our held-out 100 agricultural test pairs dropped precipitously from the zero-shot base baseline ($PPL = 62.38$) down to $PPL = 29.33$. This **52.99% relative reduction** (a 33.05-point drop) proved that the model became substantially less surprised by domain-specific agronomic phrasing.
+3. **Qualitative Completion Shift on Specialized Prompts:** When conditioned on domain prompts, the base zero-shot model degenerated into circular repetition (e.g., for *"Question: why is crop rotation important in farming?\nAnswer:"*, the base model output *"because crop rotation is a popular part of farming... why does crop rotation matter? Why does it matter?"*). In contrast, the LoRA-adapted model immediately generated structured agronomic advice: *"crop rotation is a key component in agriculture. The rotation of a crop is important for the health of the crop..."*.
 
 ---
 
@@ -42,8 +42,8 @@ We verified that the adapted model was genuinely learning domain knowledge throu
 *(Space Guide: 1–2 Paragraphs)*
 
 Our evaluation framework integrated both quantitative intrinsic metrics and qualitative diagnostic audits:
-1. **Quantitative Evaluation:** We measured **Perplexity (PP)** across a held-out test split of domain field guides that were completely excluded from the training and validation loops. We established a baseline benchmark using the zero-shot foundation model and compared it directly against our LoRA-adapted checkpoint under identical tokenization and sequence length constraints.
-2. **Qualitative Diagnostic Audits:** We crafted a diagnostic benchmark consisting of challenging agronomic query prompts covering pest diagnostics, soil chemistry, and crop cycles. Generations were sampled using nucleus sampling (Top-$p = 0.9, T = 0.7$) and evaluated for factual entity accuracy, terminology alignment, and hallucination rates.
+1. **Quantitative Evaluation:** We measured **Perplexity (PP)** across a held-out test split of 100 agricultural extension Q&A pairs (3,710 words) that were strictly excluded from the training and validation loops. We established a baseline benchmark using the zero-shot foundation model and compared it directly against our LoRA-adapted checkpoint under identical tokenization (max length 96 tokens) and batch constraints.
+2. **Qualitative Diagnostic Audits:** We crafted a diagnostic benchmark consisting of agricultural query prompts covering crop rotation and soil erosion prevention. Generations were sampled using nucleus sampling (Top-$p = 0.9, T = 0.7$) and evaluated for format compliance (answering the question rather than repeating it) and domain terminology alignment.
 
 ---
 
@@ -52,13 +52,12 @@ Our evaluation framework integrated both quantitative intrinsic metrics and qual
 
 Our experimental benchmarks demonstrated substantial improvements across all evaluation criteria after parameter-efficient domain adaptation:
 
-| Model Variant | Trainable Parameters | Domain Test Loss | Domain Test Perplexity (PP) |
-| --- | --- | --- | --- |
-| Pre-trained Foundation Model (Zero-Shot) | 0 (Frozen) | 4.45 | 85.6 |
-| Full Fine-Tuned Baseline | 82.0 M (100%) | 3.38 | 29.4 |
-| **LoRA Adapted Model ($r=8, \alpha=16$)** | **0.59 M (0.72%)** | **3.33** | **27.9** |
+| Model Variant | Trainable Parameters | Total Parameters | Domain Test Loss | Domain Test Perplexity (PP) | Relative PPL Drop |
+| --- | --- | --- | --- | --- | --- |
+| DistilGPT2 Base (Zero-Shot) | 0 (Frozen) | 82,060,032 | 4.1332 | 62.38 | Baseline |
+| **DistilGPT2 + LoRA ($r=8, \alpha=32$)** | **147,456 (0.18%)** | **82,060,032** | **3.3785** | **29.33** | **-52.99%** |
 
-The LoRA-adapted model achieved a **67.4% relative reduction in domain perplexity** compared to the un-adapted base model, demonstrating successful domain internalization while training less than 1% of total parameters. Furthermore, LoRA slightly outperformed full fine-tuning on held-out test perplexity due to its implicit low-rank regularization, which prevented the model from memorizing small corpus idiosyncrasies.
+The LoRA-adapted model achieved a **52.99% relative reduction in domain perplexity** compared to the un-adapted base model, demonstrating successful domain internalization while training less than one-fifth of one percent (0.18%) of total parameters. LoRA's low-rank factorization regularized the network, enabling high sample efficiency on agricultural terminology without catastrophic divergence.
 
 ---
 

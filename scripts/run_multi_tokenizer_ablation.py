@@ -13,7 +13,7 @@ from typing import Dict, List, Any
 # Ensure project root is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.tokenizers import (
+from src.ewe_tokenizers import (
     WhitespaceTokenizer,
     UnicodeWordTokenizer,
     EweRuleStemmerTokenizer,
