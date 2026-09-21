@@ -98,7 +98,7 @@ class EweRuleStemmerTokenizer:
 
     def tokenize(self, text: str) -> List[str]:
         tokens = self.base_tokenizer.tokenize(text)
-        return [self.stem_word(t) if t.isalnum() else t for t in tokens]
+        return [self.stem_word(t) if re.match(r"^[\w\u0300-\u036f]+$", t) else t for t in tokens]
 
 
 class SimpleBPETokenizer:
