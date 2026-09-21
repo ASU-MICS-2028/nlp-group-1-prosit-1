@@ -74,23 +74,22 @@ class EweRuleStemmerTokenizer:
 
     def __init__(self, lowercase: bool = True):
         self.base_tokenizer = UnicodeWordTokenizer(lowercase=lowercase)
-        # Common Ewe affixes
-        self.prefixes = ("mí", "wó", "nà", "me", "nu", "agble")
+        self.prefixes = ("míe", "wóe", "mí", "wó", "nà", "me", "nu", "agble")
         self.suffixes = ("wo", "la", "ye")
 
     def stem_word(self, word: str) -> str:
         if len(word) <= 3:
             return word
 
-        # Strip plural and definite suffixes
+        # Strip plural and definite suffixes (requiring at least 2-char root lemma)
         for sfx in self.suffixes:
-            if word.endswith(sfx) and len(word) > len(sfx) + 2:
+            if word.endswith(sfx) and len(word) >= len(sfx) + 2:
                 word = word[: -len(sfx)]
                 break
 
-        # Strip common pronominal prefixes
+        # Strip common pronominal prefixes (requiring at least 2-char root lemma)
         for pfx in self.prefixes:
-            if word.startswith(pfx) and len(word) > len(pfx) + 2:
+            if word.startswith(pfx) and len(word) >= len(pfx) + 2:
                 word = word[len(pfx) :]
                 break
 
