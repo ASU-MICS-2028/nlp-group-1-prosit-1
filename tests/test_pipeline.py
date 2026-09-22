@@ -16,6 +16,7 @@ from src.ewe_tokenizers import (
 )
 from src.ngram import NGramLM
 from src.data_pipeline import clean_and_normalize_ewe_sentence
+from src.experiment_runner import run_ngram_experiment
 
 
 class TestUnicodePreprocessing:
@@ -32,6 +33,10 @@ class TestUnicodePreprocessing:
         tokens = basic_tokenize(text)
         assert len(tokens) == 1
         assert "ɔ̃" in tokens[0]
+
+    def test_lookalike_letters_normalized(self):
+        # Capital eth looks like Ɖ but lowercases to ð, splitting one Ewe word into two vocabulary entries
+        assert clean_and_normalize_ewe_sentence("Ðasefowo ðe nya") == "Ɖasefowo ɖe nya"
 
     def test_html_and_url_stripping(self):
         raw = "<p>Visit https://ankora.ai for Ewe text.</p>"
@@ -62,18 +67,26 @@ class TestTokenizers:
 
     def test_ewe_stemmer(self):
         tok = EweRuleStemmerTokenizer()
-        # Plural suffix -wo stripped
+        # Plural suffix -wo split off
         res_plural = tok.tokenize("atíwo")
         assert "atí" in res_plural
 
-        # Subject pronoun prefix mí- stripped
+        # Subject pronoun prefix mí- split off
         res_prefix = tok.tokenize("míewɔ")
         assert "wɔ" in res_prefix
+
+    def test_ewe_stemmer_is_lossless(self):
+        # Affixes are kept as tokens, so the word can be rebuilt and perplexity compared per word
+        pieces = EweRuleStemmerTokenizer().tokenize("nusrɔ̃lawo")
+        assert pieces == ["nu+", "srɔ̃la", "+wo"]
+        assert "".join(p.strip("+") for p in pieces) == "nusrɔ̃lawo"
 
     def test_character_tokenizer(self):
         tok = CharacterTokenizer()
         tokens = tok.tokenize("Ewe")
         assert tokens == ["e", "w", "e"]
+        # Word boundaries are kept, so the character model predicts the same text as the others
+        assert tok.tokenize("Ewe gbe") == ["e", "w", "e", "\u2581", "g", "b", "e"]
 
     def test_bpe_training_and_tokenize(self):
         corpus = [
@@ -105,7 +118,7 @@ class TestNGramLanguageModel:
         model = NGramLM(n=2, smoothing="laplace", k=1.0).fit(sentences, vocab=vocab)
 
         context = ("woezɔ",)
-        total_prob = sum(model.probability(w, context) for w in model.vocab)
+        total_prob = sum(model.probability(w, context) for w in model.vocab - {"<s>"})
         assert math.isclose(total_prob, 1.0, rel_tol=1e-5)
 
     def test_lidstone_probability_conservation(self, small_corpus):
@@ -113,7 +126,7 @@ class TestNGramLanguageModel:
         model = NGramLM(n=2, smoothing="laplace", k=0.1).fit(sentences, vocab=vocab)
 
         context = ("kofi",)
-        total_prob = sum(model.probability(w, context) for w in model.vocab)
+        total_prob = sum(model.probability(w, context) for w in model.vocab - {"<s>"})
         assert math.isclose(total_prob, 1.0, rel_tol=1e-5)
 
     def test_interpolation_probability_conservation(self, small_corpus):
@@ -122,8 +135,28 @@ class TestNGramLanguageModel:
         model.set_interpolation_weights([0.2, 0.3, 0.5])
 
         context = ("woezɔ", "loo")
-        total_prob = sum(model.probability(w, context) for w in model.vocab)
+        total_prob = sum(model.probability(w, context) for w in model.vocab - {"<s>"})
         assert math.isclose(total_prob, 1.0, rel_tol=1e-4)
+
+    def test_interpolation_sums_to_one_for_unseen_context(self, small_corpus):
+        # Default equal weights; the bigram and trigram contexts below never occur in training
+        sentences, vocab = small_corpus
+        model = NGramLM(n=3, smoothing="interpolation").fit(sentences, vocab=vocab)
+        total_prob = sum(model.probability(w, ("keta", "ama")) for w in model.vocab - {"<s>"})
+        assert math.isclose(total_prob, 1.0, rel_tol=1e-9)
+
+    @pytest.mark.parametrize("context", [("woezɔ", "loo"), ("<s>", "<s>"), ("keta", "ama")])
+    def test_kneser_ney_sums_to_one(self, small_corpus, context):
+        sentences, vocab = small_corpus
+        model = NGramLM(n=3, smoothing="kneser_ney").fit(sentences, vocab=vocab)
+        total_prob = sum(model.probability(w, context) for w in model.vocab - {"<s>"})
+        assert math.isclose(total_prob, 1.0, rel_tol=1e-9)
+
+    def test_padding_is_never_a_target(self, small_corpus):
+        # <s> padding is context only; counting it as a word would steal unigram probability mass
+        sentences, vocab = small_corpus
+        model = NGramLM(n=6, smoothing="kneser_ney").fit(sentences, vocab=vocab)
+        assert model.ngram_counts[1][()]["<s>"] == 0
 
     def test_kneser_ney_positive_probabilities(self, small_corpus):
         sentences, vocab = small_corpus
@@ -144,3 +177,11 @@ class TestNGramLanguageModel:
         ppl = model.perplexity(test_sentences)
         assert ppl > 1.0
         assert not math.isinf(ppl)
+
+
+def test_unknown_words_pay_spelling_cost_per_word():
+    # "keta" occurs once in training, so it becomes <unk>; the per-word score must charge for spelling it
+    train = ["woezɔ loo kofi", "woezɔ loo ama", "kofi yi suku", "ama yi suku", "kofi yi keta"]
+    rows = run_ngram_experiment(train, ["kofi yi suku"], ["woezɔ loo keta"], UnicodeWordTokenizer(), max_order=2)
+    assert rows[0]["oov_rate_pct"] > 0
+    assert rows[0]["oov_spelling_nats"] > 0

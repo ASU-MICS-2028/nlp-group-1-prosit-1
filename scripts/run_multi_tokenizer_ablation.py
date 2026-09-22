@@ -1,173 +1,106 @@
 """
-Script to run multi-tokenizer ablation sweeps (N=1..6 across all 5 tokenizers)
-for individual datasets and output structured tables for the Learning Journal.
+Runs the Section B ablation: 5 tokenizers x N=1..6, interpolated Kneser-Ney, on one dataset at a time.
+Every tokenizer is trained on the same full training split and scored on the same validation and test
+sentences. The best order per tokenizer is picked on validation perplexity.
+
+Build the splits first (python scripts/build_ewe_datasets.py), then from the repo root:
+    python scripts/run_multi_tokenizer_ablation.py --dataset unified
 """
 
 import argparse
 import json
-import os
 import sys
 import time
-from typing import Dict, List, Any
+from pathlib import Path
+from typing import Any, Dict
 
-# Ensure project root is in sys.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
 
-from src.ewe_tokenizers import (
+from src.ewe_tokenizers import (  # noqa: E402
     WhitespaceTokenizer,
     UnicodeWordTokenizer,
     EweRuleStemmerTokenizer,
     CharacterTokenizer,
     SimpleBPETokenizer,
 )
-from src.experiment_runner import run_ngram_experiment
+from src.experiment_runner import run_ngram_experiment  # noqa: E402
+from src.ngram import NGramLM  # noqa: E402
+from src.preprocessing import build_vocabulary, replace_oov_tokens  # noqa: E402
+
+MAX_EVAL = 4000  # validation and test sentences scored per dataset, the same ones for every tokenizer
+
+DATASETS = {
+    "1": ("dataset_1_csv", "Dataset 1 (EWE_ENGLISH.csv)", "results_dataset_1_all_tokenizers.json"),
+    "2": ("dataset_2_json", "Dataset 2 (eweenglishsentence.json, micro-data)", "results_dataset_2_all_tokenizers.json"),
+    "3": ("dataset_3_speech", "Dataset 3 (Waxal speech transcriptions)", "results_dataset_3_all_tokenizers.json"),
+    "4": ("dataset_4_parquet", "Dataset 4 (ewe_corpus.parquet, first 200k rows)", "results_dataset_4_all_tokenizers.json"),
+    "unified": ("unified", "Unified corpus (all four sources)", "results_unified_all_tokenizers.json"),
+}
 
 
-def run_dataset_sweep(
-    train_path: str,
-    test_path: str,
-    dataset_name: str,
-    output_json_path: str,
-    max_order: int = 6,
-    subsample_for_char: int = 4000,
-) -> Dict[str, Any]:
-    print(f"\n{'='*85}")
-    print(f"RUNNING ALL 5 TOKENIZERS ON: {dataset_name}")
-    print(f"{'='*85}")
-
-    with open(train_path, "r", encoding="utf-8") as f:
-        train_lines = [l.strip() for l in f if l.strip()]
-    with open(test_path, "r", encoding="utf-8") as f:
-        test_lines = [l.strip() for l in f if l.strip()]
-
-    eval_test = test_lines[:4000] if len(test_lines) > 4000 else test_lines
-    print(f"Loaded {len(train_lines)} train sentences, {len(test_lines)} test sentences (evaluating on {len(eval_test)}).")
-
-    # 1. Initialize tokenizers
-    tokenizers = [
-        ("Whitespace", WhitespaceTokenizer(), train_lines, eval_test),
-        ("Unicode Word", UnicodeWordTokenizer(), train_lines, eval_test),
-        ("Ewe Stemmer", EweRuleStemmerTokenizer(), train_lines, eval_test),
-        (
-            "Character",
-            CharacterTokenizer(),
-            train_lines[:subsample_for_char] if len(train_lines) > subsample_for_char else train_lines,
-            eval_test[:subsample_for_char // 8] if len(eval_test) > subsample_for_char // 8 else eval_test,
-        ),
-    ]
+def read_lines(path: Path):
+    with open(path, encoding="utf-8") as f:
+        return [line.strip() for line in f if line.strip()]
 
 
-    # BPE requires training first
-    print("Training BPE tokenizer (150 merges)...")
+def discount_check(train, val, n):
+    """RULES.md 1: compare the Ney-estimated discount with fixed values on validation, never on test."""
+    tok = UnicodeWordTokenizer()
+    tr, va = [tok.tokenize(x) for x in train], [tok.tokenize(x) for x in val]
+    vocab, _ = build_vocabulary(tr, min_freq=2)
+    tr, va = replace_oov_tokens(tr, vocab), replace_oov_tokens(va, vocab)
+    out = {}
+    for d in (None, 0.5, 0.75, 0.9):
+        m = NGramLM(n=n, smoothing="kneser_ney", discount=d).fit(tr, vocab=vocab)
+        out["ney" if d is None else str(d)] = round(m.perplexity(va), 2)
+    return out
+
+
+def run_dataset_sweep(key: str, max_order: int = 6) -> Dict[str, Any]:
+    folder, label, out_name = DATASETS[key]
+    data = ROOT / "data" / "processed" / folder
+    train, val, test = (read_lines(data / f"{s}.txt") for s in ("train", "val", "test"))
+    val_eval, test_eval = val[:MAX_EVAL], test[:MAX_EVAL]
+    print(f"\n{label}: {len(train)} train, scoring {len(val_eval)} val and {len(test_eval)} test sentences", flush=True)
+
     bpe = SimpleBPETokenizer(num_merges=150)
-    bpe.train(train_lines[:3000] if len(train_lines) > 3000 else train_lines)
-    tokenizers.append(("Byte-Pair Encoding (BPE)", bpe, train_lines, eval_test))
+    bpe.train(train)
+    tokenizers = [WhitespaceTokenizer(), UnicodeWordTokenizer(), EweRuleStemmerTokenizer(), bpe, CharacterTokenizer()]
 
-    sweep_results = {}
-
-    for name, tok, tr_corpus, te_corpus in tokenizers:
+    results, best = {}, {}
+    for tok in tokenizers:
         t0 = time.time()
-        print(f"\n--- Running N=1..{max_order} for [{name}] ({len(tr_corpus)} sents) ---")
-        res = run_ngram_experiment(
-            train_corpus=tr_corpus,
-            test_corpus=te_corpus,
-            tokenizer=tok,
-            max_order=max_order,
-            smoothing="interpolation",
-        )
-        elapsed = time.time() - t0
-        print(f"Completed in {elapsed:.2f}s")
-        sweep_results[name] = res
+        rows = run_ngram_experiment(train, val_eval, test_eval, tok, max_order=max_order, smoothing="kneser_ney")
+        results[tok.name] = rows
+        b = min(rows, key=lambda r: r["val_perplexity"])
+        best[tok.name] = {k: b[k] for k in ("order", "val_perplexity", "perplexity", "per_word_perplexity")}
+        print(f"  {tok.name:28s} best N={b['order']} (by val) test PPL {b['perplexity']} per-word {b['per_word_perplexity']}  [{time.time() - t0:.0f}s]", flush=True)
 
-    # Format output summary
     summary = {
-        "dataset": dataset_name,
-        "train_sentences": len(train_lines),
-        "test_sentences": len(test_lines),
-        "results": sweep_results,
+        "dataset": label,
+        "smoothing": "interpolated Kneser-Ney (Ney discount per order); <unk> = tokens seen once in train",
+        "train_sentences": len(train),
+        "val_sentences_scored": len(val_eval),
+        "test_sentences_scored": len(test_eval),
+        "best_order_by_val": best,
+        "discount_check_val_unicode_word": discount_check(train, val_eval, best["Unicode Word"]["order"]),
+        "results": results,
     }
+    with open(ROOT / "reports" / out_name, "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2, ensure_ascii=False)
 
-    os.makedirs(os.path.dirname(output_json_path), exist_ok=True)
-    with open(output_json_path, "w", encoding="utf-8") as f:
-        json.dump(summary, f, indent=2)
-
-    # Print markdown comparison table
-    print(f"\n{'='*95}")
-    print(f"MULTI-TOKENIZER SUMMARY MATRIX FOR {dataset_name} (Perplexity / Sparsity %)")
-    print(f"{'='*95}")
-    header = f"{'Order':<8} | {'Whitespace':<16} | {'Unicode Word':<16} | {'Ewe Stemmer':<16} | {'BPE (Subwords)':<16} | {'Character':<16}"
-    print(header)
-    print("-" * 95)
-
+    print(f"\nTest perplexity per token | per word, {label}")
+    print(f"{'N':<3}" + "".join(f"{t.name[:22]:>34s}" for t in tokenizers))
     for n in range(1, max_order + 1):
-        order_str = f"{n}-gram" if n > 3 else ("Unigram" if n == 1 else ("Bigram" if n == 2 else "Trigram"))
-        row_parts = [f"{order_str:<8}"]
-        for tok_name in ["Whitespace", "Unicode Word", "Ewe Stemmer", "Byte-Pair Encoding (BPE)", "Character"]:
-            tok_res = sweep_results[tok_name]
-            entry = next((item for item in tok_res if item["order"] == n), None)
-            if entry:
-                val = f"{entry['perplexity']:.1f} ({entry['sparsity_pct']:.1f}%)"
-            else:
-                val = "N/A"
-            row_parts.append(f"{val:<16}")
-        print(" | ".join(row_parts))
-
+        cells = [next(r for r in results[t.name] if r["order"] == n) for t in tokenizers]
+        print(f"{n:<3}" + "".join(f"{c['perplexity']:>16.1f} | {c['per_word_perplexity']:>13.1f}" for c in cells))
     return summary
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", choices=["1", "2", "3", "4", "unified", "all"], default="all")
+    parser.add_argument("--dataset", choices=[*DATASETS, "all"], default="all")
     args = parser.parse_args()
-
-    if args.dataset in ["2", "all"]:
-        run_dataset_sweep(
-            train_path="data/processed/dataset_2_json/train.txt",
-            test_path="data/processed/dataset_2_json/test.txt",
-            dataset_name="Dataset 2 (eweenglishsentence.json - Micro-Data)",
-            output_json_path="reports/results_dataset_2_all_tokenizers.json",
-            max_order=6,
-        )
-
-    if args.dataset in ["1", "all"]:
-        run_dataset_sweep(
-            train_path="data/processed/dataset_1_csv/train.txt",
-            test_path="data/processed/dataset_1_csv/test.txt",
-            dataset_name="Dataset 1 (EWE_ENGLISH.csv - Cultural Stories)",
-            output_json_path="reports/results_dataset_1_all_tokenizers.json",
-            max_order=6,
-            subsample_for_char=4000,
-        )
-
-    if args.dataset in ["3", "all"]:
-        run_dataset_sweep(
-            train_path="data/processed/dataset_3_speech/train.txt",
-            test_path="data/processed/dataset_3_speech/test.txt",
-            dataset_name="Dataset 3 (Waxal Spoken Audio Transcripts - Oral Domain)",
-            output_json_path="reports/results_dataset_3_all_tokenizers.json",
-            max_order=6,
-            subsample_for_char=4000,
-        )
-
-    if args.dataset in ["4", "all"]:
-        run_dataset_sweep(
-            train_path="data/processed/dataset_4_parquet/train.txt",
-            test_path="data/processed/dataset_4_parquet/test.txt",
-            dataset_name="Dataset 4 (Large-Scale Web & Scripture Corpus - 64k Sents)",
-            output_json_path="reports/results_dataset_4_all_tokenizers.json",
-            max_order=6,
-            subsample_for_char=4000,
-        )
-
-    if args.dataset in ["unified"]:
-        run_dataset_sweep(
-            train_path="data/processed/unified/train.txt",
-            test_path="data/processed/unified/test.txt",
-            dataset_name="Grand Unified Ewe Mega-Corpus (100k Sents / 1.9M Words)",
-            output_json_path="reports/results_unified_all_tokenizers.json",
-            max_order=6,
-            subsample_for_char=4000,
-        )
-
-
-
+    for key in DATASETS if args.dataset == "all" else [args.dataset]:
+        run_dataset_sweep(key)

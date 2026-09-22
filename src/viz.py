@@ -51,17 +51,23 @@ def plot_perplexity_comparison(
     Lower is better.
     """
     plt.figure(figsize=(10, 5))
-    bars = plt.bar(models, perplexities, color=["#4C72B0", "#55A868", "#C44E52", "#8172B3", "#CCB974"][: len(models)])
-    plt.title(title, fontsize=14, weight="bold")
+    # One series, one color: a different hue per bar would suggest the bars are different kinds of thing
+    bars = plt.bar(models, perplexities, color="#2a78d6")
+    plt.title(title, fontsize=13, loc="left")
     plt.ylabel("Perplexity (Lower is better)", fontsize=12)
     plt.xticks(rotation=25, ha="right")
+    ax = plt.gca()
+    ax.grid(axis="x", visible=False)  # bars only need horizontal reference lines
+    ax.grid(axis="y", color="#e1e0d9", linewidth=0.6)
+    for side in ("top", "right", "left"):
+        ax.spines[side].set_visible(False)
 
     for bar in bars:
         yval = bar.get_height()
         plt.text(
             bar.get_x() + bar.get_width() / 2.0,
             yval + max(perplexities) * 0.01,
-            f"{yval:.2f}",
+            f"{yval:.1f}",
             ha="center",
             va="bottom",
             fontsize=10,
