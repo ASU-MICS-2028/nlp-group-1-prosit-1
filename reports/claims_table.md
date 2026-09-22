@@ -1,8 +1,9 @@
 # Claims & Traceability Table: Prosit 1
 
 Every number in the technical report, the slides and the learning journal must be copied from a file
-that a committed script writes. This table names that file, the exact key, and the script. Files under
-`data/` are gitignored; rebuild them with the commands in `README.md`. Rows marked *audit* are
+that a committed script writes. This table names that file, the exact key, and the script. Data under
+`data/` is gitignored except each split's small `stats.json`; rebuild everything with the commands in
+`README.md`. Rows marked *audit* are
 measurements from the 2026-09-21/22 verification, recorded in `WORKLOG.md`, of code or data that no
 longer exists in that form.
 
@@ -16,7 +17,7 @@ longer exists in that form.
 | 2 | Training words (unified) | 1,874,130 | same file → `train_words` | `scripts/build_ewe_datasets.py` |
 | 3 | Religious share | unified 5.1% mention Yehowa, 6.2% chapter:verse; Dataset 1: 10.6% and 6.8% | `data/processed/{unified,dataset_1_csv}/stats.json` → `pct_mentioning_yehowa`, `pct_with_chapter_verse` | `scripts/build_ewe_datasets.py` |
 | 4 | Unicode Word test perplexity, $N=1..6$ | 534.7, 121.2, 77.7, 70.5, 69.3, 69.7 | `reports/results_unified_all_tokenizers.json` → `results["Unicode Word"][N-1].perplexity` | `scripts/run_multi_tokenizer_ablation.py` |
-| 5 | Flat from $N=4$ | validation perplexities for $N=4..6$ within 3% on every dataset | all five `reports/results_*.json` → `val_perplexity` | `scripts/run_multi_tokenizer_ablation.py` |
+| 5 | Flat from $N=4$ | validation perplexities for $N=4..6$ are 3% or less apart on every dataset | all five `reports/results_*.json` → `val_perplexity` | `scripts/run_multi_tokenizer_ablation.py` |
 | 6 | Best order and per-word perplexity per tokenizer (unified) | BPE 189.1 ($N=6$), Stemmer 196.9, Unicode Word 202.2, Whitespace 261.6 ($N=5$), Character 447.1 ($N=6$) | `results_unified_all_tokenizers.json` → `best_order_by_val`, `results[...].per_word_perplexity` | `scripts/run_multi_tokenizer_ablation.py` |
 | 7 | Per-word perplexity with `<unk>` free (journal only) | Whitespace 120.1, Unicode Word 132.1, Stemmer 136.7, BPE 188.7, Character 446.2 | derived from the same rows: $\exp(\ln \text{PPL} \times (\text{test\_tokens} + 4000) / \text{test\_words})$ | computed from the JSON |
 | 8 | Kneser-Ney beats equal-weight interpolation | 77.7 vs 93.6 at $N=3$ (Unicode Word); true at every $N \ge 2$ on all datasets | `results[...].perplexity` vs `results[...].interpolation_perplexity` | `scripts/run_multi_tokenizer_ablation.py` |
@@ -42,5 +43,5 @@ longer exists in that form.
 | 23 | Validation loss per epoch | standard (full text) 3.3963, 3.3072, 3.2874; masked (answers only) 3.3395, 3.3005, 3.2902 | `results.{standard,masked}.val_loss_per_epoch` | `src/train_domain_lora.py` |
 | 24 | Seeded completions quoted in the reports | e.g. "The fall armyworm in maize affects the development of mites, insects and other insects." | `results.{base,standard,masked}.samples` | `src/train_domain_lora.py` |
 | 25 | Decoding: mean Distinct-3 | unpenalized 78.9%, penalty 1.3: 100.0%, 3-gram block 99.5%, low temperature + penalty + block 100.0%, greedy + penalty + block 100.0% | `reports/decoding_strategies_benchmark.json` → `strategy_averages` | `scripts/benchmark_decoding_strategies.py` |
-| 26 | Leakage in the superseded split | 16 of 100 test pairs identical to training pairs; 18 of 100 test "pairs" were answer fragments | *audit* | `WORKLOG.md`, 2026-09-21 and 2026-09-22 |
+| 26 | Leakage in the superseded split | 16 of 100 test pairs identical to training pairs; 18 of 100 test "pairs" were answer fragments | *audit* | `WORKLOG.md`, 2026-09-21 and 2026-09-22; journal Gotcha 6 |
 | 27 | Superseded masking comparison | standard 29.92 vs masked 30.08 answer perplexity on the old metric | *audit* | `WORKLOG.md`, 2026-09-22 |

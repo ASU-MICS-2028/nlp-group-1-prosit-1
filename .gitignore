@@ -57,6 +57,12 @@ data/raw/*
 !data/raw/**/.gitkeep
 !data/raw/**/README.md
 data/processed/*
+# keep each split's small stats.json so the corpus counts in the reports can be checked
+!data/processed/*/
+data/processed/*/*
+!data/processed/*/stats.json
+# stale copy of an old unified split, used by nothing
+data/processed/low_resource/
 !data/processed/**/.gitkeep
 !data/processed/**/README.md
 *.csv

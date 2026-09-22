@@ -152,7 +152,7 @@ Perplexities are measured on each dataset's own test set, so compare *within* a 
 Dataset 2's per-word numbers are huge because, with only 420 training sentences, 22.69% of Unicode Word test tokens are unknown words that must be spelled out.
 
 ### What the corrected sweep shows
-1. **No breaking point anywhere.** On every dataset the word-level models flatten from about $N=4$: validation perplexities for $N=4$, 5 and 6 are within 3% of each other. Which of them validation picks (3, 4 or 5) is noise, not a finding.
+1. **No breaking point anywhere.** On every dataset the word-level models flatten from about $N=4$: validation perplexities for $N=4$, 5 and 6 are 3% or less apart. Which of them validation picks (3, 4 or 5) is noise, not a finding.
 2. **The tokenizer ranking per word is stable.** BPE is best on all five datasets; keeping affixes as tokens beats plain words on all five; attached punctuation (Whitespace) is worse than Unicode Word on all five; characters are last on four of five (on the 420-sentence Dataset 2 they beat Whitespace).
 3. **The smoothing choices hold up on validation.** Kneser-Ney beats equal-weight interpolation at every $N \ge 2$ on every dataset, and the Ney discount estimate is the best of the four discounts we tried on validation, or within 0.3% of it.
 4. **The religious skew shows in what the models generate.** The unified 4-gram model's seeded sample is "2 eye yehowa ƒe gbe va na yona , amitai vi ," (the opening of the Book of Jonah). A model for everyday Ewe speech needs more conversational text like Dataset 3.
