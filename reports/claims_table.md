@@ -31,3 +31,6 @@ This table provides the authoritative evidence base for your group presentation 
 | 12 | Relative perplexity reduction | **52.99% improvement** | `reports/domain_adaptation_results.json` | $\frac{62.38 - 29.33}{62.38} = 52.99\%$ drop in prediction uncertainty |
 | 13 | Trainable parameter percentage | **0.18%** (147,456 / 82,060,032) | `reports/domain_adaptation_results.json` | LoRA attached exclusively to attention projections (`c_attn` Conv1D) |
 | 14 | Training compute efficiency | **288.6 seconds** (~4.8 min) | `reports/domain_adaptation_results.json` | Parameter efficiency enables rapid fine-tuning on standard local CPU |
+| 15 | Repetition suppression via decoding | **Distinct-3: 49.1% $\to$ 100.0%** | `reports/decoding_strategies_benchmark.json` | Repetition penalty ($r=1.25\dots 1.3$) and $N=3$ block eliminates phrase looping |
+| 16 | Prompt-loss masking answer perplexity | **38.45 $\to$ 30.08 (21.8% drop)** | `reports/prompt_masking_ablation_results.json` | Masking prompt tokens (`-100`) dedicates all gradient updates to answer tokens |
+

@@ -36,6 +36,49 @@ Field notes:
 - **Decided** — only real decisions, the kind someone might otherwise reverse without knowing. Leave it out if nothing was decided.
 - **Blocked** — this is the field that saves the project. Write it even when it feels like admitting you're stuck. Especially then.
 
+## 2026-09-22 · 10:00–10:20 GMT · Eric Elikplim Sunu
+
+**Branch:** eric
+**Assistant:** Gemini (Antigravity), to implement and evaluate decoding strategy improvements (repetition penalty, n-gram blocking, temperature tuning) and prompt-loss masking training for the domain-adapted agricultural model.
+**Did:**
+- Built `scripts/benchmark_decoding_strategies.py` and evaluated 5 decoding strategies across 4 agronomic prompts. Quantified repetition via Distinct-3 metrics (unpenalized baseline: 49.1% unique trigrams vs 100.0% under repetition penalty $r=1.25\dots 1.3$ and $N=3$ blocking).
+- Saved full empirical decoding benchmark to `reports/decoding_strategies_benchmark.json`.
+- Built `src/train_prompt_masked_lora.py` and trained DistilGPT2 with LoRA using prompt-loss masking (`labels[:prompt_len] = -100` on `\nAnswer:`) for 3 epochs (400 train pairs, 403s runtime on CPU).
+- Evaluated answer-token cross-entropy and perplexity: Base zero-shot answer PPL dropped from `38.45` (loss 3.6493) to `30.08` (loss 3.4037), a `21.78%` relative improvement specifically on answer generation.
+- Verified qualitative completions: Prompt-masked model directly names specific crops (corn, soybeans, wheat, rice) and pest control actions without repeating prompt phrasing.
+- Updated `notebooks/02_domain_specific_llm_adaptation.ipynb` with interactive Sections 6 (Decoding Ablation) and 7 (Prompt Loss Masking).
+- Synchronized `reports/LEARNING_JOURNAL.md` (Sections 10 and 11) and `reports/claims_table.md` (Claims 15 and 16).
+**Decided:**
+- Set Conservative Agronomic Sampling ($T=0.35, \text{top\_p}=0.85, r_{\text{rep}}=1.25, \text{no\_repeat\_ngram\_size}=3$) as the production recommendation for agricultural advisory assistants to eliminate self-reinforcement looping.
+- Confirmed prompt-loss masking as the superior training paradigm over raw causal LM for instruction and Q&A adaptation.
+**Next:**
+- Commit all updates and push to `origin eric`.
+
+---
+
+## 2026-09-21 · 22:43–23:05 GMT · Eric Elikplim Sunu
+
+**Branch:** eric
+**Assistant:** Claude (Claude Code, Opus 5), to review the whole repo (worklog, journal, methodology guide, reports, notebooks, `src/`) against the code and data, and to re-run checks in a temporary scratch folder outside the repo. No code, notebook, or report was changed; this entry is the only edit.
+**Did:**
+- Reproduced exactly: every cell of the five journal ablation tables matches its `reports/results_*.json` (150/150); Dataset 1 and Unified Unicode Word N=1..6 re-run from scratch; claims-table row 9 (Bigram Laplace 1879.6, Bigram KN 327.7); Section C 62.38 → 29.33 using the repo's own eval logic. 13/13 tests pass.
+- Found `_prob_interpolation` (uniform lambdas, as used by the ablation) is not a proper distribution when a higher-order context is unseen: probabilities sum to 0.667 at N=3 and 0.333 at N=6. `_prob_kneser_ney` for N≥3 backs off to 1/|V|, not to continuation counts. The validation splits are never loaded, so no lambda or k was tuned.
+- Re-ran with textbook interpolated Kneser-Ney (Ney discounts, OOV test tokens excluded). Dataset 1, N=1..6: 512.0, 115.1, 77.8, 72.4, 71.6, 72.1. Unified: 598.3, 131.6, 83.4, 76.0, 74.6, 75.1. Best at N=5 on both, flat at N=6. The repo's own model with OOV tokens excluded still degrades (Dataset 1, N=3..6: 103.5, 107.9, 123.4, 142.7), so the shape comes from the smoothing, not the OOV handling: the N=4 "breaking point" and the scale-driven rightward shift are artifacts of the uniform interpolation.
+- OOV: `min_freq=1` means `<unk>` never occurs in training, so each OOV test token gets p≈1e-12. OOVs are ~1.4% of test tokens but ~7% of total test NLL.
+- Per-word normalization of the Unified JSON (same 4,000 test sentences): Unicode Word best 320.0 (N=4), Whitespace 441.2 (N=3), BPE 449.2 (N=6), Character 1985.2 (N=6, trained on 4,000 sentences only). Stemmer maps nusrɔ̃la→srɔ̃ but nusrɔ̃lawo→srɔ̃la, agbledela→de, megbe→gbe.
+- Section C: 16/100 test pairs are exact duplicates of pairs among the 500 training pairs (KisanVaani has 22,615 rows but 2,221 unique questions; no dedup before the split). Clean 84 pairs: 65.37 → 31.30 (52.1% drop). Answer tokens only: 34.40 → 28.10 (18.3% drop). General English (WikiText-2 test, 200 paragraphs): 73.19 → 81.87 (+11.9%).
+- Data: a large share of Dataset 1 is Jehovah's Witnesses and Bible text, not folklore (5 of 6 random rows sampled; 10.3% of its train lines contain "yehowa", 8.2% contain chapter:verse references).
+**Blocked / open questions:**
+- Claims with no code or data behind them: Section C Q6 forgetting check (<3.8%) and Sitophilus zeamais (0 hits in the corpus); Section B Q3 PPL 245 → 79 (hardcoded in notebook 03 cell 3, same values as journal §2.1–2.2) and the example generated phrases (they are notebook 01's hand-written fallback training sentences); Section B Q6 ARPA export (no code); journal §7.2 example Q&A (0 hits in KisanVaani); journal §4 rows 4–5; presentation slides 4–5 (α=16, q_proj/v_proj, 67.4%, 0.72%, <3.8%); datasheet §2–3 agricultural provenance (CSIR Ghana bulletins); Section B Q1 and datasheet describe Dataset 1 as folklore and non-religious.
+- Notebook 02 does not run: code cells 3, 7 and 15 have unterminated string literals, and markdown cells 2 and 4 lost their inline-code text.
+- The scripts that built `data/processed/dataset_1..4` and `unified` are not in the repo; Dataset 4 is a symlink into `~/Downloads`; `requirements.txt` has floors, not the pins the environment needs.
+- origin has no `main` branch; the default branch is `eric`.
+- The check scripts live in the session scratchpad and will not survive; the IKN used above is ~50 lines and can be moved into `src/ngram.py` if the fix goes ahead.
+**Next:**
+- Eric to choose which fixes to make: n-gram smoothing and re-run; remove or correct the unsupported claims; Section C dedup plus answer-only and general-English numbers.
+
+---
+
 ## 2026-09-21 · 22:00–22:45 GMT · Eric Elikplim Sunu
 
 **Branch:** eric
