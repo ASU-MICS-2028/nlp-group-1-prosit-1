@@ -36,6 +36,36 @@ Field notes:
 - **Decided** — only real decisions, the kind someone might otherwise reverse without knowing. Leave it out if nothing was decided.
 - **Blocked** — this is the field that saves the project. Write it even when it feels like admitting you're stuck. Especially then.
 
+## 2026-09-22 · 10:20–13:50 GMT · Eric Elikplim Sunu
+
+**Branch:** eric
+**Assistant:** Claude (Claude Code, Opus 5), to verify the 10:00 decoding and prompt-masking work, then carry out every fix from the 2026-09-21 review: rebuild the data with committed scripts, fix the n-gram smoothing and re-run the full sweep, redo Section C on deduplicated data, repair the notebooks, and rewrite the reports, slides and journal from the new result files.
+**Did:**
+- Verified the 10:00 entry. Reproduces: masked answer perplexity 38.45 → 30.08. Not supported: masking as "the superior training paradigm" (on the same metric the standard adapter from 2026-09-21 already scored 29.92, and the masked run used 400 training pairs instead of 500); the 49.1% Distinct-3 baseline (one unseeded sample per prompt; 78.9% with 5 seeds); the "zero hallucination" label and the production recommendation (that setting's soil-erosion answer recommended insecticide); 100% Distinct-3 under 3-gram blocking is true by construction. The masked run's samples were greedy, because `do_sample` was never set.
+- Data: `scripts/build_ewe_datasets.py` rebuilds all five Ewe splits from the raw files (added `openpyxl`). Two attempts to reproduce the old splits exactly: Dataset 2 came out byte-identical; the rest differ by whitespace normalization, dropped one-word and garbage lines, and the lookalike fix, so the rebuilt splits are canonical. The cleaner now drops 15 binary garbage rows and zero-width characters and maps lookalike letters (Ð/ð → Ɖ/ɖ, ε → ɛ; 5,026 lines of the old unified training split were affected, and "ðe" appeared 2,073 times against 46,110 for "ɖe"). Unified: 123,511 sentences (98,808 / 12,351 / 12,352).
+- N-gram fixes in `src/ngram.py`: count only predicted positions (padding no longer counted as a word), interpolation renormalized over orders whose context was seen, recursive interpolated Kneser-Ney with Ney discounts (matches the 2026-09-21 scratch implementation exactly). Runner: tokens seen once → `<unk>`, N chosen on validation, per-word perplexity with a spelling charge for `<unk>`, seeded samples. Tokenizers: Whitespace lowercases, Character keeps spaces as ▁, the stemmer keeps affixes as tokens, BPE learns its merges from the full training split. 21 unit tests pass (sum-to-1 for seen and unseen contexts, padding, lossless stemmer, lookalikes, spelling charge).
+- Full sweep, 5 datasets × 5 tokenizers × N=1..6. Unified Unicode Word test perplexity: 534.7, 121.2, 77.7, 70.5, 69.3, 69.7, flat from N=4 (validation perplexities for N=4..6 are 3% or less apart on every dataset). Per word with `<unk>` spelled: BPE 189.1 < stemmer 196.9 < word 202.2 < whitespace 261.6 < character 447.1, the same order on every dataset except that characters beat whitespace on Dataset 2. Kneser-Ney beats equal-weight interpolation at every N ≥ 2; the Ney discount is best on validation or within 0.3%.
+- Section C: `src/prepare_domain_data.py` deduplicates by question before the split (2,212 distinct questions; 1,769 / 221 / 222 pairs; 0 test questions in training or validation) and writes JSONL. In the old split, 18 of the first 100 test chunks were answer fragments with no question, because 790 answers contain blank lines. `src/train_domain_lora.py` trains the standard and masked LoRA on identical data and scores all three models token-weighted: full 56.08 / 28.13 / 51.39, answer-only 37.77 / 30.00 / 29.09, WikiText-2 73.19 / 78.44 / 77.24 (base / standard / masked). Decoding benchmark reseeded (5 seeds per prompt). Removed `src/train_prompt_masked_lora.py`, `reports/prompt_masking_ablation_results.json`, and the unused `src/domain_adaptation.py` and `src/evaluation.py`.
+- Notebooks 01 to 04 repaired and executed end to end (02 re-scores the saved adapters and matches the JSON exactly); outputs cleared before commit. Figures regenerated; `figures/ngram_order_ablation.png` replaces `ngram_ablation_breaking_point.png`.
+- Rewrote Section B, Section C, the claims table (27 rows, each naming file, key and script), the slide outline, the datasheet, `data/README.md`, `METHODOLOGY_GUIDE.md` (new Pillar 6 "Verify Before You Write", corrected Pillar 5 answers), `README.md` (reproduction commands), `RULES.md` (Python 3.12), `requirements.txt` (exact pins) and `LEARNING_JOURNAL.md` (sections 2 to 11 rewritten, new section 12 on the audit).
+**Decided:**
+- Interpolated Kneser-Ney is the Section B model. N is chosen on validation and reported without adjectives, because N=4..6 are 3% or less apart.
+- Tokenizers are compared per word with a spelling charge for `<unk>`; the stemmer keeps affixes as tokens so it models the same text.
+- Dataset 4 keeps its first 200k rows for continuity, despite the Bible skew (documented in the datasheet).
+- Section C deduplicates by question. The standard objective stays the main Section C model because Ankora's use case scores whole transcripts, questions included.
+**Blocked / open questions:**
+- Section A is labelled individual and was drafted by Gemini; Eric to check the course AI policy and rewrite it in his own words (not touched here).
+- The origin of Dataset 1 and the Hugging Face repository of Dataset 4 are not recorded; the licences of all sources are unverified.
+- The viva platform is spelled clenam.ai in some files and klenam.ai in `README.md`; check the course brief.
+- origin has no `main` branch, so a pull request has no base. Creating `main` and opening a PR needs Eric's go-ahead; nothing was pushed. Teammates have not reviewed any of this yet.
+- No Ewe speaker has judged the grammaticality of the n-gram samples.
+- `data/processed/low_resource/` is a stale local copy of the old unified split that nothing uses; now gitignored, safe to delete.
+- The journal cites Holtzman et al. (2020) and Xu et al. (2022) on repetition in generation; Eric should read what each says before quoting them in the viva.
+**Next:**
+- Eric: read journal section 12 and the rewritten Sections B and C before the viva; decide on `main` and the PR; push when ready.
+
+---
+
 ## 2026-09-22 · 10:00–10:20 GMT · Eric Elikplim Sunu
 
 **Branch:** eric
