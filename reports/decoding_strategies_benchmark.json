@@ -1,59 +1,230 @@
 {
-  "model": "distilgpt2 + LoRA (r=8, alpha=32)",
+  "model": "distilgpt2 + LoRA (r=8, alpha=32), models/domain_adapted_checkpoint",
   "prompts_evaluated": 4,
+  "samples_per_prompt": 5,
+  "note": "Distinct-3 measures repetition, not correctness. no_repeat_ngram_size=3 makes it ~1 by construction.",
   "results": [
     {
       "prompt": "Question: why is crop rotation important in farming?\nAnswer:",
       "evaluations": {
         "unpenalized_sampling": {
           "strategy_name": "Unpenalized Sampling (Baseline)",
-          "generated_answer": "it helps keep crops growing faster and can be used to improve yields. It also reduces the risk of disease and disease.\nAnswer: it can help keep crops growing faster and can be used to improve yields. It also reduces",
-          "metrics": {
-            "distinct_1": 0.55,
-            "distinct_2": 0.6667,
-            "distinct_3": 0.6842,
-            "word_count": 40
-          }
+          "samples": [
+            {
+              "generated_answer": "crop rotation is important in farming because it allows for improved yields and improved productivity. It also allows for improved crop rotation because it allows for better crop rotation because it allows for improved productivity.\n\nAnswer: crop rotation is important",
+              "metrics": {
+                "distinct_1": 0.425,
+                "distinct_2": 0.5897,
+                "distinct_3": 0.7368,
+                "word_count": 40
+              }
+            },
+            {
+              "generated_answer": "crop rotation is a key factor in developing crops. The optimal crop rotation should be optimal for optimal crop rotation and optimal for optimal crop rotation.\nAnswer: crop rotation should be optimal for optimal crop rotation and optimal for optimal crop",
+              "metrics": {
+                "distinct_1": 0.4146,
+                "distinct_2": 0.525,
+                "distinct_3": 0.6154,
+                "word_count": 41
+              }
+            },
+            {
+              "generated_answer": "In the past, farmers were instructed to use the crop rotation method to ensure optimum yield and yield. This method allowed the planting of leaves to grow in a manner consistent with the soil conditions and soil conditions. This method allowed the",
+              "metrics": {
+                "distinct_1": 0.6905,
+                "distinct_2": 0.9268,
+                "distinct_3": 0.95,
+                "word_count": 42
+              }
+            },
+            {
+              "generated_answer": "crop rotation in agriculture involves planting different types of crop varieties, including wheat, rye, and rye.\nAnswer: crop rotation involves planting different types of crop varieties, including wheat, rye, and rye.\nAnswer: crop",
+              "metrics": {
+                "distinct_1": 0.4848,
+                "distinct_2": 0.5625,
+                "distinct_3": 0.6129,
+                "word_count": 33
+              }
+            },
+            {
+              "generated_answer": "crop rotation is important in farming because it is the right way to grow crops. It is important to keep a low yield and maintain a crop rotation balance.\nAnswer: crop rotation is important in farming because it is the right",
+              "metrics": {
+                "distinct_1": 0.5366,
+                "distinct_2": 0.675,
+                "distinct_3": 0.7692,
+                "word_count": 41
+              }
+            }
+          ],
+          "mean_distinct_3": 0.7369
         },
         "repetition_penalty_only": {
           "strategy_name": "Repetition Penalty (r=1.3)",
-          "generated_answer": "because of the fact that maize rotates much faster than it does during harvest. This leads to increased yields and improved productivity, reduced disease resistance, decreased yield, better soil quality, more food security, greater access for farmers,",
-          "metrics": {
-            "distinct_1": 1.0,
-            "distinct_2": 1.0,
-            "distinct_3": 1.0,
-            "word_count": 37
-          }
+          "samples": [
+            {
+              "generated_answer": "It depends on the timing and duration of cultivation. In particular, it can be advantageous to implement a variety of methods such as planting trees with leaves or roots that will allow for more effective growth during this period. When planted using",
+              "metrics": {
+                "distinct_1": 0.9524,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 42
+              }
+            },
+            {
+              "generated_answer": "It depends on the degree to which farmers are planting, how they use their crops and what kinds of equipment used. The most common method for controlling this problem involves using soil cover or other suitable material such as rubber mulch;",
+              "metrics": {
+                "distinct_1": 0.9756,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 41
+              }
+            },
+            {
+              "generated_answer": "In the past, farmers were instructed to use a variety of plants that are available for cultivation. They also applied insecticides or pesticides before planting and using them as fertilizer at different locations throughout their growing season when needed. These treatments",
+              "metrics": {
+                "distinct_1": 1.0,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 41
+              }
+            },
+            {
+              "generated_answer": "It depends on the soil composition of crops, which varies by region. In addition to changing conditions for seed planting and growing time, there are also environmental factors such as nitrogen oxides (NO 2 ) or phosphorus from fertilizers",
+              "metrics": {
+                "distinct_1": 1.0,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 39
+              }
+            },
+            {
+              "generated_answer": "rotates the soil to produce a variety of different crops. During this period, there are four types and five varieties available that promote optimal growth rates for all plants \u2013 including corn or soybeans. These two can be used as",
+              "metrics": {
+                "distinct_1": 1.0,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 40
+              }
+            }
+          ],
+          "mean_distinct_3": 1.0
         },
         "ngram_blocking": {
           "strategy_name": "Strict N-gram Blocking (N=3)",
-          "generated_answer": "because crop rotation is essential for the development of crops and for the growth of crop crops.\nAnswer?: Because crop rotation promotes crop rotation, it is important to increase crop rotation by reducing the amount of time needed to prepare for",
-          "metrics": {
-            "distinct_1": 0.6341,
-            "distinct_2": 0.9,
-            "distinct_3": 0.9744,
-            "word_count": 41
-          }
+          "samples": [
+            {
+              "generated_answer": "crop rotation is important in agricultural production. It is essential for farmers to maintain their crop rotation, and to maintain the crop rotation for the foreseeable future.\nAnswer : crop rotation should be supported by a variety of factors such as",
+              "metrics": {
+                "distinct_1": 0.7561,
+                "distinct_2": 0.925,
+                "distinct_3": 1.0,
+                "word_count": 41
+              }
+            },
+            {
+              "generated_answer": "crop rotation is a key factor in developing crops. The optimal crop rotation should be optimal for optimal crop spacing and optimal crop turnover.\nAnswer to: crop rotations should be directed toward the root of the crop. The best",
+              "metrics": {
+                "distinct_1": 0.6667,
+                "distinct_2": 0.8947,
+                "distinct_3": 1.0,
+                "word_count": 39
+              }
+            },
+            {
+              "generated_answer": "In the past, farmers were instructed to use the crop rotation method to ensure optimum yield and yield. This method allowed the planting of leaves to grow in a manner consistent with the soil conditions and soil conditions. This allowed the plant",
+              "metrics": {
+                "distinct_1": 0.7143,
+                "distinct_2": 0.9756,
+                "distinct_3": 1.0,
+                "word_count": 42
+              }
+            },
+            {
+              "generated_answer": "crop rotation in agriculture involves planting different types of crop varieties, including wheat, rye, and rye.\nAnswer, especially in agriculture where the soil is not suitable for crop rotation, can be difficult to manage, and can cause",
+              "metrics": {
+                "distinct_1": 0.8378,
+                "distinct_2": 0.9722,
+                "distinct_3": 1.0,
+                "word_count": 37
+              }
+            },
+            {
+              "generated_answer": "crop rotation is important in agriculture because it is the right way to reduce crop rotations. The crop rotation method is based on a combination of crop rotation and rotational rotation. The rotational rotational method involves the rotation of",
+              "metrics": {
+                "distinct_1": 0.6154,
+                "distinct_2": 0.9474,
+                "distinct_3": 1.0,
+                "word_count": 39
+              }
+            }
+          ],
+          "mean_distinct_3": 1.0
         },
         "conservative_agronomic": {
-          "strategy_name": "Conservative Agronomic Sampling (Recommended)",
-          "generated_answer": "it helps to reduce the amount of time needed for crops and reduces their growth. This can be done by reducing soil moisture, increasing yields, or using less fertilizer than usual (e-cropping). It also increases yield during",
-          "metrics": {
-            "distinct_1": 0.973,
-            "distinct_2": 1.0,
-            "distinct_3": 1.0,
-            "word_count": 37
-          }
+          "strategy_name": "Low temperature + penalty + 3-gram block",
+          "samples": [
+            {
+              "generated_answer": "It depends on the type of crops it cultivates. The most common varieties are maize, wheat and sorghum (see below). These include corn or soybeans, but not all types of grains such as barley, cass",
+              "metrics": {
+                "distinct_1": 0.9143,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 35
+              }
+            },
+            {
+              "generated_answer": "It depends on the type of crops it cultivates, and how well-tolerated they are. The optimal planting method for selecting a suitable plant will depend on whether or not you have enough time to grow your own variety",
+              "metrics": {
+                "distinct_1": 0.9211,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 38
+              }
+            },
+            {
+              "generated_answer": "In the past, farmers were forced to use irrigation methods that would allow them access to water. This practice was popularized by a number of agricultural organizations and led directly to widespread adoption of agriculture techniques such as drought management systems (",
+              "metrics": {
+                "distinct_1": 0.9286,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 42
+              }
+            },
+            {
+              "generated_answer": "It depends on the soil composition of crops and how well they are grown. The amount or quantity that plants need to be planted varies depending upon where their roots lie, but it can vary widely from plant to tree with a variety",
+              "metrics": {
+                "distinct_1": 0.9302,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 43
+              }
+            },
+            {
+              "generated_answer": "it depends on the type of crops that are planted. The most common varieties include maize, cassava and sorghum; rice, wheat, barley (which have been grown with a variety of different types) or cornmeal",
+              "metrics": {
+                "distinct_1": 0.9412,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 34
+              }
+            }
+          ],
+          "mean_distinct_3": 1.0
         },
         "deterministic_greedy": {
           "strategy_name": "Deterministic Greedy Search",
-          "generated_answer": "because of the need for irrigation, it can help to reduce soil moisture and increase yields. It also helps farmers grow crops that are suitable for growing plants such as maize or cassava which will be used during harvest season when they",
-          "metrics": {
-            "distinct_1": 0.9524,
-            "distinct_2": 1.0,
-            "distinct_3": 1.0,
-            "word_count": 42
-          }
+          "samples": [
+            {
+              "generated_answer": "because of the need for irrigation, it can be difficult to maintain a stable soil surface. The best way to keep crops growing during rainy seasons and avoid excessive moisture accumulation occurs by planting more mature plants on top or using less water",
+              "metrics": {
+                "distinct_1": 0.9535,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 43
+              }
+            }
+          ],
+          "mean_distinct_3": 1.0
         }
       }
     },
@@ -62,53 +233,222 @@
       "evaluations": {
         "unpenalized_sampling": {
           "strategy_name": "Unpenalized Sampling (Baseline)",
-          "generated_answer": "To improve soil quality, by increasing the number of farmers who use agricultural equipment, it reduces soil erosion.\nAnswer: It reduces soil erosion and improves soil quality. It also reduces soil erosion.\nAnswer: It also reduces",
-          "metrics": {
-            "distinct_1": 0.6389,
-            "distinct_2": 0.7714,
-            "distinct_3": 0.8529,
-            "word_count": 36
-          }
+          "samples": [
+            {
+              "generated_answer": "It helps to control soil erosion, which can lead to soil erosion. It also helps to improve soil drainage. It also helps to reduce soil erosion.\n\nQuestion: How can planting practices help reduce soil erosion?\nAnswer",
+              "metrics": {
+                "distinct_1": 0.5833,
+                "distinct_2": 0.8286,
+                "distinct_3": 0.9412,
+                "word_count": 36
+              }
+            },
+            {
+              "generated_answer": "It reduces soil erosion and improves soil quality. It reduces soil erosion and improves soil quality. It improves soil quality. It improves soil quality. It improves soil quality. It improves soil quality. It improves soil quality. It improves",
+              "metrics": {
+                "distinct_1": 0.1842,
+                "distinct_2": 0.2432,
+                "distinct_3": 0.2778,
+                "word_count": 38
+              }
+            },
+            {
+              "generated_answer": "In most cases, soil erosion is a primary cause of soil erosion. This is particularly important in agriculture where soil erosion is the primary cause of soil erosion.\nAnswer: In most cases, soil erosion is a primary cause of",
+              "metrics": {
+                "distinct_1": 0.4615,
+                "distinct_2": 0.6053,
+                "distinct_3": 0.6757,
+                "word_count": 39
+              }
+            },
+            {
+              "generated_answer": "Farmers can help reduce soil erosion by using soil moisture, soil moisture and fertilizers to reduce soil erosion. These include:",
+              "metrics": {
+                "distinct_1": 0.8,
+                "distinct_2": 0.9474,
+                "distinct_3": 1.0,
+                "word_count": 20
+              }
+            },
+            {
+              "generated_answer": "Farmers are able to control soil erosion through using soil-based methods such as soil-based methods, soil-based methods, and soil-based methods.\nAnswer: Farmers can control soil erosion through using soil-based methods",
+              "metrics": {
+                "distinct_1": 0.6,
+                "distinct_2": 0.7586,
+                "distinct_3": 0.8214,
+                "word_count": 30
+              }
+            }
+          ],
+          "mean_distinct_3": 0.7432
         },
         "repetition_penalty_only": {
           "strategy_name": "Repetition Penalty (r=1.3)",
-          "generated_answer": "The term agricultural practices help to reduce the amount of moisture that can be accumulated in soils. This includes removing dirt and other debris from plant surfaces, improving drainage systems, reducing irrigation methods, or eliminating harmful pests such as mites",
-          "metrics": {
-            "distinct_1": 0.975,
-            "distinct_2": 1.0,
-            "distinct_3": 1.0,
-            "word_count": 40
-          }
+          "samples": [
+            {
+              "generated_answer": "It can help reduce the amount of sediment in soils that are contaminated with nitrogen. The main aim is to eradicate root rot and other problems such as high levels of phosphorus, aldehydes, sulfate residues, lead-",
+              "metrics": {
+                "distinct_1": 0.9444,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 36
+              }
+            },
+            {
+              "generated_answer": "It facilitates the development of nutrient-rich, low phosphorus sources. The practices help maintain healthy soils and promote food production while reducing water use in agriculture by promoting crop growth through increased productivity for farmers with less resources (such as irrigation",
+              "metrics": {
+                "distinct_1": 0.975,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 40
+              }
+            },
+            {
+              "generated_answer": "In most cases, farmers use tools to reduce the amount of nitrogen in soils and increase crop yield. This is usually done with a water source that allows for fresh air at lower temperatures than usual by using fertilizer such as compost or",
+              "metrics": {
+                "distinct_1": 0.9767,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 43
+              }
+            },
+            {
+              "generated_answer": "Farmers can help reduce the risk of disease caused by agricultural practices. For example, using a variety of techniques to control crop growth and harvest material is effective for reducing root damage from leaves or other plant pests that have been causing nutrient",
+              "metrics": {
+                "distinct_1": 0.9535,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 43
+              }
+            },
+            {
+              "generated_answer": "Farmers are able to control weeds and develop healthy soils that protect them from disease. They also can use their own resources, such as seedlings or other beneficial materials for the environment they grow during a season of growth with minimal damage",
+              "metrics": {
+                "distinct_1": 0.9762,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 42
+              }
+            }
+          ],
+          "mean_distinct_3": 1.0
         },
         "ngram_blocking": {
           "strategy_name": "Strict N-gram Blocking (N=3)",
-          "generated_answer": "farming practices that protect soil are not suitable for farming, which can result in erosion, damage to vegetation and other damage.\nAnswer:- To prevent soil degradation, farmers can reduce their cultivation and use of the fertilizer to increase their",
-          "metrics": {
-            "distinct_1": 0.8462,
-            "distinct_2": 1.0,
-            "distinct_3": 1.0,
-            "word_count": 39
-          }
+          "samples": [
+            {
+              "generated_answer": "It helps to control soil erosion, which can lead to soil erosion. It also helps to improve soil drainage. It helps reduce soil erosion and improve soil quality.\n\nAnswer, it helps to reduce soil destruction, which could",
+              "metrics": {
+                "distinct_1": 0.5405,
+                "distinct_2": 0.8333,
+                "distinct_3": 0.9714,
+                "word_count": 37
+              }
+            },
+            {
+              "generated_answer": "It reduces soil erosion and improves soil quality. It reduces nitrogen, phosphorus, and other pollutants. It also reduces air pollution and water quality.\nAnswer : It reduces air pollutants by reducing water quality and water resources. It helps",
+              "metrics": {
+                "distinct_1": 0.6053,
+                "distinct_2": 0.8919,
+                "distinct_3": 1.0,
+                "word_count": 38
+              }
+            },
+            {
+              "generated_answer": "In most cases, soil erosion is a primary cause of soil erosion. This is particularly important in agriculture where soil erosion can occur through irrigation, and in agricultural areas where soil moisture can be absorbed by irrigation.\nAnswer to soil",
+              "metrics": {
+                "distinct_1": 0.75,
+                "distinct_2": 0.9487,
+                "distinct_3": 1.0,
+                "word_count": 40
+              }
+            },
+            {
+              "generated_answer": "Farmers can help reduce soil erosion by using soil moisture, soil moisture and fertilizers to reduce soil damage. These include:\n\n\n, soil-based, organic, and organic farming.\n\n.\n. These incorporate",
+              "metrics": {
+                "distinct_1": 0.7667,
+                "distinct_2": 0.9655,
+                "distinct_3": 1.0,
+                "word_count": 30
+              }
+            },
+            {
+              "generated_answer": "Farmers are able to control soil erosion through using soil-based methods such as soil-clearing, soil-cleaning, and soil-flowing methods such the use of irrigation tools. For example, soil and soil cleaning",
+              "metrics": {
+                "distinct_1": 0.8333,
+                "distinct_2": 0.9655,
+                "distinct_3": 1.0,
+                "word_count": 30
+              }
+            }
+          ],
+          "mean_distinct_3": 0.9943
         },
         "conservative_agronomic": {
-          "strategy_name": "Conservative Agronomic Sampling (Recommended)",
-          "generated_answer": "Use insecticide, fungicides and other pesticides to reduce the amount of time needed for root growth. Insecticide can also be used as fertilizer or in combination with a variety such that insects are more susceptible to pests than their native",
-          "metrics": {
-            "distinct_1": 0.975,
-            "distinct_2": 1.0,
-            "distinct_3": 1.0,
-            "word_count": 40
-          }
+          "strategy_name": "Low temperature + penalty + 3-gram block",
+          "samples": [
+            {
+              "generated_answer": "The most effective method of preventing soils erosion is by using a variety of methods such as compost, or with organic matter. This technique involves removing the excess nitrogen from plants and placing it in an airtight container to allow for water",
+              "metrics": {
+                "distinct_1": 0.9524,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 42
+              }
+            },
+            {
+              "generated_answer": "It is recommended to use a variety of methods such as irrigation, fertilizers and other means for managing soils. The following practices are suitable in order not only for the prevention or control but also for controlling water quality through direct action",
+              "metrics": {
+                "distinct_1": 0.9286,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 42
+              }
+            },
+            {
+              "generated_answer": "Farmers can use a variety of methods to reduce the amount and moisture that they need for crop growth. They also include planting leaves, using anaerobic method or composting with organic matter (e-liquid) instead; harvesting",
+              "metrics": {
+                "distinct_1": 0.9714,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 35
+              }
+            },
+            {
+              "generated_answer": "Farmers can use a variety of methods to reduce the amount and moisture in soils. The method involves using organic matter, such as compost or other natural sources that are suitable for irrigation purposes. This technique is effective when planting crops with",
+              "metrics": {
+                "distinct_1": 0.9762,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 42
+              }
+            },
+            {
+              "generated_answer": "Farmers can use a variety of methods to reduce the amount and severity that they need. They include using compost, or with other means such as fertilizers for fertilizer production, irrigation systems, etc., which are used in conjunction between",
+              "metrics": {
+                "distinct_1": 0.9744,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 39
+              }
+            }
+          ],
+          "mean_distinct_3": 1.0
         },
         "deterministic_greedy": {
           "strategy_name": "Deterministic Greedy Search",
-          "generated_answer": "Planting is a good way to reduce the amount of land that can be planted. It also reduces runoff from plants and prevents weeds spreading in areas where it has been previously cultivated, such as agricultural fields or farms near crops with",
-          "metrics": {
-            "distinct_1": 0.9762,
-            "distinct_2": 1.0,
-            "distinct_3": 1.0,
-            "word_count": 42
-          }
+          "samples": [
+            {
+              "generated_answer": "Farmers can use a variety of methods to reduce the amount and damage caused by soils. They also include using compost, or other means that are suitable for planting in areas where they have high levels of moisture (such as grasses",
+              "metrics": {
+                "distinct_1": 0.9512,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 41
+              }
+            }
+          ],
+          "mean_distinct_3": 1.0
         }
       }
     },
@@ -117,53 +457,222 @@
       "evaluations": {
         "unpenalized_sampling": {
           "strategy_name": "Unpenalized Sampling (Baseline)",
-          "generated_answer": "Answer:\nAnswer:\nAnswer:\nAnswer:\nAnswer:\nAnswer:\nAnswer:\nAnswer:\nAnswer:\nAnswer:\nAnswer:\nAnswer:\nAnswer:\nAnswer:\nAnswer:",
-          "metrics": {
-            "distinct_1": 0.0667,
-            "distinct_2": 0.0714,
-            "distinct_3": 0.0769,
-            "word_count": 15
-          }
+          "samples": [
+            {
+              "generated_answer": "The fall armyworm in maize affects the development of mites, insects and other insects. In addition, the fall armyworm affects the development of mites, insects and other insects. This affects the development of mites,",
+              "metrics": {
+                "distinct_1": 0.4412,
+                "distinct_2": 0.5758,
+                "distinct_3": 0.6562,
+                "word_count": 34
+              }
+            },
+            {
+              "generated_answer": "It can be managed with insecticide, fungicide, and other insecticide.\nAnswer: The problem is that the insecticide can cause fall armyworm infection in maize, which can cause severe diarrhea, diarrhea, and death",
+              "metrics": {
+                "distinct_1": 0.8125,
+                "distinct_2": 0.9677,
+                "distinct_3": 1.0,
+                "word_count": 32
+              }
+            },
+            {
+              "generated_answer": "In most cases, farmers use fungicide to control fall armyworm in maize. The fungicide works by blocking the fall armyworm in the soil. The fungicide can also be used to prevent fall armyworm in maize.",
+              "metrics": {
+                "distinct_1": 0.6,
+                "distinct_2": 0.8235,
+                "distinct_3": 0.9091,
+                "word_count": 35
+              }
+            },
+            {
+              "generated_answer": "Farmers can control fall armyworm in maize by limiting the amount of time they take to remove it from their soil. Farmers can also control fall armyworm in maize by removing it from their soil.\nAnswer: Farmers can control",
+              "metrics": {
+                "distinct_1": 0.6154,
+                "distinct_2": 0.7105,
+                "distinct_3": 0.8108,
+                "word_count": 39
+              }
+            },
+            {
+              "generated_answer": "Farmers can control fall armyworm in maize by using herbicides.\nAnswer: Farmers can control fall armyworm in maize by using herbicides.\nAnswer: Farmers can control fall armyworm in maize by using herbicides.",
+              "metrics": {
+                "distinct_1": 0.3438,
+                "distinct_2": 0.3548,
+                "distinct_3": 0.3667,
+                "word_count": 32
+              }
+            }
+          ],
+          "mean_distinct_3": 0.7486
         },
         "repetition_penalty_only": {
           "strategy_name": "Repetition Penalty (r=1.3)",
-          "generated_answer": "First of all, it is important to protect the crop when necessary and use insecticides. In addition you must also take care not to put any soil moisture on crops which have fallen into an agricultural trap or are being thrown away",
-          "metrics": {
-            "distinct_1": 0.9762,
-            "distinct_2": 1.0,
-            "distinct_3": 1.0,
-            "word_count": 42
-          }
+          "samples": [
+            {
+              "generated_answer": "The common disease, the malaria parasite-borne chikungunya virus, is transmitted by soil moisture. It affects people's diets and leaves their crops with a high amount of nutrients for growth or health as well as food",
+              "metrics": {
+                "distinct_1": 0.9429,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 35
+              }
+            },
+            {
+              "generated_answer": "It is caused by the parasitic bacterium Bacillus pylori, which causes a drop in plant productivity and increases its population. The disease has been successfully eradicated through various methods such as spraying insecticide on crops or planting",
+              "metrics": {
+                "distinct_1": 0.973,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 37
+              }
+            },
+            {
+              "generated_answer": "In most cases, soil moisture will be a good thing. When the corn is dry and leaves browned with yellow or green light before it reaches its surface, plant roots are formed at an angle of about 3 degrees Celsius (",
+              "metrics": {
+                "distinct_1": 1.0,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 41
+              }
+            },
+            {
+              "generated_answer": "Farmers must use insecticide fungicides, such as Dioxin and Trichlorobacterium B. cholerae to reduce the spread of insects by reducing their impact on crop yields (such that they will be able",
+              "metrics": {
+                "distinct_1": 1.0,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 31
+              }
+            },
+            {
+              "generated_answer": "Farmers are able to manage falls by using insecticides, fungicide and other methods. In addition they also use pesticides such as Roundup herbivore or Phylococcus mertus which is commonly used for crop management including",
+              "metrics": {
+                "distinct_1": 1.0,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 34
+              }
+            }
+          ],
+          "mean_distinct_3": 1.0
         },
         "ngram_blocking": {
           "strategy_name": "Strict N-gram Blocking (N=3)",
-          "generated_answer": "Control fall armyworms in maize.\nAnswer : Control fall soldierworms in the maize field.\nSolution: To control fall soldiersworm in the field, farmers can use a variety of insecticides, such as DDT,",
-          "metrics": {
-            "distinct_1": 0.7812,
-            "distinct_2": 0.9032,
-            "distinct_3": 1.0,
-            "word_count": 32
-          }
+          "samples": [
+            {
+              "generated_answer": "The fall armyworms can be used to control fall Armyworm in wheat. This is accomplished by spraying an insecticide or fungicide, such as M-14, with a mixture of dyes and a mixture that is effective",
+              "metrics": {
+                "distinct_1": 0.8857,
+                "distinct_2": 0.9706,
+                "distinct_3": 1.0,
+                "word_count": 35
+              }
+            },
+            {
+              "generated_answer": "It can be managed with insecticide, fungicide, and other insecticide.\nAnswer. The control is simple and effective in eliminating fall armyworms and eliminating fall soldierworms. It is also effective in preventing fall army worms",
+              "metrics": {
+                "distinct_1": 0.7353,
+                "distinct_2": 0.9394,
+                "distinct_3": 1.0,
+                "word_count": 34
+              }
+            },
+            {
+              "generated_answer": "In most cases, farmers use fungicide to control fall Armyworm in corn and maize varieties. In some cases, the fungicide works by reducing the amount of fall armyworms can be removed from crops.\nAnswer to the",
+              "metrics": {
+                "distinct_1": 0.7778,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 36
+              }
+            },
+            {
+              "generated_answer": "Farmers can control fall soldiersworm in corn, maize, and other wheat crops. The use of insecticides and insecticides is effective to reduce fall armyworms, and to reduce the risk of infection and disease. Insecticides and",
+              "metrics": {
+                "distinct_1": 0.6857,
+                "distinct_2": 0.9412,
+                "distinct_3": 1.0,
+                "word_count": 35
+              }
+            },
+            {
+              "generated_answer": "Farmers can control fall armiesworm in corn and soybeans in maize. In this scenario, farmers can control falls armyworm by using herbicides to suppress fall armyworms in corn. In addition, farmers may use herbicides,",
+              "metrics": {
+                "distinct_1": 0.7353,
+                "distinct_2": 0.9394,
+                "distinct_3": 0.9688,
+                "word_count": 34
+              }
+            }
+          ],
+          "mean_distinct_3": 0.9938
         },
         "conservative_agronomic": {
-          "strategy_name": "Conservative Agronomic Sampling (Recommended)",
-          "generated_answer": "The soil moisture is a good source of insecticide, and the insects are very sensitive to it. They also tend not to eat any food that they have left on their own or at least feed them as well as other crops",
-          "metrics": {
-            "distinct_1": 0.9048,
-            "distinct_2": 1.0,
-            "distinct_3": 1.0,
-            "word_count": 42
-          }
+          "strategy_name": "Low temperature + penalty + 3-gram block",
+          "samples": [
+            {
+              "generated_answer": "Farmers should use insecticide spray to reduce the spread of disease. Insecticides are effective at reducing soil moisture, but they also help prevent insects from spreading through crops and other sources such as manure or composting plants that may be",
+              "metrics": {
+                "distinct_1": 1.0,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 40
+              }
+            },
+            {
+              "generated_answer": "Farmers must ensure that the crop is properly maintained and protected. The aim of this program is to reduce disease transmission through direct contact with soil, water, or other sources by reducing insecticide use during planting season (see below).",
+              "metrics": {
+                "distinct_1": 0.9487,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 39
+              }
+            },
+            {
+              "generated_answer": "Farmers should use insecticide to reduce the amount of falling Armyworms that are introduced into their crops. Insecticide is effective at reducing soil moisture and preventing insects from spreading through trees or other structures, such as branches, leaves,",
+              "metrics": {
+                "distinct_1": 0.9737,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 38
+              }
+            },
+            {
+              "generated_answer": "Farmers must use insecticide to reduce the spread of disease. Insecticides are used for controlling falls armyworms, which cause severe symptoms such as fever and vomiting or diarrhea that occur when they reach maturity; however, spraying is necessary",
+              "metrics": {
+                "distinct_1": 1.0,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 38
+              }
+            },
+            {
+              "generated_answer": "Farmers must use insecticide to reduce the amount of falls that they have caused. Insecticides are used for reducing crop losses and improving soil quality, such as by using pesticides or fungicides on crops with low yields (such a",
+              "metrics": {
+                "distinct_1": 1.0,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 39
+              }
+            }
+          ],
+          "mean_distinct_3": 1.0
         },
         "deterministic_greedy": {
           "strategy_name": "Deterministic Greedy Search",
-          "generated_answer": "The soil is covered with a layer of clay that covers the surface and allows it to grow. This helps prevent insecticide-resistant weeds from spreading into crops, which are susceptible to disease outbreaks or pests such as mites.",
-          "metrics": {
-            "distinct_1": 0.9474,
-            "distinct_2": 1.0,
-            "distinct_3": 1.0,
-            "word_count": 38
-          }
+          "samples": [
+            {
+              "generated_answer": "Farmers must use insecticide to reduce the spread of disease. Insecticides are effective at reducing soil moisture and preventing it from spreading, but they also have a negative impact on crop yields due to their high levels of pesticide residues (",
+              "metrics": {
+                "distinct_1": 0.9512,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 41
+              }
+            }
+          ],
+          "mean_distinct_3": 1.0
         }
       }
     },
@@ -172,53 +681,222 @@
       "evaluations": {
         "unpenalized_sampling": {
           "strategy_name": "Unpenalized Sampling (Baseline)",
-          "generated_answer": "Nitrogen deficiency is associated with a high amount of nitrogen and nitrogen content. Nitrogen deficiency is associated with a high amount of nitrogen and nitrogen content. Nitrogen deficiency is associated with a high amount of nitrogen and nitrogen content.",
-          "metrics": {
-            "distinct_1": 0.2821,
-            "distinct_2": 0.3421,
-            "distinct_3": 0.3514,
-            "word_count": 39
-          }
+          "samples": [
+            {
+              "generated_answer": "Nitrogen deficiency in crops is a common cause of nitrogen deficiency, causing nitrogen deficiency in crops, such as the maize and rice. Nitrogen deficiency affects the health of the plants, including the ability to absorb nutrients from the soil",
+              "metrics": {
+                "distinct_1": 0.7179,
+                "distinct_2": 0.9211,
+                "distinct_3": 0.973,
+                "word_count": 39
+              }
+            },
+            {
+              "generated_answer": "Nitrogen deficiency in crops is common in crops with nitrogen deficiency, and is the result of a deficiency in the nitrogen-poor soil. Nitrogen deficiency occurs due to the fact that nitrogen is deficient in the nitrogen-poor soil",
+              "metrics": {
+                "distinct_1": 0.5946,
+                "distinct_2": 0.8611,
+                "distinct_3": 0.9714,
+                "word_count": 37
+              }
+            },
+            {
+              "generated_answer": "nitrogen deficiency is caused by nitrogen deficiency in crop soils, such as the tropics, and through a variety of nitrogen-poor soils. It is also caused by the lack of soil cover and soil moisture.\nAnswer: nitrogen",
+              "metrics": {
+                "distinct_1": 0.7222,
+                "distinct_2": 0.9429,
+                "distinct_3": 1.0,
+                "word_count": 36
+              }
+            },
+            {
+              "generated_answer": "Nitrogen deficiency is caused by nitrogen deficiency, which can occur by either fertilizing nitrogen or fertilizing nitrogen. Nitrogen deficiency can occur by fertilizing nitrogen or fertilizing nitrogen, which can occur by either fertilizing nitrogen or",
+              "metrics": {
+                "distinct_1": 0.4,
+                "distinct_2": 0.6176,
+                "distinct_3": 0.7273,
+                "word_count": 35
+              }
+            },
+            {
+              "generated_answer": "nitrogen deficiency is caused by poor nitrogen balance and poor nitrogen supply. Nitrogen deficiency can cause poor crop production, which can lead to poor crop production and failure to meet the needs of farmers. Nitrogen deficiency can also lead to",
+              "metrics": {
+                "distinct_1": 0.6,
+                "distinct_2": 0.8462,
+                "distinct_3": 0.9737,
+                "word_count": 40
+              }
+            }
+          ],
+          "mean_distinct_3": 0.9291
         },
         "repetition_penalty_only": {
           "strategy_name": "Repetition Penalty (r=1.3)",
-          "generated_answer": "Nitrogen deficiencies can be caused by a lack of water and soil moisture, especially when you have insufficient fertilizer or irrigation. This causes problems such as poor drainage practices that result from fertilization rather than manure management systems which may hinder",
-          "metrics": {
-            "distinct_1": 1.0,
-            "distinct_2": 1.0,
-            "distinct_3": 1.0,
-            "word_count": 41
-          }
+          "samples": [
+            {
+              "generated_answer": "Nitrogen deficiencies include poor growth, high yield yields and inadequate nutrition. There is no cure for this problem or a solution to it; there can be little benefit from improved plant productivity during prolonged periods of drought by reducing nutrient availability",
+              "metrics": {
+                "distinct_1": 0.9756,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 41
+              }
+            },
+            {
+              "generated_answer": "Nitrogen deficiencies can occur by eating corn, rice and other grains. They include a high percentage (30%) phosphorus content but also low levels of potassium chloride that causes nitric oxide to accumulate within foods like breads and milk",
+              "metrics": {
+                "distinct_1": 0.9737,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 38
+              }
+            },
+            {
+              "generated_answer": "Nitrogen deficiencies can affect crop yields. The presence or absence, of nitrosin and other phosphorus compounds may cause poor yield growth for food production systems such as soil moisture management (DRM), water supplies to maintain healthy plant",
+              "metrics": {
+                "distinct_1": 1.0,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 37
+              }
+            },
+            {
+              "generated_answer": "Nitrogen deficiencies can occur when soil moisture is high enough to cover up phosphorus. The presence and severity may lead farmers to choose which varieties, cultivars or types they prefer; however, this risk could be mitigated by planting",
+              "metrics": {
+                "distinct_1": 0.9737,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 38
+              }
+            },
+            {
+              "generated_answer": "Nitrogen deficiencies, such as nitrite and lead sulfate levels, may affect crop production. Symptoms include dry leaves or poor quality fruit; diarrhea after peeling during spring months with mild symptoms like sore throats (especially cramps",
+              "metrics": {
+                "distinct_1": 0.9714,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 35
+              }
+            }
+          ],
+          "mean_distinct_3": 1.0
         },
         "ngram_blocking": {
           "strategy_name": "Strict N-gram Blocking (N=3)",
-          "generated_answer": "nitrogen deficiency is a serious problem in crops that have a high number of nitrogen deficiencies. However, the presence of nitrogen can cause problems such as high phosphorus levels, low yields, poor crop growth, and poor crop yields. Therefore",
-          "metrics": {
-            "distinct_1": 0.8205,
-            "distinct_2": 0.9474,
-            "distinct_3": 1.0,
-            "word_count": 39
-          }
+          "samples": [
+            {
+              "generated_answer": "Nitrogen deficiency in crop plants can occur in a variety of diseases, such as malaria, dengue, and other diseases.\nAnswer, especially in the case of severe nitrogen deficiency, can occur when corn is too cold",
+              "metrics": {
+                "distinct_1": 0.8286,
+                "distinct_2": 0.9706,
+                "distinct_3": 1.0,
+                "word_count": 35
+              }
+            },
+            {
+              "generated_answer": "Nitrogen deficiency in crop crops has been documented in maize and maize varieties, but it has not been confirmed in maize varieties.\nAnswer to nitrogen deficiency is due to the fact that nitrogen deficiency affects the cell surface of the body",
+              "metrics": {
+                "distinct_1": 0.6829,
+                "distinct_2": 0.925,
+                "distinct_3": 1.0,
+                "word_count": 41
+              }
+            },
+            {
+              "generated_answer": "nitrogen deficiency is caused by nitrogen deficiency. Nitrogen deficiency is triggered by the formation of nitrogen-rich soils. The nitrogen-containing soils of plants produce nitrogen-poor soil, which can cause nitrogen deficiency, and nitrogen-s",
+              "metrics": {
+                "distinct_1": 0.75,
+                "distinct_2": 0.9355,
+                "distinct_3": 0.9667,
+                "word_count": 32
+              }
+            },
+            {
+              "generated_answer": "Nitrogen deficiency is caused by nitrogen deficiency, which can occur by either fertilizing nitrogen or fertilizing it with nitrogen. Nitrogen deficiencies are caused by the accumulation of nitrogen and nitrogen in soil. Nitrous deficiency can occur when",
+              "metrics": {
+                "distinct_1": 0.6757,
+                "distinct_2": 0.9444,
+                "distinct_3": 1.0,
+                "word_count": 37
+              }
+            },
+            {
+              "generated_answer": "nitrogen deficiency is caused by poor nitrogen balance and poor nitrogen supply. Nitrogen deficiency can cause poor crop production, which can lead to poor crop productivity and low yields. Nitrous deficiency can also lead to crop failures and bad crop",
+              "metrics": {
+                "distinct_1": 0.575,
+                "distinct_2": 0.8718,
+                "distinct_3": 1.0,
+                "word_count": 40
+              }
+            }
+          ],
+          "mean_distinct_3": 0.9933
         },
         "conservative_agronomic": {
-          "strategy_name": "Conservative Agronomic Sampling (Recommended)",
-          "generated_answer": "Nitrogen deficiencies can occur when a crop is growing or has been damaged by nutrient-poor soil conditions. The presence and extent to which nutrients have fallen into soils may be associated with poor nutrition, lack thereof, inadequate water supply",
-          "metrics": {
-            "distinct_1": 1.0,
-            "distinct_2": 1.0,
-            "distinct_3": 1.0,
-            "word_count": 39
-          }
+          "strategy_name": "Low temperature + penalty + 3-gram block",
+          "samples": [
+            {
+              "generated_answer": "Nitrogen deficiencies can occur when a soil is covered with nutrients such as potassium, magnesium and zinc. The presence or absence thereof may cause problems for crop growth due to poor drainage conditions that lead directly into water sources like irrigation systems",
+              "metrics": {
+                "distinct_1": 1.0,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 42
+              }
+            },
+            {
+              "generated_answer": "Nitrogen deficiencies can occur by producing a high concentration, low amount or both of these nutrients. The presence and extent to which nitrate levels may be affected depends on soil conditions such as pH (1-2) and moisture",
+              "metrics": {
+                "distinct_1": 0.973,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 37
+              }
+            },
+            {
+              "generated_answer": "Nitrogen deficiencies can be caused by excessive fertilizer use, such as heavy metals and pesticides. The presence or absence of nitrous oxide (NO 2) on crop surfaces causes soil to become acidic during development. This occurs when soils",
+              "metrics": {
+                "distinct_1": 1.0,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 38
+              }
+            },
+            {
+              "generated_answer": "Nitrogen deficiencies can occur when soil moisture is high enough to cause nitrous oxide formation. The presence or absence thereof of phosphorus, which causes a lack of oxygen and nutrients, may lead farmers to reduce their yields by reducing crop",
+              "metrics": {
+                "distinct_1": 0.95,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 40
+              }
+            },
+            {
+              "generated_answer": "Nitrogen deficiencies can be caused by soil erosion, which causes a lack of nutrients and phosphorus. The problem is that soils have been exposed to heavy metals such as lead or zinc oxide (ZN 2) for decades before they",
+              "metrics": {
+                "distinct_1": 1.0,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 39
+              }
+            }
+          ],
+          "mean_distinct_3": 1.0
         },
         "deterministic_greedy": {
           "strategy_name": "Deterministic Greedy Search",
-          "generated_answer": "Nitrogen deficiencies can be caused by over-feeding, excessive fertilizer use and poor soil quality. The problem is that many farmers have limited access to fertilizers or other nutrients for their crop so they cannot grow properly without having a",
-          "metrics": {
-            "distinct_1": 1.0,
-            "distinct_2": 1.0,
-            "distinct_3": 1.0,
-            "word_count": 39
-          }
+          "samples": [
+            {
+              "generated_answer": "Nitrogen deficiencies can occur when soil moisture is low enough to allow for adequate irrigation. The presence or absence of nitrous oxide, which causes a high concentration and/or lack of oxygen during development, may cause problems with crop",
+              "metrics": {
+                "distinct_1": 0.9737,
+                "distinct_2": 1.0,
+                "distinct_3": 1.0,
+                "word_count": 38
+              }
+            }
+          ],
+          "mean_distinct_3": 1.0
         }
       }
     }
@@ -226,7 +904,7 @@
   "strategy_averages": {
     "unpenalized_sampling": {
       "name": "Unpenalized Sampling (Baseline)",
-      "avg_distinct_3": 0.4914
+      "avg_distinct_3": 0.7894
     },
     "repetition_penalty_only": {
       "name": "Repetition Penalty (r=1.3)",
@@ -234,10 +912,10 @@
     },
     "ngram_blocking": {
       "name": "Strict N-gram Blocking (N=3)",
-      "avg_distinct_3": 0.9936
+      "avg_distinct_3": 0.9953
     },
     "conservative_agronomic": {
-      "name": "Conservative Agronomic Sampling (Recommended)",
+      "name": "Low temperature + penalty + 3-gram block",
       "avg_distinct_3": 1.0
     },
     "deterministic_greedy": {

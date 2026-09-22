@@ -1,68 +1,74 @@
 """
-Script to prepare and split the English Domain-Specific Agriculture Dataset (KisanVaani Agriculture QA).
-Saves raw parquet to data/raw/domain_english/ and formatted text splits to data/processed/domain_english/.
+Prepares the English agriculture Q&A corpus (KisanVaani/agriculture-qa-english-only) for Section C.
+
+The raw corpus has 22,615 rows but only about 2,200 distinct questions: most rows are repeats. We keep
+one row per question (its first occurrence) BEFORE shuffling, so a test question can never also sit
+in training, then split 80/10/10 with seed 42.
+
+Splits are JSONL, one {"question", "answer"} object per line. (Some answers contain blank lines, which
+broke the old blank-line-separated text files: one Q&A pair could turn into several fragments.)
+
+Run from the repo root:  python src/prepare_domain_data.py
 """
 
-import os
+import json
+import random
+import re
 from pathlib import Path
-from datasets import load_dataset
 
+import pandas as pd
+
+RANDOM_SEED = 42
 REPO_ROOT = Path(__file__).resolve().parent.parent
-RAW_DIR = REPO_ROOT / "data" / "raw" / "domain_english"
+RAW_PARQUET = REPO_ROOT / "data" / "raw" / "domain_english" / "agriculture_qa.parquet"
 PROCESSED_DIR = REPO_ROOT / "data" / "processed" / "domain_english"
 
-RAW_DIR.mkdir(parents=True, exist_ok=True)
-PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+
+def normalize_question(question: str) -> str:
+    """Lowercase, punctuation to spaces, collapsed whitespace: the key used to find repeated questions."""
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9 ]", " ", question.lower())).strip()
 
 
-def prepare_data(
-    train_size: int = 4000,
-    val_size: int = 500,
-    test_size: int = 500,
-    seed: int = 42,
-):
-    print("Loading KisanVaani/agriculture-qa-english-only from Hugging Face...")
-    ds = load_dataset("KisanVaani/agriculture-qa-english-only", split="train")
-    print(f"Total raw examples downloaded: {len(ds):,}")
+def load_raw() -> pd.DataFrame:
+    if not RAW_PARQUET.exists():
+        from datasets import load_dataset
 
-    # Save raw dataset locally for reproducibility and offline access
-    raw_parquet_path = RAW_DIR / "agriculture_qa.parquet"
-    if not raw_parquet_path.exists():
-        ds.to_parquet(str(raw_parquet_path))
-        print(f"Saved raw parquet to: {raw_parquet_path}")
+        RAW_PARQUET.parent.mkdir(parents=True, exist_ok=True)
+        load_dataset("KisanVaani/agriculture-qa-english-only", split="train").to_parquet(str(RAW_PARQUET))
+    return pd.read_parquet(RAW_PARQUET)
 
-    # Shuffle deterministically
-    shuffled_ds = ds.shuffle(seed=seed)
 
-    # Slice partitions
-    total_needed = train_size + val_size + test_size
-    assert len(shuffled_ds) >= total_needed, "Dataset size smaller than requested partitions"
+def prepare_data(seed: int = RANDOM_SEED) -> dict:
+    df = load_raw()
+    pairs, seen = [], set()
+    for question, answer in zip(df["question"], df["answers"]):
+        question, answer = str(question).strip(), str(answer).strip()
+        key = normalize_question(question)
+        if question and answer and key not in seen:
+            seen.add(key)
+            pairs.append({"question": question, "answer": answer})
 
-    train_data = shuffled_ds.select(range(0, train_size))
-    val_data = shuffled_ds.select(range(train_size, train_size + val_size))
-    test_data = shuffled_ds.select(range(train_size + val_size, total_needed))
+    random.seed(seed)
+    random.shuffle(pairs)
+    n_train, n_val = int(0.8 * len(pairs)), int(0.1 * len(pairs))
+    splits = {"train": pairs[:n_train], "val": pairs[n_train : n_train + n_val], "test": pairs[n_train + n_val :]}
 
-    def format_and_save(dataset_split, output_path: Path):
-        with open(output_path, "w", encoding="utf-8") as f:
-            for item in dataset_split:
-                q = str(item.get("question", "")).strip()
-                a = str(item.get("answers", "")).strip()
-                if q and a:
-                    formatted = f"Question: {q}\nAnswer: {a}\n\n"
-                    f.write(formatted)
-        
-        # Calculate summary statistics
-        with open(output_path, "r", encoding="utf-8") as f:
-            content = f.read()
-            num_words = len(content.split())
-            num_lines = content.count("\n")
-        print(f"  -> {output_path.name}: {len(dataset_split)} examples, {num_words:,} words")
+    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    for name, rows in splits.items():
+        with open(PROCESSED_DIR / f"{name}.jsonl", "w", encoding="utf-8") as f:
+            f.writelines(json.dumps(row, ensure_ascii=False) + "\n" for row in rows)
 
-    print("\nFormatting and writing causal language modeling splits:")
-    format_and_save(train_data, PROCESSED_DIR / "train.txt")
-    format_and_save(val_data, PROCESSED_DIR / "val.txt")
-    format_and_save(test_data, PROCESSED_DIR / "test.txt")
-    print("\nData preparation complete!")
+    stats = {"raw_rows": len(df), "unique_questions": len(pairs), **{f"{k}_pairs": len(v) for k, v in splits.items()}}
+    (PROCESSED_DIR / "stats.json").write_text(json.dumps(stats, indent=2) + "\n", encoding="utf-8")
+    print(stats)
+    return stats
+
+
+def load_split(name: str, max_samples: int = None) -> list:
+    """One split as training strings: 'Question: ...\\nAnswer: ...'."""
+    with open(PROCESSED_DIR / f"{name}.jsonl", encoding="utf-8") as f:
+        rows = [json.loads(line) for line in f]
+    return [f"Question: {r['question']}\nAnswer: {r['answer']}" for r in rows[:max_samples]]
 
 
 if __name__ == "__main__":

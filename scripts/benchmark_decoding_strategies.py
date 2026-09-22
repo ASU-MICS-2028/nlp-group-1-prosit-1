@@ -1,20 +1,28 @@
 """
 Benchmark Decoding Strategies for Domain-Adapted DistilGPT2 (LoRA).
-Quantifies the impact of repetition penalty, n-gram blocking, and temperature tuning
-on suppressing degenerative phrase loops in agricultural advisory completions.
+Measures how repetition penalty, n-gram blocking, and temperature change phrase looping in
+agricultural completions, using Distinct-3 (unique word trigrams / all word trigrams per answer).
+
+Distinct-3 measures repetition only, not whether the advice is correct. With no_repeat_ngram_size=3
+the decoder is forbidden to repeat any token trigram, so Distinct-3 is close to 1 by construction.
+Every sampled strategy is run with N_SAMPLES fixed seeds per prompt, so the averages are reproducible.
+
+Run after src/train_domain_lora.py:  python scripts/benchmark_decoding_strategies.py
 Saves empirical results to reports/decoding_strategies_benchmark.json.
 """
 
 import json
 from pathlib import Path
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, set_seed
 from peft import PeftModel
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CHECKPOINT_DIR = REPO_ROOT / "models" / "domain_adapted_checkpoint"
 REPORTS_DIR = REPO_ROOT / "reports"
 BASE_MODEL_NAME = "distilgpt2"
+RANDOM_SEED = 42
+N_SAMPLES = 5  # seeds per (prompt, strategy); greedy search is deterministic and runs once
 
 REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -45,7 +53,7 @@ def run_decoding_benchmark():
     print("=== Benchmarking Decoding Strategies for LoRA-Adapted LLM ===")
     
     print(f"Loading checkpoint from: {CHECKPOINT_DIR}")
-    tokenizer = AutoTokenizer.from_pretrained(str(CHECKPOINT_DIR))
+    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_NAME)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
         
@@ -74,7 +82,7 @@ def run_decoding_benchmark():
             "params": {"temperature": 0.7, "top_p": 0.9, "repetition_penalty": 1.0, "no_repeat_ngram_size": 3, "do_sample": True}
         },
         "conservative_agronomic": {
-            "name": "Conservative Agronomic Sampling (Recommended)",
+            "name": "Low temperature + penalty + 3-gram block",
             "params": {"temperature": 0.35, "top_p": 0.85, "repetition_penalty": 1.25, "no_repeat_ngram_size": 3, "do_sample": True}
         },
         "deterministic_greedy": {
@@ -84,8 +92,10 @@ def run_decoding_benchmark():
     }
 
     benchmark_data = {
-        "model": "distilgpt2 + LoRA (r=8, alpha=32)",
+        "model": "distilgpt2 + LoRA (r=8, alpha=32), models/domain_adapted_checkpoint",
         "prompts_evaluated": len(prompts),
+        "samples_per_prompt": N_SAMPLES,
+        "note": "Distinct-3 measures repetition, not correctness. no_repeat_ngram_size=3 makes it ~1 by construction.",
         "results": []
     }
 
@@ -97,21 +107,23 @@ def run_decoding_benchmark():
         input_ids = tokenizer.encode(prompt, return_tensors="pt")
         
         for strat_id, strat in strategies.items():
-            with torch.no_grad():
-                output = adapted_model.generate(
-                    input_ids,
-                    max_new_tokens=45,
-                    pad_token_id=tokenizer.eos_token_id,
-                    **strat["params"]
-                )
-            full_text = tokenizer.decode(output[0], skip_special_tokens=True)
-            answer = full_text[len(prompt):].strip()
-            metrics = calculate_repetition_metrics(answer)
-            
+            samples = []
+            for i in range(N_SAMPLES if strat["params"]["do_sample"] else 1):
+                set_seed(RANDOM_SEED + i)
+                with torch.no_grad():
+                    output = adapted_model.generate(
+                        input_ids,
+                        max_new_tokens=45,
+                        pad_token_id=tokenizer.eos_token_id,
+                        **strat["params"]
+                    )
+                answer = tokenizer.decode(output[0][input_ids.shape[1]:], skip_special_tokens=True).strip()
+                samples.append({"generated_answer": answer, "metrics": calculate_repetition_metrics(answer)})
+
             prompt_entry["evaluations"][strat_id] = {
                 "strategy_name": strat["name"],
-                "generated_answer": answer,
-                "metrics": metrics
+                "samples": samples,
+                "mean_distinct_3": round(sum(x["metrics"]["distinct_3"] for x in samples) / len(samples), 4),
             }
             
         benchmark_data["results"].append(prompt_entry)
@@ -119,7 +131,7 @@ def run_decoding_benchmark():
     # Compute average distinct-3 across all prompts per strategy
     strategy_averages = {}
     for strat_id, strat in strategies.items():
-        d3_scores = [p["evaluations"][strat_id]["metrics"]["distinct_3"] for p in benchmark_data["results"]]
+        d3_scores = [x["metrics"]["distinct_3"] for p in benchmark_data["results"] for x in p["evaluations"][strat_id]["samples"]]
         strategy_averages[strat_id] = {
             "name": strat["name"],
             "avg_distinct_3": round(sum(d3_scores) / len(d3_scores), 4)
