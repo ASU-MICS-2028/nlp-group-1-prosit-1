@@ -25,7 +25,7 @@ The grading rubric directly tests our pipeline discipline and statistical validi
 
 ## 3. Code Standards
 
-- **Python 3.11**: Keep dependencies pinned in `requirements.txt`.
+- **Python 3.12**: Keep dependencies pinned to exact versions in `requirements.txt` (torch 2.2.2, the last release with Intel-Mac wheels, fixes the rest of the stack).
 - **Formatting**: `black` for formatting and `ruff` for linting.
 - **Relative paths only**: Always use `Path(__file__).parent` or `Path.cwd()`. Never hardcode absolute paths like `/Users/...` or `C:\...`.
 - **No magic numbers**: Always define `RANDOM_SEED = 42` at the top of every script and notebook, passing it to splits, sampling, and model initializers.

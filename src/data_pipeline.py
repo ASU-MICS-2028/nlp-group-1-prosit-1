@@ -9,6 +9,10 @@ import random
 import unicodedata
 from typing import List, Dict, Any, Tuple, Optional
 
+# Lookalike letters typed in place of Ewe letters. Capital eth Ð looks identical to African D Ɖ, but
+# lowercases to ð instead of ɖ, so "Ðe" and "Ɖe" would become two different words. Greek ε stands in for ɛ.
+EWE_LOOKALIKES = str.maketrans({"Ð": "Ɖ", "ð": "ɖ", "ε": "ɛ"})
+
 
 def clean_and_normalize_ewe_sentence(text: str, min_words: int = 2) -> Optional[str]:
     """
@@ -21,12 +25,16 @@ def clean_and_normalize_ewe_sentence(text: str, min_words: int = 2) -> Optional[
     if not text:
         return None
 
+    # Drop corrupted rows: Dataset 1's CSV holds a few binary blobs (control bytes, "\E7"-style escapes)
+    if re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]|\\[0-9A-F]{2}", text):
+        return None
     # Strip HTML tags
     text = re.sub(r"<[^>]+>", " ", text)
     # Strip URLs
     text = re.sub(r"https?://\S+|www\.\S+", " ", text)
-    # NFC normalization
-    text = unicodedata.normalize("NFC", text)
+    # NFC normalization, then drop zero-width characters (they are not whitespace, so \s+ misses them)
+    text = unicodedata.normalize("NFC", text).translate(EWE_LOOKALIKES)
+    text = re.sub(r"[\u200b-\u200d\ufeff]", "", text)
     # Collapse multiple whitespace
     text = re.sub(r"\s+", " ", text).strip()
 
@@ -121,16 +129,31 @@ def merge_and_harmonize_datasets(
     Ingests up to 4 (or more) disparate Ewe datasets, cleans, normalizes,
     deduplicates, merges, and splits them into clean train/val/test partitions.
     """
+    sources = {f"Source {i} ({p.stem})": load_dataset_source(p) for i, p in enumerate(source_files, start=1)}
+    return harmonize_sentences(sources, output_dir, min_words, train_ratio, val_ratio, test_ratio, seed)
+
+
+def harmonize_sentences(
+    sources: Dict[str, List[str]],
+    output_dir: Path,
+    min_words: int = 2,
+    train_ratio: float = 0.8,
+    val_ratio: float = 0.1,
+    test_ratio: float = 0.1,
+    seed: int = 42,
+) -> Dict[str, Any]:
+    """
+    Same pipeline as merge_and_harmonize_datasets, for sentences already in memory
+    ({source name: raw lines}). Used by scripts/build_ewe_datasets.py.
+    """
     random.seed(seed)
     stats_per_source = {}
     seen_hashes = set()
     unified_sentences = []
 
-    print(f"--- Starting Multi-Source Dataset Harmonization ({len(source_files)} sources) ---")
+    print(f"--- Starting Multi-Source Dataset Harmonization ({len(sources)} sources) ---")
 
-    for idx, src_path in enumerate(source_files, start=1):
-        source_name = src_path.stem
-        raw_lines = load_dataset_source(src_path)
+    for source_name, raw_lines in sources.items():
         valid_lines = 0
         duplicates = 0
 
@@ -146,13 +169,12 @@ def merge_and_harmonize_datasets(
                     unified_sentences.append(cleaned)
                     valid_lines += 1
 
-        stats_per_source[f"Source {idx} ({source_name})"] = {
-            "path": str(src_path),
+        stats_per_source[source_name] = {
             "raw_lines": len(raw_lines),
             "unique_valid_lines": valid_lines,
             "duplicates_removed": duplicates,
         }
-        print(f"Source {idx} [{source_name}]: {len(raw_lines)} raw -> {valid_lines} retained ({duplicates} duplicates removed)")
+        print(f"{source_name}: {len(raw_lines)} raw -> {valid_lines} retained ({duplicates} duplicates removed)")
 
     # Shuffle for stratified splitting
     random.shuffle(unified_sentences)
@@ -184,17 +206,17 @@ def merge_and_harmonize_datasets(
     with open(test_path, "w", encoding="utf-8") as f:
         f.write("\n".join(test_data) + "\n")
 
+    words = lambda lines: sum(len(line.split()) for line in lines)
     summary = {
-        "sources_count": len(source_files),
+        "sources_count": len(sources),
         "source_breakdown": stats_per_source,
         "total_unique_sentences": total_unified,
         "train_sentences": len(train_data),
         "val_sentences": len(val_data),
         "test_sentences": len(test_data),
-        "unified_corpus_path": str(unified_path),
-        "train_path": str(train_path),
-        "val_path": str(val_path),
-        "test_path": str(test_path),
+        "train_words": words(train_data),
+        "val_words": words(val_data),
+        "test_words": words(test_data),
     }
 
     print(f"\n--- Harmonization Complete ---")

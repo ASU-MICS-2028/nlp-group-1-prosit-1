@@ -1,28 +1,28 @@
-# Core NLP and Machine Learning
-torch>=2.1.0
-transformers>=4.38.0
-datasets>=2.18.0
-accelerate>=0.28.0
-peft>=0.10.0
-evaluate>=0.4.1
-nltk>=3.8.1
-scikit-learn>=1.4.0
+# Exact versions of the environment every number in reports/ was produced with:
+# Python 3.12, macOS on Intel. torch 2.2.2 is the last torch release with Intel-Mac wheels, and it
+# holds transformers, peft, accelerate and numpy (1.x ABI) at these versions. Keep the pins together.
 
-# Scientific computing & Data analysis
-numpy>=1.26.0
-pandas>=2.2.0
-scipy>=1.12.0
+# Core NLP and machine learning
+torch==2.2.2
+transformers==4.38.2
+peft==0.10.0
+accelerate==0.28.0
+datasets==5.0.1
 
-# Visualization
-matplotlib>=3.8.0
-seaborn>=0.13.0
+# Scientific computing, data loading (parquet, xlsx) and plotting
+numpy==1.26.4
+scipy==1.12.0
+pandas==3.0.6
+pyarrow==25.0.1
+openpyxl==3.1.5
+matplotlib==3.11.2
+seaborn==0.13.2
 
-# Notebook & Progress
-jupyter>=1.0.0
-ipykernel>=6.29.0
-tqdm>=4.66.0
-
-# Code Quality & Hygiene
-black>=24.2.0
-ruff>=0.3.0
-nbstripout>=0.7.1
+# Notebooks, tests and hygiene
+jupyterlab==4.6.4
+ipykernel==7.3.0
+nbconvert==7.17.1
+nbstripout==0.9.1
+pytest==9.1.1
+black==26.5.1
+ruff==0.16.8
