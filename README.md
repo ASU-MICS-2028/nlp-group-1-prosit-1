@@ -78,6 +78,7 @@ python scripts/benchmark_decoding_strategies.py               # decoding benchma
 │   ├── train_domain_lora.py  # Section C: standard vs prompt-masked LoRA, evaluation, figure
 │   └── viz.py                # Perplexity & frequency distribution plotting
 ├── figures/                  # Exported plots for reports and presentation slides
+├── models/                   # The two trained LoRA adapters for Section C (see models/README.md)
 ├── reports/
 │   ├── section_a_theory.md   # Theoretical foundations (14 questions with space constraints)
 │   ├── section_b_low_resource_lm.md  # Team report on African LM (Ewe / Èʋegbe)

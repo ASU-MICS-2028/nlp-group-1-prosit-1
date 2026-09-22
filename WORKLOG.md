@@ -47,6 +47,7 @@ Field notes:
 - Full sweep, 5 datasets × 5 tokenizers × N=1..6. Unified Unicode Word test perplexity: 534.7, 121.2, 77.7, 70.5, 69.3, 69.7, flat from N=4 (validation perplexities for N=4..6 are 3% or less apart on every dataset). Per word with `<unk>` spelled: BPE 189.1 < stemmer 196.9 < word 202.2 < whitespace 261.6 < character 447.1, the same order on every dataset except that characters beat whitespace on Dataset 2. Kneser-Ney beats equal-weight interpolation at every N ≥ 2; the Ney discount is best on validation or within 0.3%.
 - Section C: `src/prepare_domain_data.py` deduplicates by question before the split (2,212 distinct questions; 1,769 / 221 / 222 pairs; 0 test questions in training or validation) and writes JSONL. In the old split, 18 of the first 100 test chunks were answer fragments with no question, because 790 answers contain blank lines. `src/train_domain_lora.py` trains the standard and masked LoRA on identical data and scores all three models token-weighted: full 56.08 / 28.13 / 51.39, answer-only 37.77 / 30.00 / 29.09, WikiText-2 73.19 / 78.44 / 77.24 (base / standard / masked). Decoding benchmark reseeded (5 seeds per prompt). Removed `src/train_prompt_masked_lora.py`, `reports/prompt_masking_ablation_results.json`, and the unused `src/domain_adaptation.py` and `src/evaluation.py`.
 - Notebooks 01 to 04 repaired and executed end to end (02 re-scores the saved adapters and matches the JSON exactly); outputs cleared before commit. Figures regenerated; `figures/ngram_order_ablation.png` replaces `ngram_ablation_breaking_point.png`.
+- At Eric's request, committed the two trained LoRA adapters (`models/*/adapter_config.json` and `adapter_model.safetensors`, 0.6 MB each) with `models/README.md` (training setup, scores, loading code, SHA-256 checksums); distilgpt2 and KisanVaani are both Apache-2.0, so the adapters can be shared. Pushed branch `eric` to origin (the repository is public).
 - Rewrote Section B, Section C, the claims table (27 rows, each naming file, key and script), the slide outline, the datasheet, `data/README.md`, `METHODOLOGY_GUIDE.md` (new Pillar 6 "Verify Before You Write", corrected Pillar 5 answers), `README.md` (reproduction commands), `RULES.md` (Python 3.12), `requirements.txt` (exact pins) and `LEARNING_JOURNAL.md` (sections 2 to 11 rewritten, new section 12 on the audit).
 **Decided:**
 - Interpolated Kneser-Ney is the Section B model. N is chosen on validation and reported without adjectives, because N=4..6 are 3% or less apart.
@@ -57,12 +58,12 @@ Field notes:
 - Section A is labelled individual and was drafted by Gemini; Eric to check the course AI policy and rewrite it in his own words (not touched here).
 - The origin of Dataset 1 and the Hugging Face repository of Dataset 4 are not recorded; the licences of all sources are unverified.
 - The viva platform is spelled clenam.ai in some files and klenam.ai in `README.md`; check the course brief.
-- origin has no `main` branch, so a pull request has no base. Creating `main` and opening a PR needs Eric's go-ahead; nothing was pushed. Teammates have not reviewed any of this yet.
+- origin has no `main` branch, so a pull request has no base. Creating `main` and opening a PR needs Eric's go-ahead (not done). Teammates have not reviewed any of this yet.
 - No Ewe speaker has judged the grammaticality of the n-gram samples.
 - `data/processed/low_resource/` is a stale local copy of the old unified split that nothing uses; now gitignored, safe to delete.
 - The journal cites Holtzman et al. (2020) and Xu et al. (2022) on repetition in generation; Eric should read what each says before quoting them in the viva.
 **Next:**
-- Eric: read journal section 12 and the rewritten Sections B and C before the viva; decide on `main` and the PR; push when ready.
+- Eric: read journal section 12 and the rewritten Sections B and C before the viva; decide on `main` and the PR.
 
 ---
 

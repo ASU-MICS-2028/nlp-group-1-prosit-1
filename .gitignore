@@ -46,7 +46,14 @@ env/
 *.bin
 *.safetensors
 checkpoint-*/
-models/
+# models/: track only the two small LoRA adapters (config + weights) and the README
+models/*
+!models/README.md
+!models/domain_adapted_checkpoint/
+!models/prompt_masked_lora_checkpoint/
+models/*/*
+!models/*/adapter_config.json
+!models/*/adapter_model.safetensors
 runs/
 wandb/
 .cache/

@@ -72,6 +72,8 @@ All in `src/data_pipeline.py` (Ewe) and `src/prepare_domain_data.py` (English):
 - **Intended use**: coursework experiments on n-gram language modeling for Ewe and LoRA domain adaptation.
 - **Religious skew**: a large part of the Ewe text is Bible and Jehovah's Witnesses material, so the models
   will favour that register over everyday or technical speech. Only Dataset 3 is conversational speech.
-- **Licensing is unverified** for every source; do not redistribute the data or models trained on it.
+- **Licensing**: the English corpus (KisanVaani) and the base model (distilgpt2) are both Apache-2.0, so the
+  two LoRA adapters in `models/` can be shared with attribution. The licences of the four Ewe sources are
+  unverified; do not redistribute the Ewe data or models trained on it.
 - **The English corpus is small once deduplicated** (2,212 questions), and the adapted model's answers are
   fluent but often factually wrong (see `reports/domain_adaptation_results.json`); they are not advice.

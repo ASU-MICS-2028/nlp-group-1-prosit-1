@@ -24,7 +24,7 @@ the lowercased text (within and across sources, first occurrence wins), shuffle 
 
 ## Section C: English agriculture (`data/raw/domain_english/`)
 
-`agriculture_qa.parquet` is `KisanVaani/agriculture-qa-english-only` from Hugging Face: 22,615 rows but
+`agriculture_qa.parquet` is `KisanVaani/agriculture-qa-english-only` from Hugging Face (Apache-2.0): 22,615 rows but
 only 2,212 distinct questions. `python src/prepare_domain_data.py` downloads it if missing, keeps one row
 per question before shuffling (so no test question is also a training question), and writes
 `data/processed/domain_english/{train,val,test}.jsonl` plus `stats.json`.
