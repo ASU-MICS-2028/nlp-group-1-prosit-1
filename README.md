@@ -58,7 +58,7 @@ python3 -c "import torch, transformers, datasets, nltk, peft; print('Environment
 │   ├── data_pipeline.py      # Unified multi-source corpus loader & normalizer
 │   ├── ngram.py              # Statistical LM: MLE, Laplace, Interpolation, Kneser-Ney
 │   ├── preprocessing.py      # Unicode tokenization, OOV handling, vocabulary split
-│   ├── tokenizers.py         # 5 tokenizers: Whitespace, Word, Stemmer, BPE, Char
+│   ├── ewe_tokenizers.py     # 5 tokenizers: Whitespace, Word, Stemmer, BPE, Char
 │   ├── domain_adaptation.py  # HuggingFace & PEFT/LoRA fine-tuning utilities
 │   ├── evaluation.py         # Perplexity, cross-entropy, markdown table formatting
 │   ├── experiment_runner.py  # Automated ablation experiment harness

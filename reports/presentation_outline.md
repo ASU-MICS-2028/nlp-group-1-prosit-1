@@ -39,22 +39,25 @@
 ---
 
 ### Slide 4: Domain-Specific LLM Adaptation (Agro-Extension) (4:30 - 6:30)
-- **Domain Selection**: West African Agricultural Technical Field Guides (fall armyworm, cassava mosaic virus, cocoa swollen shoot).
+- **Domain Selection**: Authentic KisanVaani Agricultural Extension Advisory Q&A Corpus (`KisanVaani/agriculture-qa-english-only`, 22,615 extension pairs).
 - **Methodological Evaluation**:
   - *From Scratch*: Computationally prohibitive ($>10^5$ GPU hours).
   - *RAG*: High retrieval latency and index maintenance overhead.
-  - *PEFT / LoRA (Selected)*: Parameter-efficient, freezes base weights, adapts low-rank matrices ($r=8, \alpha=16$) on attention projections (`q_proj`, `v_proj`).
-- **Safety**: Complete preservation of general language competence without catastrophic forgetting (<3.8% change on out-of-domain text).
+  - *PEFT / LoRA (Selected)*: Parameter-efficient, freezes 99.82% of base weights, adapts low-rank matrices ($r=8, \alpha=32$) on attention projections (`c_attn` Conv1D).
+- **Safety & Efficiency**: Trains only **147,456 parameters (0.18%)** in under 5 minutes on standard CPU, completely avoiding catastrophic forgetting.
 
 ---
 
 ### Slide 5: Experimental Results & Claims Traceability (6:30 - 8:30)
 - **Quantitative Benchmark Highlights**:
   - Ewe Statistical LM: 4-gram Stemmer achieves **PPL = 134.0**; BPE 6-gram achieves **PPL = 13.8**.
-  - Agro-Extension LoRA: Domain test perplexity drops by **67.4%** ($85.6 \to 27.9$) using only **0.72%** trainable parameters.
+  - Agro-Extension LoRA: Domain test perplexity drops by **53.0%** (**62.38 $\to$ 29.33**; Loss: $4.13 \to 3.38$) with only **0.18%** trainable parameters.
+  - Repetition Suppression: Repetition penalty ($r=1.25-1.3$) boosts Distinct-3 unique trigrams from **49.1% $\to$ 100.0%**, eliminating self-reinforcement loops.
+  - Prompt-Loss Masking: Focusing gradients on response tokens reduces answer-token PPL from **38.45 $\to$ 30.08** (21.8% drop).
 - **Traceability Table (`reports/claims_table.md`)**:
-  - Every single number on our slides is cross-referenced to reproducible cells in `01_low_resource_ngram_lm.ipynb` and `02_domain_specific_llm_adaptation.ipynb`.
-- **Qualitative Generation Samples**: Fluent Ewe and accurate agro-advisory completions displayed side-by-side.
+  - Every single number on our slides is cross-referenced to reproducible benchmark JSON artifacts and notebook cells.
+- **Qualitative Generation Samples**:
+  - Base model repetitively parrots questions; adapted model immediately generates actionable agronomic guidance naming specific crops (`maize`, `cassava`, `soybeans`).
 
 ---
 
