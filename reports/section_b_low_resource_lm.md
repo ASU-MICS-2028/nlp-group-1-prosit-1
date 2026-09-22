@@ -1,73 +1,74 @@
-# Technical Report — Section B: Specialized Language Model for Low-Resource African Language (Ewe / Èʋegbe)
+# Technical Report, Section B: Specialized Language Model for a Low-Resource African Language (Ewe / Èʋegbe)
 
 **Course**: ICS554 Natural Language Processing · Ashesi University  
 **Team**: MICS 2028 · Group 1  
-**Deliverable**: Technical Report Section B (Group Sync — Identical across team members) · Weight: 15% Implementation & Results + 5% Writing Quality = 20%  
+**Deliverable**: Technical Report Section B (Group Sync, identical across team members) · Weight: 15% Implementation & Results + 5% Writing Quality = 20%  
 **Public Repository**: https://github.com/ASU-MICS-2028/nlp-group-1-prosit-1.git  
+**Numbers**: every figure below is copied from `reports/results_unified_all_tokenizers.json` (or the per-dataset result files) and `data/processed/unified/stats.json`; see `reports/claims_table.md`.
 
 ---
 
 ### Question 1: What data did you use in building your model?
 *(Space Guide: 1 Paragraph)*
 
-Our group selected **Ewe (Èʋegbe)**, a low-resource Niger-Congo (Gbe/Kwa branch) tonal language widely spoken across southeastern Ghana (Volta Region), southern Togo, and Benin. To build a robust language model for Ankora's speech recognition pipeline, we curated and harmonized a multi-domain Ewe text corpus spanning four distinct linguistic sources: (1) authentic cultural folklore and literature (`EWE_ENGLISH.csv`), (2) conversational personal biographies and dates (`eweenglishsentence(3).json`), (3) spoken audio transcriptions from the University of Ghana Waxal speech project (`selected transcribed audios.xlsx`), and (4) a deduplicated balanced web crawl (`ewe_corpus.parquet`). We intentionally avoided relying exclusively on historical or religious translations to prevent skewing the vocabulary toward archaic liturgical phrasing. All text was preprocessed using Unicode NFC normalization to preserve Ewe's distinctive orthographic inventory—including open vowels (`ɛ`, `ɔ`), bilabial fricatives (`ƒ`, `ʋ`), the retroflex stop (`ɖ`), the velar fricative (`ɣ`), and the velar nasal (`ŋ`)—while safely binding combining tone diacritics. Cross-domain deduplication yielded a **Grand Unified Mega-Corpus of 124,396 clean unique sentences (~2.35 million tokens)**, partitioned using an 80/10/10 split into training (99,516 sentences / 1.88M words), validation (12,439 sentences), and test (12,441 sentences) subsets, with out-of-vocabulary words strictly mapped to `<unk>` based on training set frequencies.
+Our group chose **Ewe (Èʋegbe)**, a Gbe language of the Kwa branch of Niger-Congo spoken in south-eastern Ghana (Volta Region), southern Togo and Benin. We combined four existing sources (`data/README.md`): (1) English/Ewe sentence pairs (`EWE_ENGLISH.csv`), a large share of which are Jehovah's Witnesses publications and Bible verses; (2) 526 dictionary example sentences and short personal texts from a database export (Glosbe and peterlin.pl); (3) 19,150 transcriptions of spoken image descriptions from the University of Ghana's Waxal project, our only conversational speech; and (4) the first 200,000 rows of a large English/Ewe sentence-pair file, mostly Bible-aligned text. Religious text is therefore a large part of the corpus (5.1% of unified sentences mention Yehowa and 6.2% carry chapter:verse references), which skews the model toward that register. All text is Unicode NFC normalized so that Ewe letters (`ɖ`, `ƒ`, `ɣ`, `ŋ`, `ɔ`, `ɛ`, `ʋ`) and tone marks are stored one way; lookalike letters typed in their place (capital eth Ð for Ɖ) are mapped back; corrupted rows are dropped; and duplicates are removed within and across sources before splitting. That leaves **123,511 sentences**, split 80/10/10 into 98,808 training (1,874,130 words), 12,351 validation and 12,352 test sentences (`scripts/build_ewe_datasets.py`). The vocabulary comes from the training split only, and words seen just once in training become `<unk>`.
 
 ---
 
 ### Question 2: Do you agree that n-gram models are better than neural models when building a language model for a low-resource language?
 *(Space Guide: 1–2 Paragraphs)*
 
-Yes, we agree with Ankora's recommendation: when developing a language model **from scratch under severe data scarcity**, statistical n-gram models are undeniably superior to deep neural architectures. Deep neural networks (such as Transformer decoders or recurrent networks) optimize millions of parameters through gradient descent; when provided with only a few thousand sentences of Ewe text, neural models suffer from extreme sample inefficiency, quickly memorizing idiosyncratic dataset noise (overfitting) and generating nonsensical text during inference. Furthermore, neural models demand high-end GPU compute for training and introduce significant inference latency, making them impractical for edge deployment.
+Partly. With very little data, a few thousand sentences, a neural model trained from scratch has far more parameters than the evidence can support and overfits, while a smoothed n-gram model gives stable estimates straight from counts, trains in minutes on a CPU, is fully explainable, and plugs into speech recognition decoders as a weighted finite-state transducer. Those are real advantages for Ankora's setting, and they are why we agree n-grams are the right *first* model and the right choice under tight compute and latency limits.
 
-In contrast, statistical n-gram models compute explicit conditional frequencies directly from text co-occurrences without backpropagation. When paired with effective smoothing algorithms (such as Laplace or Interpolated Kneser-Ney), n-gram models establish stable, mathematically sound probability distributions even on minimal corpora. Operationally for Ankora's low-resource speech recognition decoders, statistical n-gram models compile seamlessly into Weighted Finite-State Transducers (WFSTs), delivering ultra-fast $O(1)$ table-lookup decoding with near-zero latency on standard CPU hardware.
+We do not claim n-grams are better in general, and we did not train a neural baseline to test it. Our corpus has 1.9M training words, a scale at which small neural models, or multilingual pretrained models fine-tuned on Ewe, are often competitive or better, partly because they share information between similar words and n-grams cannot. Our own results show the n-gram's ceiling: with correct smoothing, word-level models stop improving after about four words of context (Question 5).
 
 ---
 
 ### Question 3: How did you train your model and what convinced you your model was learning?
 *(Space Guide: 2–3 Paragraphs)*
 
-We trained a progression of statistical n-gram models (Unigram, Bigram, and Trigram) on our cleaned Ewe corpus. Sentences were preprocessed with boundary tokens: prepending the start token `<s>` to model the conditional probability of the initial word $P(w_1 \mid \text{<s>})$ and appending the termination token `</s>`. Counts were accumulated into nested frequency hash tables using `defaultdict(Counter)`. To address the zero-probability dilemma on unseen transitions, we implemented and evaluated Maximum Likelihood Estimation (MLE), Laplace (Add-One) smoothing, Lidstone (Add-$k$) smoothing, Linear Interpolation across orders, and Interpolated Kneser-Ney smoothing based on continuation probabilities.
+`src/ngram.py` counts, for every order $k \le N$, how often each word follows each $(k-1)$-word context, over padded sentences (`<s>` before, `</s>` after), counting only the positions the model actually has to predict. On those counts we implemented Maximum Likelihood Estimation, Laplace and Lidstone (add-$k$) smoothing, linear interpolation (with the weights of orders whose context was never seen redistributed to the others, so probabilities still sum to 1), and **interpolated Kneser-Ney**: each order's counts are discounted by $D_k$, estimated from the training counts as $D = n_1 / (n_1 + 2 n_2)$, and the freed probability goes to the next-lower order, which uses continuation counts (in how many different contexts a word has appeared). The main sweep (`scripts/run_multi_tokenizer_ablation.py`) trains Kneser-Ney models for five tokenizers and $N = 1 \dots 6$, and picks each tokenizer's best $N$ on the validation split.
 
-We confirmed that our models were genuinely learning the sequential structure of Ewe through three distinct empirical signals:
-1. **Monotonic Perplexity Reduction with Context Window:** As the conditioning context expanded from unigram ($N=1$) to bigram ($N=2$) and trigram ($N=3$), test perplexity on unseen Ewe sentences decreased systematically (from $PPL \approx 245$ down to $PPL \approx 79$ under Kneser-Ney). This confirmed that conditioning on preceding Ewe tokens substantially reduced prediction entropy.
-2. **Grammatical Coherence in Autoregressive Generation:** Sampled text shifted from random token bags under the unigram model to grammatically and culturally authentic Ewe expressions under bigram and trigram models (e.g., generating fluent phrases such as *"Woezɔ loo"*, *"Efoa nyuie mah?"*, and *"Ama fle nuɖuɖu le asime"*).
-3. **Conservation of Probability Mass:** We systematically audited the conditional probability distributions across the vocabulary, verifying that $\sum_{w \in V} P(w \mid \text{context}) = 1.0 \pm 10^{-6}$ across all smoothed variants, confirming that probability mass was properly conserved without mathematical divergence.
+Three things convinced us the models were learning:
+1. **Held-out perplexity falls as context grows, then levels off.** For Unicode Word tokens, test perplexity goes 534.7 (unigram), 121.2 (bigram), 77.7 (trigram), 70.5 (4-gram), then stays flat (69.3 at $N=5$, 69.7 at $N=6$).
+2. **Every smoothed model is a proper probability distribution.** Unit tests (`tests/test_pipeline.py`) check that probabilities sum to 1 over the vocabulary for seen and unseen contexts. An earlier version of our interpolation failed this (the probabilities for an unseen trigram context summed to 0.667), and finding that failure is how we traced our first, wrong conclusion that longer contexts "break" the model (Question 6).
+3. **Samples become longer runs of real Ewe, and eventually copies of training text.** With a fixed seed, the unified corpus model moves from punctuation and function words at $N=1$ to, from $N=4$ on, reproducing a Bible verse: "2 eye yehowa ƒe gbe va na yona , amitai vi ," (Jonah 1:1). That shows both memorization and the corpus's religious skew. Whether the shorter samples are grammatical has to be judged by an Ewe speaker, so we record them rather than grade them.
 
 ---
 
 ### Question 4: How did you evaluate your model?
 *(Space Guide: 1–2 Paragraphs)*
 
-We evaluated our models intrinsically using **Perplexity (PP)** computed over a held-out test split of unseen Ewe sentences strictly isolated during training. Perplexity was calculated as the exponentiated cross-entropy:
-$$\text{PP}(W) = \exp\left(-\frac{1}{N} \sum_{i=1}^N \ln P(w_i \mid w_{i-N+1}^{i-1})\right)$$
-where $N$ is the total token count in the evaluation split including sentence boundaries. To maintain scientific rigor and prevent data leakage, a closed vocabulary was induced exclusively from the training split, mapping all rare and novel words to `<unk>`.
+We measured **perplexity** on held-out sentences, the exponentiated average negative log-probability per predicted token:
+$$\text{PP}(W) = \exp\left(-\frac{1}{M} \sum_{i=1}^{M} \ln P(w_i \mid w_{i-N+1}^{i-1})\right)$$
+where $M$ counts every predicted token including `</s>`. The order $N$ and the Kneser-Ney discount were chosen on 4,000 validation sentences; test perplexity on 4,000 test sentences is reported once. Vocabularies come from the training split only.
 
-In addition to quantitative perplexity scoring, we performed qualitative generation audits by conditioning the models on common Ewe prompt prefixes under greedy and temperature sampling ($T \in \{0.2, 0.7, 1.0\}$), evaluating syntactic coherence, repetition penalties, and handling of out-of-vocabulary transitions.
+Per-token perplexity cannot compare tokenizers, because a character model picks among 227 symbols per step and a word model among 26,489. For that comparison we use **perplexity per word**: the same total test log-probability divided by the number of words, which is identical for every tokenizer because they all model the same text. To be fair, every model must pay for the whole text: a word model that predicts `<unk>` has not said which word it was, so each `<unk>` is also charged the cost of spelling the word with a small character model trained on the words seen once in training. We also report **sparsity**, the share of test n-grams never seen in training.
 
 ---
 
 ### Question 5: What results did you get?
 *(Space Guide: 1–2 Paragraphs)*
 
-Our experimental benchmarks across 5 tokenizers and orders $N=1\dots 6$ on the Grand Unified Mega-Corpus (1.88M training words) demonstrated that tokenization granularity and corpus scale fundamentally dictate low-resource performance:
+Best order per tokenizer on the unified corpus (chosen on validation):
 
-| Tokenizer Strategy | Optimal Order | Sparsity (% Unseen) | Test Perplexity (PP) | Architectural Finding |
-| --- | :---: | :---: | :---: | --- |
-| Whitespace Tokenizer | Trigram ($N=3$) | 52.8% | 441.2 | Punctuation boundary pollution inflates vocabulary to 100k surface forms |
-| Unicode Word Tokenizer | 4-gram ($N=4$) | 62.6% | 147.8 | Standard word baseline; breaks beyond $N=4$ due to data sparsity |
-| Ewe Morphological Stemmer | 4-gram ($N=4$) | 61.6% | **134.0** | Affix peeling (`-wo`, `mí-`) pools inflections, reducing error by 9.3% |
-| Byte-Pair Encoding (BPE, 150 merges) | 6-gram ($N=6$) | 50.6% | **13.8** | Subwords eliminate OOV crashes and push peak context cleanly to $N=6$ |
-| Character Tokenizer | 6-gram ($N=6$) | 37.9% | **7.6** | Ultra-compact vocabulary ($|V|=123$), lowest branching entropy |
+| Tokenizer | Best $N$ | Vocabulary | Test perplexity per token | Test perplexity per word |
+| --- | :---: | ---: | ---: | ---: |
+| Whitespace (punctuation attached) | 5 | 37,560 | 120.1 | 261.6 |
+| Unicode Word | 5 | 26,489 | 69.3 | 202.2 |
+| Ewe Stemmer (affixes kept as tokens) | 5 | 23,297 | 50.7 | 196.9 |
+| Byte-Pair Encoding (150 merges) | 6 | 371 | 9.7 | **189.1** |
+| Character | 6 | 227 | 3.7 | 447.1 |
 
-A paramount scientific discovery was the **rightward shift of the word-level breaking point**: while smaller isolated corpora (Datasets 1, 3, and 4) plateaued at Trigram ($N=3$) and immediately degraded at $N=4$, scaling to the 1.88M-word Unified Mega-Corpus stabilized 4-word co-occurrences, allowing 4-grams to outperform Trigrams for the first time ($147.8$ vs $150.1$ for Word; $134.0$ vs $137.2$ for Stemmer). Across all orders, Byte-Pair Encoding (BPE) unlocked the lowest perplexity and highest context headroom, sustaining monotonic improvements up to order 6 ($PPL = 13.8$).
+**Longer context never hurts, but stops helping from about $N=4$.** Word-level test perplexity levels off at $N=4$ even though 80.5% of test 6-grams were never seen in training, because Kneser-Ney passes the probability of an unseen long context down to shorter ones; on every dataset, validation perplexities for $N = 4$, 5 and 6 are within 3% of each other. **Per word, subwords win**: BPE is best (189.1), keeping Ewe affixes as separate tokens beats plain words by 2.6%, attaching punctuation to words costs 29%, and a character 6-gram, which sees only about 1.2 words of context, is far behind. The same ranking holds on each of the four source datasets, except that on the 420-sentence Dataset 2 characters beat whitespace tokens. Kneser-Ney beats equal-weight interpolation at every $N \ge 2$ (77.7 against 93.6 at $N=3$ for Unicode Word).
 
 ---
 
 ### Question 6: What should we know about the work you did which is not already captured in your answers above?
 *(Space Guide: 1–3 Paragraphs)*
 
-A central engineering achievement was the discovery and remediation of **the Ewe combining tone mark bug** in Python's standard library. Ewe features combining tone diacritics (such as the nasal tilde `\u0303` in *"nusrɔ̃lawo"*), which Python's `str.isalnum()` classifies as non-alphanumeric (category `Mn`). In naive tokenizers, this causes words containing nasalized vowels to be erroneously split into corrupted fragments. In [`src/tokenizers.py`](file:///Users/macbookpro/Documents/Coding/Ashesi%20Uni/Natural%20Language%20Processing/nlp-group-1-prosit-1/src/tokenizers.py), we resolved this by enforcing Unicode NFC normalization and developing a tone-aware regex pattern `^[\w\u0300-\u036f]+$` that preserves complex tonal glyphs intact.
+**Our first conclusions were wrong, and finding out why taught us the most.** An earlier draft of this report said word n-grams "break" beyond $N=3$, that more data "shifts" the breaking point to $N=4$, and that BPE reached a perplexity of 13.8 against 147.8 for words. All three came from errors: our interpolation threw away the probability of unseen contexts (more of it as $N$ grew), the `<s>` padding was counted as a word, trigram "Kneser-Ney" backed off to a uniform distribution, unknown words got an arbitrary probability of about $10^{-12}$, and per-token perplexities of different tokenizers were compared directly. We found these by checking that probabilities sum to 1 and by re-implementing Kneser-Ney independently; the corrected code matches that implementation exactly, and the unit tests now guard it.
 
-Additionally, to understand the exact empirical scaling behavior of low-resource African NLP, we designed and executed an **incremental 5-phase ablation study**: benchmarking all 5 tokenizers across $N=1\dots 6$ on Dataset 1 (Folklore), Dataset 2 (Micro-Bios), Dataset 3 (Waxal Spoken Speech), and Dataset 4 (Web Crawl) in complete isolation before constructing our 5-stage harmonization pipeline (`src/data_pipeline.py`) to merge and cross-deduplicate them into the Grand Unified Mega-Corpus. Every experiment, qualitative generation sample, and bug mitigation is documented in our Reflective Learning Journal ([`reports/LEARNING_JOURNAL.md`](file:///Users/macbookpro/Documents/Coding/Ashesi%20Uni/Natural%20Language%20Processing/nlp-group-1-prosit-1/reports/LEARNING_JOURNAL.md)).
+**Ewe orthography needs care at the character level.** Nasalized vowels such as ɔ̃ have no precomposed Unicode character, so they remain a letter plus a combining tilde even after NFC normalization, and Python's `\w` does not match the tilde; our tokenizers accept the combining-mark range explicitly. We also found that 5,026 lines of an earlier training split used capital eth Ð, which looks identical to Ewe Ɖ but lowercases to ð instead of ɖ, splitting words such as "ɖe" into two vocabulary entries; the cleaner now maps these lookalikes back.
 
-Finally, our statistical count matrices support direct export into standard ARPA language modeling format files, enabling Ankora's engineering team to compile our trained Ewe language models directly into Weighted Finite-State Transducers (WFSTs) for ultra-fast, microsecond-latency speech recognition decoding on edge devices.
+**The data has limits we should state plainly.** A large share of it is religious text, so the model will favour that register over everyday speech; one source contains personal introductions naming real people; and the licences of the sources are unverified, so neither the data nor the models should be redistributed. All splits, results and figures can be rebuilt from the raw files with the commands in `README.md`.

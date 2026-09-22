@@ -4,7 +4,8 @@
 **Topic**: Building and Adapting Language Models (Prosit 1)  
 **Lab Context**: Ankora AI Research Lab (Ghana)  
 **Deliverable Link**: https://github.com/ASU-MICS-2028/nlp-group-1-prosit-1.git  
-*(Must appear on Slide 1 as required by assignment guidelines)*
+*(Must appear on Slide 1 as required by assignment guidelines)*  
+**Every number below is in `reports/claims_table.md` with the file and script that produce it.**
 
 ---
 
@@ -18,52 +19,47 @@
 
 ---
 
-### Slide 2: Problem Formulation & The Statistical Imperative (1:00 - 2:30)
-- **The African NLP Dilemma**: Under data scarcity (<100k sentences), deep neural models overfit, memorize noise, and suffer high latency.
-- **The Classical Solution**: Smoothed n-gram models compile into **Weighted Finite-State Transducers (WFSTs)** with $O(1)$ table-lookup decoding, running with microsecond latency on edge CPUs.
-- **Handling Data Sparsity**: Why Maximum Likelihood Estimation fails ($\text{PP}=\infty$ on 38% unseen transitions); the mathematical progression from Laplace and Lidstone to Interpolation and Kneser-Ney.
+### Slide 2: Problem Formulation & the N-Gram Approach (1:00 - 2:30)
+- **Why n-grams first**: trained from counts in minutes on a CPU, fully explainable, and usable inside speech recognition decoders as weighted finite-state transducers. We did not train a neural baseline, so we claim "right first model", not "better than neural".
+- **The sparsity problem, in our own numbers**: on the Ewe test set, 10.5% of bigrams and 80.5% of 6-grams never occur in training. Maximum likelihood gives those probability 0.
+- **The fix**: smoothing, from Laplace to interpolation to **interpolated Kneser-Ney**, which moves probability from rare events down to shorter contexts.
 
 ---
 
-### Slide 3: Ewe Low-Resource Language Model & 5-Tokenizer Ablation (2:30 - 4:30)
-- **The Grand Unified Ewe Mega-Corpus**: 124,396 clean sentences / 2.35M words harmonized across 4 registers (Folklore, Biographies, Waxal Spoken Speech, and Web Crawl).
-- **Linguistic & Engineering Innovations**:
-  - Unicode NFC normalization and remediation of Python's combining tone mark bug (`\u0303` regex fix).
-  - Multi-tokenizer spectrum benchmark: Whitespace, Unicode Word, Ewe Stemmer, BPE Subwords, and Character.
-- **Key Empirical Discoveries**:
-  - **The Punctuation Penalty**: Glued punctuation degrades Whitespace perplexity by 3.2x (470.2 vs 147.8).
-  - **The Stemming Advantage**: Peeling affixes (`-wo`, `mí-`) reduces perplexity across all orders ($147.8 \to 134.0$).
-  - **The Rightward Shift**: Corpus scaling pushes the word breaking point from $N=3$ to $N=4$.
-  - **Subword Headroom**: BPE subwords eliminate OOV and sustain peak context all the way to $N=6$ (PPL = 13.8).
+### Slide 3: The Ewe Model & 5-Tokenizer Study (2:30 - 4:30)
+- **Data**: 123,511 unique sentences (1.87M training words) from four sources: sentence pairs, dictionary examples, University of Ghana Waxal speech transcriptions, and a large aligned corpus. A large part is Bible and Jehovah's Witnesses text (5.1% of sentences mention Yehowa), and that skews the model.
+- **Ewe orthography**: NFC normalization, tone marks kept as part of the word (ɔ̃ has no single Unicode character), and lookalike letters fixed (Ð typed for Ɖ had split "ɖe" into two words).
+- **Result 1, context length**: test perplexity falls 534.7 → 121.2 → 77.7 → 70.5 from unigram to 4-gram, then stays flat (69.3, 69.7). Longer context never hurts with Kneser-Ney; it stops helping at about 4 words.
+- **Result 2, tokenizers (perplexity per word, the fair unit)**: BPE 189.1 < Ewe affixes kept 196.9 < words 202.2 < whitespace 261.6 < characters 447.1. Same ranking on every source dataset.
+- **Visual**: `figures/ngram_order_ablation.png`.
 
 ---
 
 ### Slide 4: Domain-Specific LLM Adaptation (Agro-Extension) (4:30 - 6:30)
-- **Domain Selection**: Authentic KisanVaani Agricultural Extension Advisory Q&A Corpus (`KisanVaani/agriculture-qa-english-only`, 22,615 extension pairs).
-- **Methodological Evaluation**:
-  - *From Scratch*: Computationally prohibitive ($>10^5$ GPU hours).
-  - *RAG*: High retrieval latency and index maintenance overhead.
-  - *PEFT / LoRA (Selected)*: Parameter-efficient, freezes 99.82% of base weights, adapts low-rank matrices ($r=8, \alpha=32$) on attention projections (`c_attn` Conv1D).
-- **Safety & Efficiency**: Trains only **147,456 parameters (0.18%)** in under 5 minutes on standard CPU, completely avoiding catastrophic forgetting.
+- **Data**: KisanVaani agricultural Q&A, 22,615 rows but only **2,212 distinct questions**. We deduplicated before splitting: 1,769 train / 221 validation / 222 test, with 0 test questions seen in training.
+- **Options considered**: training from scratch (far too little data), RAG (does not change the model's probabilities, which is what transcript scoring needs), **LoRA (chosen)**.
+- **LoRA setup**: distilgpt2, rank 8, $\alpha=32$, on `c_attn` (the fused query/key/value projection): **147,456 trainable parameters, 0.18%** of the model. Two variants on identical data: loss on all tokens, and loss on answers only.
 
 ---
 
-### Slide 5: Experimental Results & Claims Traceability (6:30 - 8:30)
-- **Quantitative Benchmark Highlights**:
-  - Ewe Statistical LM: 4-gram Stemmer achieves **PPL = 134.0**; BPE 6-gram achieves **PPL = 13.8**.
-  - Agro-Extension LoRA: Domain test perplexity drops by **53.0%** (**62.38 $\to$ 29.33**; Loss: $4.13 \to 3.38$) with only **0.18%** trainable parameters.
-  - Repetition Suppression: Repetition penalty ($r=1.25-1.3$) boosts Distinct-3 unique trigrams from **49.1% $\to$ 100.0%**, eliminating self-reinforcement loops.
-  - Prompt-Loss Masking: Focusing gradients on response tokens reduces answer-token PPL from **38.45 $\to$ 30.08** (21.8% drop).
-- **Traceability Table (`reports/claims_table.md`)**:
-  - Every single number on our slides is cross-referenced to reproducible benchmark JSON artifacts and notebook cells.
-- **Qualitative Generation Samples**:
-  - Base model repetitively parrots questions; adapted model immediately generates actionable agronomic guidance naming specific crops (`maize`, `cassava`, `soybeans`).
+### Slide 5: Results (6:30 - 8:30)
+
+| Model | Full Q&A | Answer only | General English (WikiText-2) |
+|---|---:|---:|---:|
+| distilgpt2 base | 56.08 | 37.77 | 73.19 |
+| LoRA, loss on all tokens | 28.13 | 30.00 | 78.44 |
+| LoRA, loss on answers only | 51.39 | 29.09 | 77.24 |
+
+- **Domain knowledge**: answer perplexity down 20.6% (standard). The larger full-text drop also includes learning the question format.
+- **Cost**: general-English perplexity up 7.2%. LoRA limits forgetting; it does not prevent it.
+- **Masking** helps answers about as much (within noise) but never learns to predict questions, which speech recognition needs.
+- **Fluent is not correct**: "The fall armyworm in maize affects the development of mites, insects and other insects." Decoding tricks remove loops (Distinct-3 78.9% → 100%, partly by construction) but not errors.
+- **Visual**: `figures/domain_adaptation_perplexity.png`.
 
 ---
 
-### Slide 6: Key Takeaways & Viva Readiness (8:30 - 10:00)
-- **Core Insights**:
-  1. Statistical N-grams with morphological stemming provide the optimal compute-accuracy frontier for low-resource ASR decoding.
-  2. LoRA enables cost-effective domain adaptation for specialized African enterprise applications.
-- **Reproducibility**: Complete open-source pipeline with automated linting, tests, and reflective learning journals.
-- **Q&A / Panel Defense**: Ready for automated Viva Quiz on `clenam.ai` and panel questions.
+### Slide 6: Key Takeaways (8:30 - 10:00)
+1. **Smoothing decides everything.** With correct Kneser-Ney, Ewe n-grams improve up to about 4 words of context and then plateau; subword (BPE) units model the text best per word.
+2. **LoRA adapts cheaply but does not make the model reliable.** 0.18% of the parameters cut answer perplexity by a fifth, at a measurable cost to general English, and the answers are fluent rather than correct.
+3. **Verify before you write.** Our first draft reported a "breaking point" at $N=4$ and a tokenizer ranking that both came from bugs (probability lost for unseen contexts, padding counted as a word, per-token comparisons across tokenizers). Unit tests and committed scripts now guard every number.
+- **Q&A / Panel Defense**: ready for the automated Viva Quiz on `clenam.ai` and panel questions.

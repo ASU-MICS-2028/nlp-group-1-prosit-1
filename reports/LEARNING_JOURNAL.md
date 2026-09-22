@@ -1,499 +1,328 @@
-# Individual Reflective Learning Journal — Natural Language Processing (ICS554)
+# Individual Reflective Learning Journal: Natural Language Processing (ICS554)
 
 **Student Name**: Eric Elikplim Sunu  
 **Degree**: Master's in Intelligent Computing Systems (MICS 2028)  
 **Course**: ICS554 Natural Language Processing · Ashesi University  
-**Project**: Prosit 1 (Ankora AI Research Lab — Language Modeling & Domain Adaptation)  
+**Project**: Prosit 1 (Ankora AI Research Lab: Language Modeling & Domain Adaptation)  
 **Branch**: `eric` · **Public Repository**: https://github.com/ASU-MICS-2028/nlp-group-1-prosit-1.git  
+
+> **Status, 2026-09-22.** Sections 2 to 11 were rewritten after a verification audit of this repository. Section 12 records what we first believed, what it turned out to be, and why. Every number here is copied from a file in `reports/` written by a committed script; `reports/claims_table.md` lists which.
 
 ---
 
 ## 1. Problem Formulation & Epistemic Objectives
 
 ### 1.1 The Learning Purpose
-In Problem-Based Learning (PBL), the objective of an engineering exploration is not merely to write functional code, but to understand the fundamental physics of the algorithms, document where mathematical abstractions break down under empirical pressure, and build defensible mental models for production deployment.
+In Problem-Based Learning (PBL), the objective of an engineering exploration is not merely to write functional code, but to understand how the algorithms behave, document where our understanding broke down under empirical pressure, and build mental models we can defend.
 
-For this prosit, we set out to rigorously test the interaction between:
-1. **Tokenization Granularity**: How the choice of input unit (Character, Whitespace, Unicode Word, Morphological Stemming, and Byte-Pair Encoding) alters vocabulary entropy, vocabulary size $|V|$, and sequential dependency length.
-2. **N-Gram Conditioning Horizon ($N \in [1, 2, 3, 4, 5, 6]$)**: How scaling the Markov lookback window impacts model perplexity, parameter storage, and data sparsity, identifying the exact inflection point where statistical models begin "breaking apart."
-3. **Multi-Source Data Harmonization**: How to clean, normalize (Unicode NFC), deduplicate, and merge up to four disparate text sources in a low-resource tonal language (**Ewe / Èʋegbe**) into a unified, leak-free training corpus.
+For this prosit, we set out to test the interaction between:
+1. **Tokenization Granularity**: how the choice of unit (Character, Whitespace, Unicode Word, a rule-based Ewe stemmer, and Byte-Pair Encoding) changes vocabulary size $|V|$, unknown-word rate and sequence length.
+2. **N-Gram Conditioning Horizon ($N \in [1, 2, 3, 4, 5, 6]$)**: how a longer Markov context changes perplexity and data sparsity, and whether longer contexts eventually stop helping.
+3. **Multi-Source Data Harmonization**: how to clean, normalize (Unicode NFC), deduplicate, and merge four disparate text sources in a low-resource tonal language (**Ewe / Èʋegbe**) into one leak-free training corpus.
 
 ---
 
-## 2. Progressive Empirical Log & Experimental Findings
+## 2. The Two Core Experiments (Unified Corpus)
+
+All numbers in this section come from `reports/results_unified_all_tokenizers.json`, written by `scripts/run_multi_tokenizer_ablation.py`. Setup: 98,808 training sentences (1,874,130 words), scored on 4,000 validation and 4,000 test sentences; interpolated Kneser-Ney smoothing; tokens seen only once in training become `<unk>`; the best order $N$ is chosen on validation, never on test.
+
+*The first draft of this section (2026-09-17) was written before any Ewe data was in the repository and contained illustrative tables (a vocabulary of about 1,250 words, a Kneser-Ney trigram perplexity of 71.4, and so on). Those numbers were never measured and have been removed; see section 12.*
 
 ### 2.1 Experiment Series A: The Tokenization Spectrum
-We evaluated five distinct tokenization paradigms on the Ewe language corpus:
 
-| Tokenization Strategy | Vocab Size $|V|$ | Token Count (Length) | Out-of-Vocabulary (OOV) Rate | Linguistic Characteristics in Ewe |
-|---|---|---|---|---|
-| **Character-Level** | Minimal ($\approx 45$) | Extremely Long ($5.2\times$ word) | $0.0\%$ (Virtually zero) | Treats letters as tokens; zero semantic context per token |
-| **Whitespace** | Large ($\approx 2,400$) | Moderate | Very High ($14.2\%$) | Merges punctuation into words (`"asime,"` $\ne$ `"asime"`) |
-| **Unicode Word (NFC)** | Optimal ($\approx 1,250$) | Standard Baseline | Moderate ($4.8\%$) | Binds combining diacritics; preserves letters `ɖ, ƒ, ɣ, ŋ, ɔ, ɛ, ʋ` |
-| **Ewe Rule Stemmer** | Reduced ($\approx 820$) | Standard Baseline | Low ($3.1\%$) | Strips pronominal prefixes (`mí-`, `wó-`) & plural `-wo` |
-| **Byte-Pair Encoding (BPE)** | Compact ($\approx 350$) | Balanced ($1.6\times$ word) | $0.2\%$ (Subword fallback) | Merges frequent byte pairs; breaks rare words into morphemes |
+| Tokenizer | What one token is | Vocabulary $|V|$ | Test tokens that are `<unk>` | Tokens per word |
+|---|---|---:|---:|---:|
+| Whitespace | text between spaces, punctuation attached (`loo!`) | 37,560 | 3.93% | 1.00 |
+| Unicode Word | words and punctuation separately, tone marks kept | 26,489 | 1.93% | 1.16 |
+| Ewe Stemmer (affixes kept) | Unicode words with one prefix and one suffix split off (`nu+ srɔ̃la +wo`) | 23,297 | 1.55% | 1.27 |
+| BPE (150 merges) | subword pieces learned from the training split | 371 | 0.01% | 2.38 |
+| Character | single characters, spaces kept as `▁` | 227 | 0.00% | 4.82 |
 
-#### Key Insight from Series A:
-- **Character-level models** completely eliminate OOV tokens, but an N-gram model with $N=3$ only sees 3 characters (e.g. `"a-f-l"`), which is insufficient to capture even a single word's syntax.
-- **Whitespace splitting** severely corrupts count matrices because attached punctuation creates duplicate vocabulary entries (`"Keta."`, `"Keta,"`, and `"Keta"` become three distinct words).
-- **Subword BPE** achieves the optimal mathematical balance between vocabulary size and sequence length, providing a clean solution to the out-of-vocabulary dilemma in low-resource African languages.
+#### Key insights from Series A
+- **Attached punctuation multiplies word types.** Whitespace splitting makes `loo`, `loo!` and `loo,` three different words: its vocabulary is 42% larger than Unicode Word's (37,560 vs 26,489) and its unknown-token rate twice as high (3.93% vs 1.93%).
+- **Characters and BPE almost never meet an unknown token,** but pay with longer sequences (4.82 and 2.38 tokens per word), so the same $N$ covers much less text.
+- **Per-token perplexity cannot rank tokenizers.** A character model chooses among 227 symbols per step, a word model among 26,489. Section 3, Discovery 4 compares them per word instead.
+
+### 2.2 Experiment Series B: The N-Gram Lookback Horizon (Unicode Word)
+
+| Order $N$ | Test n-grams never seen in training | KN validation PPL | KN test PPL | Equal-weight interpolation, test PPL | Superseded code, test PPL |
+|---|---:|---:|---:|---:|---:|
+| 1 | 0.0% | 527.7 | 534.7 | 534.7 | 782.1 |
+| 2 | 10.5% | 117.6 | 121.2 | 151.6 | 225.9 |
+| 3 | 36.9% | 74.9 | 77.7 | 93.6 | 150.1 |
+| 4 | 60.9% | 68.0 | 70.5 | 80.6 | 147.8 |
+| 5 | 74.5% | 66.8 | **69.3** | 77.0 | 163.6 |
+| 6 | 80.5% | 67.1 | 69.7 | 75.9 | 185.8 |
+
+The last column is the old code's result (from the committed JSON before this rewrite, on slightly different data), kept only to show the shape that misled us.
+
+- **Longer context never hurts once smoothing is correct.** Test perplexity falls from 534.7 to 70.5 by $N=4$, then stays flat (69.3 at $N=5$, 69.7 at $N=6$) even though 80.5% of test 6-grams never occur in training: Kneser-Ney hands the probability of an unseen long context down to the shorter ones.
+- **The chosen order is within noise.** Validation picks $N=5$, but $N=4$, 5 and 6 differ by less than 2% on validation. The honest summary is "flat from $N=4$".
+- **Kneser-Ney beats equal-weight interpolation at every $N \ge 2$** (77.7 vs 93.6 at $N=3$). Interpolation, now a proper distribution, also keeps improving with $N$; it is simply worse at deciding how much to trust a rare context.
+- **The old curve turned upward after $N=4$ because of bugs**, not because of the language (Discovery 2).
 
 ---
 
-### 2.2 Experiment Series B: The N-Gram Lookback Horizon ($N=1$ to $N=6$)
-Using our Unicode Word tokenizer on Ewe, we scaled the n-gram order $N$ from 1 to 6 to pinpoint where the statistical model breaks down:
+## 3. Deep Technical Discoveries
 
-| Order ($N$) | Context Name | Sparsity Rate (% Unseen in Test) | Test Perplexity (MLE) | Test Perplexity (Laplace $k=1$) | Test Perplexity (Kneser-Ney / Interp) | Qualitative Coherence in Ewe |
-|---|---|---|---|---|---|---|
-| **$N=1$** | Unigram | $0.0\%$ (all known) | $245.8$ | $245.8$ | $245.8$ | Random bag of words; no syntactic grammar |
-| **$N=2$** | Bigram | $38.2\%$ unseen | $\infty$ (Failed) | $134.2$ | $79.1$ | Natural two-word transitions (*"woezɔ loo"*, *"suku me"*) |
-| **$N=3$** | Trigram | $74.6\%$ unseen | $\infty$ (Failed) | $148.7$ | **$71.4$** | **Optimal sweet spot**: fluent phrases (*"kofi yi suku"*) |
-| **$N=4$** | 4-Gram | $92.1\%$ unseen | $\infty$ (Failed) | $312.4$ | $94.2$ | Highly sparse; Laplace breaks; model memorizes phrases |
-| **$N=5$** | 5-Gram | $98.4\%$ unseen | $\infty$ (Failed) | $840.1$ | $162.8$ | Over $98\%$ of test contexts never seen in training |
-| **$N=6$** | 6-Gram | $99.7\%$ unseen | $\infty$ (Failed) | $2,150.0$ | $285.6$ | **Complete breakdown**: acts purely as a verbatim memorizer |
+### Discovery 1: The Combining Diacritic Trap
+- **The phenomenon**: the punctuation-aware pattern `\w+|[^\w\s]` split `"nusrɔ̃lawo"` (students) into three tokens, `['nusrɔ', '̃', 'lawo']`, with the tilde alone in the middle; plain `\w+` silently dropped the tilde.
+- **The root cause**: Python's `\w` matches what `str.isalnum()` accepts, letters and digits. A combining tilde (U+0303, Unicode category Mn) is neither. NFC normalization cannot rescue it, because Unicode has no single precomposed character for ɔ with a tilde: ɔ̃ stays two code points. This is documented behaviour, not a Python bug.
+- **The fix**: the token pattern also accepts the combining-mark block U+0300 to U+036F: `r"[\w\u0300-\u036f]+|[^\w\s]"`. NFC still matters, so that letters that *do* have a precomposed form are always stored the same way.
 
----
+### Discovery 2: The "Breaking Point" Was Our Smoothing, Not the Language
+- **What we believed**: on each dataset, word n-grams peak at $N=3$ and get worse from $N=4$; with 1.9M words the peak "shifts rightward" to $N=4$. Both claims were in the report and the slides.
+- **What it was**: three bugs in `src/ngram.py`, each of which grows with $N$:
+  1. *Equal-weight interpolation threw probability away.* An order whose context never occurred in training contributed 0 but kept its weight, so the probabilities summed to less than 1: 0.667 for an unseen trigram context, 0.333 for an unseen 6-gram context.
+  2. *The `<s>` padding was counted as a word.* A 6-gram model pads each sentence with five `<s>` and counted them in the unigram table (in our unit-test corpus, 10 of 18 unigram tokens), so the distribution everything backs off to got worse as $N$ grew.
+  3. *"Kneser-Ney" above bigrams was not Kneser-Ney.* For $N \ge 3$ it backed off to a uniform $1/|V|$ instead of the continuation-count distribution.
 
-## 3. Deep Technical Discoveries: Where & Why Things Break Apart
+  On top of that, every training word was in the vocabulary, so `<unk>` never occurred in training and each unknown test word got probability about $10^{-12}$, roughly 7% of the old total test loss.
+- **Why it looked like a law**: each bug hurts more as $N$ grows, which is exactly the shape of a "breaking point".
+- **How we know the fix is right**: the new Kneser-Ney reproduces, to one decimal at every order, an independent implementation written during the audit (on the old Dataset 1 split: 512.0, 115.1, 77.8, 72.4, 71.6, 72.1). `tests/test_pipeline.py` now checks that probabilities sum to 1 for seen and unseen contexts; that one-line check would have caught bug 1 on the first day.
 
-### Discovery 1: The Combining Diacritic Tokenization Trap in African Languages
-- **The Phenomenon**: In Ewe, vowels frequently carry tonal accents (e.g., acute, grave, nasal tilde). When standard Python regex `re.findall(r"\w+", text)` was initially applied, the word `"Nusrɔ̃lawo"` (students) was unexpectedly split into **three fragmented tokens**: `['Nusrɔ', '̃', 'lawo']`!
-- **The Root Cause**: Unicode categorizes combining diacritics (like combining tilde `\u0303`) under category `Mn` (Mark, non-spacing). The standard `\w` regex engine does not recognize standalone combining characters as word constituents unless explicitly precomposed into Unicode NFC form.
-- **The Circumvention**: We updated our tokenization regex to explicitly capture Unicode combining marks: `r"[\w\u0300-\u036f]+|[^\w\s]"` combined with `unicodedata.normalize("NFC", text)`. This kept `"nusrɔ̃lawo"` completely intact as an atomic lexical entry.
+### Discovery 3: Lookalike Letters Split Ewe Words in Two
+Capital eth Ð (U+00D0) looks identical to the Ewe capital Ɖ (U+0189) but lowercases to ð, not ɖ. The corpus used it in 5,026 lines of the previous unified training split, so "ðe" (2,073 times) and "ɖe" (46,110 times) were counted as different words, as were "ðasefowo" and "ɖasefowo". The cleaner now maps Ð and ð to Ɖ and ɖ (and Greek ε to ɛ) before anything is counted.
 
-### Discovery 2: The Inflection Point — Why $N \ge 4$ Breaks Down
-- **The Theoretical Reality**: The potential state space of an n-gram model grows exponentially as $|V|^N$. For a modest vocabulary of $|V| = 1,250$ Ewe words:
-  - Bigram combinations: $1,250^2 \approx 1.56 \times 10^6$ states.
-  - Trigram combinations: $1,250^3 \approx 1.95 \times 10^9$ states.
-  - 4-gram combinations: $1,250^4 \approx 2.44 \times 10^{12}$ states.
-- **The Empirical Collapse**: In a small dataset (~50,000 tokens), the vast majority of these billions of theoretical states are never observed. At $N=4$, **$92.1\%$ of test contexts are unseen**; at $N=6$, **$99.7\%$ are unseen**. 
-- **The Consequence**: Without backoff, the model assigns zero probability to virtually all valid text. With naive Laplace smoothing, the model distributes almost all probability mass to impossible sequences, causing test perplexity to spike from $71.4$ at $N=3$ to over $2,150$ at $N=6$.
+### Discovery 4: Comparing Tokenizers Needs a Common Unit (a Correction of a Correction)
+1. **The draft claim**: "Across all orders, Byte-Pair Encoding (BPE) unlocked the lowest perplexity", comparing BPE's per-token perplexity (13.8) with Unicode Word's (147.8). Per-token perplexities of different tokenizers are not comparable.
+2. **The first correction (review of 2026-09-21)**: re-expressed per word, the old results said Unicode Word 320 against BPE 449, so "BPE is worse". That was also wrong. It used the broken models above (where each unknown word cost an arbitrary 27.6 nats), a character model trained on only 4,000 sentences, and BPE merges learned from 3,000.
+3. **The corrected comparison**: every tokenizer now trains on the same 98,808 sentences, all lowercase the same way, the character model keeps word boundaries, and each `<unk>` pays the cost of spelling its word with a small character model trained on the words seen once in training. A model that predicts `<unk>` has only said "some rare word"; it has not finished predicting the sentence.
 
-### Discovery 3: Why Bigrams Generate "I live TV" while Trigrams Avoid It
-- **The Lookback Anomaly**: A bigram model conditions each word strictly on the single preceding word ($N-1=1$). In our training corpus, the pair `("I", "live")` is frequent, and the pair `("live", "TV")` is frequent. When generating autoregressively, the model computes:
-  $$P(\text{TV} \mid \text{live})$$
-  Because `"live TV"` is frequent in isolation, the bigram model assigns high probability to `"TV"`, having completely lost the memory that `"I"` was the subject.
-- **The Trigram Fix**: A trigram model ($N=3$) evaluates $P(\text{TV} \mid \text{I}, \text{live}) = 0$, properly eliminating this grammatical degradation.
+| Tokenizer | Best $N$ (val) | Test PPL per token | Per word, `<unk>` free | Per word, `<unk>` spelled |
+|---|:---:|---:|---:|---:|
+| Whitespace | 5 | 120.1 | 120.1 | 261.6 |
+| Unicode Word | 5 | 69.3 | 132.1 | 202.2 |
+| Ewe Stemmer (affixes kept) | 5 | 50.7 | 136.7 | 196.9 |
+| BPE (150 merges) | 6 | 9.7 | 188.7 | **189.1** |
+| Character | 6 | 3.7 | 446.2 | 447.1 |
+
+Without the spelling charge the ranking runs backwards: the tokenizer with the most unknown tokens (Whitespace, 3.93%) looks best, because `<unk>` is an easy, frequent token. With it, **BPE is best per word**, keeping affixes as tokens beats plain words by 2.6% (196.9 vs 202.2), attached punctuation costs 29% (261.6 vs 202.2), and characters trail because six characters cover only about 1.2 words of context.
+
+The old stemmer *deleted* the affixes it found. That made each prediction easier (fewer, coarser types), so its lower perplexity measured an easier task, not a better model. It now keeps them as tokens (`nu+ srɔ̃la +wo`), so it models the same text as the others. Its rules are still crude: `megbe` (behind) becomes `me+ gbe`.
 
 ---
 
 ## 4. Problems Encountered & Proven Circumventions
 
-| # | Problem Encountered | Technical Symptom | Root Cause | Proven Engineering Circumvention |
+| # | Problem | Symptom | Root cause | Fix (and where) |
 |---|---|---|---|---|
-| 1 | **Combining Diacritic Splitting** | Ewe words split into letters + floating accents (`nusrɔ` + `̃`) | Regex `\w+` fails on non-spacing Unicode marks (`\u0300-\u036f`) | Enforced `unicodedata.normalize('NFC')` and extended regex to `[\w\u0300-\u036f]+` |
-| 2 | **Zero-Probability Collapse** | Test Perplexity diverges to $\infty$ on unsmoothed MLE | A single unseen bigram in the test set yields $C(w_{i-1}, w_i) = 0$ | Implemented **Interpolated Kneser-Ney Smoothing** with continuation probability backoff |
-| 3 | **Laplace Distortion at High $N$** | Perplexity worsens dramatically at $N=4, 5, 6$ ($PPL > 2000$) | Adding $+1$ to all $|V|$ words heavily over-allocates mass to unseen events | Replaced Add-1 with **Lidstone ($k=0.1$)** and Linear Interpolation across lower orders |
-| 4 | **Out-of-Vocabulary (OOV) Leaks** | Novel words in evaluation cause indexing crashes | Evaluating text on an unclosed vocabulary | Induced closed vocabulary strictly from training partition; mapped rare words ($C < 2$) to `<unk>` |
-| 5 | **Memory Exhaustion on Colab** | System RAM crashes when downloading large raw text files | Ingesting entire corpora into memory at once | Built an iterable **Cloud Streaming Pipeline** with configurable sampling (`SCALE_FACTOR = 0.05`) |
-| 6 | **Cross-Source Dataset Inconsistency** | Duplicate sentences and conflicting text formats across 4 sources | Scraping datasets from distinct origins with different schemas | Engineered `src/data_pipeline.py` with multi-source ingestion, hash-based deduplication, and length filters |
+| 1 | Combining diacritic splitting | `nusrɔ̃lawo` split into three tokens | `\w` excludes combining marks; ɔ̃ has no precomposed form | token regex accepts U+0300 to U+036F (`src/ewe_tokenizers.py`) |
+| 2 | Zero probability under MLE | unseen n-gram gives $P=0$ | MLE has no mass for unseen events | interpolated Kneser-Ney; `perplexity()` now returns infinity for MLE instead of hiding it behind a $10^{-12}$ floor |
+| 3 | Probability thrown away at high $N$ | perplexity rose from $N=4$ | equal-weight interpolation kept weight on orders with unseen contexts | renormalize over orders whose context was seen (`src/ngram.py`) |
+| 4 | `<s>` counted as a word | unigram mass on `<s>` grew with $N$ | counting started at the padding | count only positions that are predicted |
+| 5 | Trigram "Kneser-Ney" was uniform backoff | lower orders never used | wrong lookup table for the lower order | recursive Kneser-Ney with continuation counts, checked against an independent implementation |
+| 6 | Unknown words | each got $P \approx 10^{-12}$ | `<unk>` never occurred in training | tokens seen once become `<unk>`; per-word comparisons charge the spelling |
+| 7 | Lookalike letters | `ðe` and `ɖe` counted separately | Ð (eth) typed for Ɖ | mapped in `src/data_pipeline.py` |
+| 8 | Corrupted rows | 15 binary lines in Dataset 1 | broken rows in the CSV | dropped by the cleaner |
+| 9 | Irreproducible splits | nobody else could rebuild the data | build steps were never committed | `scripts/build_ewe_datasets.py` |
+| 10 | Section C answers split into fragments | 18 of 100 test "pairs" had no question | answers contain blank lines; files were split on blank lines | JSONL splits (`src/prepare_domain_data.py`) |
+| 11 | Section C test questions seen in training | 16 of 100 test pairs were copies of training pairs | 22,615 rows but only 2,212 distinct questions, split without deduplication | one row per question before the split |
+
+(An earlier version of this table listed a Colab memory problem; it never happened in this project and has been removed.)
 
 ---
 
 ## 5. Multi-Source Dataset Harmonization Protocol & Empirical Sweep
 
-Our team identified four distinct text sources for Ewe:
-1. **Dataset 1 (`EWE_ENGLISH.csv`)**: 28,614 rows of rich cultural stories, naming customs, folklore, and narratives.
-2. **Dataset 2 (`eweenglishsentence(3).json`)**: 600 rows of personal biographical introductions and educational text (micro-dataset).
-3. **Dataset 3 (`selected transcribed audios.xlsx`)**: 19,152 rows of spoken speech transcriptions from the University of Ghana Waxal Project.
-4. **Dataset 4 (`ewe_corpus.parquet`)**: 4,408,322 rows of large-scale web and scripture aligned sentences.
+`scripts/build_ewe_datasets.py` builds every split from the raw files; `data/README.md` records their origin.
 
----
+1. **Dataset 1 (`EWE_ENGLISH.csv`)**: 28,614 English/Ewe rows. Earlier described as cultural folklore; in fact a large share is Jehovah's Witnesses publications and Bible verses (10.6% of kept sentences mention Yehowa, 6.8% carry chapter:verse references). Kept: 25,837 sentences.
+2. **Dataset 2 (`eweenglishsentence(3).json`)**: 600 rows from a dictionary database: 477 Glosbe example sentences and 123 sentences from peterlin.pl, including personal introductions that name real people. Kept: 526.
+3. **Dataset 3 (`selected transcribed audios.xlsx`)**: 19,152 rows, 19,151 of them with a transcription of a spoken image description (University of Ghana, Waxal project, 2023, 539 speakers). Kept: 19,150.
+4. **Dataset 4 (`ewe_corpus.parquet`)**: the first 200,000 rows of a 4,408,322-row English/Ewe pair file sorted by alignment score; at least 10 of 15 randomly sampled kept sentences are Bible or Jehovah's Witnesses text. Kept: 80,183.
+5. **Unified**: all four, deduplicated across sources: 123,511 sentences (98,808 train / 12,351 validation / 12,352 test).
 
-### Dataset 1 Empirical Ablation Log (`EWE_ENGLISH.csv`)
+### Cross-dataset comparison
+Perplexities are measured on each dataset's own test set, so compare *within* a column, not across columns.
 
-- **Raw Rows**: 28,614 | **Deduplicated Unique Sentences**: 26,594 (1,636 duplicate rows filtered).
-- **Split**: 21,275 Train (517,444 words) | 2,659 Val (65,067 words) | 2,660 Test (66,805 words).
-- **Special Ewe Orthography Distribution**: `ɔ` (109,034), `ɖ` (51,727), `ƒ` (33,158), `ŋ` (27,165), `ɛ` (4,456), `ʋ` (4,222), `ɣ` (3,660).
-- **Vocabulary Size $|V|$**: 21,419 unique word tokens.
+| | Dataset 1 | Dataset 2 | Dataset 3 | Dataset 4 | Unified |
+|---|---:|---:|---:|---:|---:|
+| Training sentences | 20,669 | 420 | 15,320 | 64,146 | 98,808 |
+| Training words | 518,219 | 9,642 | 508,630 | 866,411 | 1,874,130 |
+| Unicode Word: test `<unk>` rate | 2.47% | 22.69% | 3.3% | 2.18% | 1.93% |
+| Unicode Word: test trigrams unseen in training | 43.59% | 61.94% | 40.37% | 40.8% | 36.91% |
+| Unicode Word: $N$ chosen on validation | 5 | 4 | 3 | 4 | 5 |
+| Per word, `<unk>` spelled: BPE | **183.2** | **5,806.9** | **187.3** | **201.6** | **189.1** |
+| Per word: Ewe Stemmer (affixes kept) | 198.9 | 7,300.0 | 200.9 | 219.0 | 196.9 |
+| Per word: Unicode Word | 208.2 | 7,827.7 | 205.1 | 226.0 | 202.2 |
+| Per word: Whitespace | 284.5 | 10,555.3 | 237.6 | 295.6 | 261.6 |
+| Per word: Character | 375.8 | 8,062.8 | 249.6 | 408.0 | 447.1 |
 
-#### Empirical N-Gram Progression ($N=1$ to $N=6$) with Unicode Word Tokenizer
+Dataset 2's per-word numbers are huge because, with only 420 training sentences, 22.69% of Unicode Word test tokens are unknown words that must be spelled out.
 
-| Order $N$ | Gram Name | Sparsity (% Unseen Test N-Grams) | Laplace Perplexity | Interpolation Perplexity | Sample Generated Text (Autoregressive) | Qualitative Coherence |
-|---|---|---|---|---|---|---|
-| **$N=1$** | Unigram | 1.39% | 571.39 | 663.55 | `nɛ eƒe , eye agbalẽ la wɔa le woava siwo ŋu mia` | Word salad, no syntax |
-| **$N=2$** | Bigram | 17.94% | 1,105.73 | 193.31 | `eye be mawu ; le gbɔnye o ;` | Local pairings make sense |
-| **$N=3$** | **Trigram** | **47.29%** | 2,266.41 | **139.40 (OPTIMUM)** | `nu si gbɔ eme ate ŋu ana nàlolo .` | **Natural, coherent Ewe sentence** |
-| **$N=4$** | 4-gram | 69.44% | 6,844.14 | 145.88 (Degrading) | `, ne míaɖo kpe xɔasiwo , ati , bè , alo negawɔ` | Partial memorization |
-| **$N=5$** | 5-gram | 80.65% | 10,656.67 | 167.19 (Degrading) | `3 eya ta , eye woatsrɔ̃ aʋakɔ alo ŋusẽ me o ,` | Verbatim chunk repetition |
-| **$N=6$** | 6-gram | 85.62% | 12,658.39 | 193.46 (Severely Degraded) | `le kpɔɖeŋu me , dzɔdzɔmeŋutinunyala aɖewo gɔ̃ hã ”` | Verbatim training memorization |
-
-#### Comprehensive Multi-Tokenizer Matrix for Dataset 1 (`EWE_ENGLISH.csv` - 21,275 Train Sents)
-*Values shown as: Perplexity (Sparsity % Unseen in Test Set)*
-
-| Order $N$ | Whitespace | Unicode Word | Ewe Stemmer | BPE (Subwords) | Character |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Unigram ($N=1$)** | 2,044.1 (3.9%) | 663.5 (1.4%) | 593.9 (1.2%) | 134.9 (0.0%) | 27.2 (0.0%) |
-| **Bigram ($N=2$)** | 568.9 (28.6%) | 193.3 (17.9%) | 178.2 (16.8%) | 45.1 (0.2%) | 13.8 (0.1%) |
-| **Trigram ($N=3$)** | **476.9** (61.5%) | **139.4** (47.3%) | **127.4** (46.2%) | 22.2 (7.0%) | 10.6 (1.4%) |
-| **4-gram ($N=4$)** | 540.8 (79.1%) | 145.9 (69.4%) | 132.3 (68.8%) | 15.5 (26.1%) | 8.6 (6.7%) |
-| **5-gram ($N=5$)** | 643.5 (85.9%) | 167.2 (80.7%) | 151.2 (80.4%) | **14.0** (45.4%) | 7.4 (18.0%) |
-| **6-gram ($N=6$)** | 758.1 (88.6%) | 193.5 (85.6%) | 174.8 (85.5%) | 14.2 (59.7%) | **7.0** (33.1%) |
-
-#### Key Discoveries across Tokenizers on Dataset 1:
-1. **The Punctuation Penalty (Whitespace vs Unicode Word)**: Punctuation attached to words inflates vocabulary and causes Whitespace perplexity to be **3.4x worse** than Unicode Word (476.9 vs 139.4 at Trigram).
-2. **The Stemming Advantage**: Peeling affixes (`-wo`, `mí-`) drops Trigram perplexity from $139.4 \to 127.4$, confirming that agglutinative morphology compounds data sparsity.
-3. **Subwords Push the Breaking Point**: Word tokenizers break at $N=4$ ($69.4\%$ sparsity). BPE subwords keep sparsity below $50\%$ all the way to $N=5$, pushing the empirical sweet spot to **5-gram ($N=5$, PPL=14.0)**!
-
----
-
-### Dataset 2 Empirical Ablation Log (`eweenglishsentence(3).json`)
-
-- **Raw Rows**: 600 | **Valid Non-Empty**: 540 | **Deduplicated Sentences**: 526.
-- **Split**: 420 Train (9,642 words) | 52 Val (1,182 words) | 54 Test (1,086 words).
-- **Domain**: Personal introductions, biographies, dates, family relationships.
-- **Vocabulary Size $|V|$**: 3,114 unique word tokens.
-
-#### Comprehensive Multi-Tokenizer Matrix for Dataset 2 (Micro-Data - 420 Train Sents)
-*Values shown as: Perplexity (Sparsity % Unseen in Test Set)*
-
-| Order $N$ | Whitespace | Unicode Word | Ewe Stemmer | BPE (Subwords) | Character |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Unigram ($N=1$)** | 21,207.4 (26.8%) | 4,263.6 (17.6%) | 3,451.8 (16.3%) | 137.8 (0.1%) | 26.6 (0.0%) |
-| **Bigram ($N=2$)** | **19,468.3** (73.9%) | **3,098.1** (61.6%) | **2,539.1** (61.1%) | 54.9 (14.4%) | 14.4 (1.8%) |
-| **Trigram ($N=3$)** | 27,088.2 (92.3%) | 3,881.7 (85.6%) | 3,163.0 (85.5%) | **40.8** (56.2%) | 11.6 (9.2%) |
-| **4-gram ($N=4$)** | 36,444.1 (95.5%) | 5,121.9 (93.5%) | 4,168.5 (93.4%) | 45.4 (77.4%) | 10.2 (25.3%) |
-| **5-gram ($N=5$)** | 46,498.0 (96.7%) | 6,459.7 (95.4%) | 5,255.2 (95.3%) | 53.7 (86.6%) | **9.8** (45.8%) |
-| **6-gram ($N=6$)** | 57,052.3 (96.9%) | 7,855.7 (96.0%) | 6,388.8 (96.0%) | 63.0 (91.2%) | 10.2 (62.9%) |
-
-#### Cross-Dataset Comparison: Dataset 1 vs. Dataset 2 (The Data Starvation Threshold)
-
-| Metric | Dataset 1 (21,275 Train Sents) | Dataset 2 (420 Train Sents) | Scientific Takeaway |
-|---|---|---|---|
-| **Unigram Sparsity ($N=1$)** | **1.39%** | **17.61%** | A 98% drop in data volume increases out-of-vocabulary test words by **12.6x**! |
-| **Bigram Sparsity ($N=2$)** | **17.94%** | **61.64%** | On micro-data, over 60% of common 2-word pairs never appeared in training. |
-| **Trigram Sparsity ($N=3$)** | **47.29%** | **85.60%** | Trigrams are usable on Dataset 1, but completely starved on Dataset 2. |
-| **Word Breaking Point** | Breaks at **$N=4$** (Trigram sweet spot) | Breaks at **$N=3$** (Bigram sweet spot) | The word breaking point shifts **leftward** under data scarcity. |
-| **BPE Subword Sweet Spot** | **5-gram ($N=5$, PPL=14.0)** | **Trigram ($N=3$, PPL=40.8)** | BPE consistently gives +2 orders of headroom before breaking! |
-| **Character Sweet Spot** | **6-gram ($N=6$, PPL=7.0)** | **5-gram ($N=5$, PPL=9.8)** | Characters require high orders ($N \ge 5$) to capture word-level meaning. |
-
----
-
-### Dataset 3 Empirical Ablation Log (`selected transcribed audios.xlsx`)
-
-- **Raw Rows**: 19,152 | **Non-Null Transcriptions**: 19,151 | **Unique**: 19,151 (0 duplicates).
-- **Split**: 15,320 Train (508,655 words) | 1,915 Val (63,264 words) | 1,916 Test (63,490 words).
-- **Domain**: Spoken audio transcriptions from the University of Ghana Waxal Project (scene descriptions).
-- **Characteristics**: Conversational syntax, spontaneous repetitions (`ee ee ee`), non-standard orthography and lengthened vowels (`t̄ɔwo`, `gā`, `hā`).
-- **Vocabulary Size $|V|$**: 35,298 raw tokens.
-
-#### Comprehensive Multi-Tokenizer Matrix for Dataset 3 (Spoken Oral Domain - 15,320 Train Sents)
-*Values shown as: Perplexity (Sparsity % Unseen in Test Set)*
-
-| Order $N$ | Whitespace | Unicode Word | Ewe Stemmer | BPE (Subwords) | Character |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Unigram ($N=1$)** | 1,140.0 (3.8%) | 492.7 (2.4%) | 421.7 (2.1%) | 121.0 (0.0%) | 23.4 (0.0%) |
-| **Bigram ($N=2$)** | 403.7 (25.5%) | 178.8 (16.9%) | 158.1 (15.7%) | 39.7 (0.4%) | 11.6 (0.1%) |
-| **Trigram ($N=3$)** | **390.0** (58.2%) | **157.5** (46.0%) | **137.5** (44.1%) | 22.3 (8.7%) | 8.6 (0.7%) |
-| **4-gram ($N=4$)** | 460.9 (80.2%) | 176.4 (71.1%) | 152.4 (69.5%) | 17.9 (30.8%) | 6.8 (3.7%) |
-| **5-gram ($N=5$)** | 558.5 (89.8%) | 208.6 (85.3%) | 179.4 (84.3%) | **17.8** (53.6%) | 5.9 (10.8%) |
-| **6-gram ($N=6$)** | 664.4 (92.6%) | 245.8 (91.1%) | 210.9 (90.6%) | 19.1 (70.3%) | **5.5** (21.4%) |
-
-#### 3-Way Cross-Domain Discoveries (Written vs. Micro-Bio vs. Spoken Speech):
-1. **The Oral Language Concentration Effect**: Spoken transcriptions exhibit **lower Unigram Perplexity** (Unicode Word: **492.7** on Dataset 3 vs. **663.5** on Dataset 1). Spoken descriptions reuse high-frequency spatial anchors (*"le mɔ to"*, *"wole kpɔm"*), concentrating probability mass in fewer core lexical choices.
-2. **Orthographic Noise in Transcriptions**: Speech transcriptions contain non-standard elongations (e.g. macron accents `t̄ɔwo`, `gā`, `hā`). The Ewe Stemmer provided the largest absolute perplexity reduction on Dataset 3 ($157.5 \to 137.5$ at Trigram), effectively normalizing phonetic and dialectal variance!
-3. **Consistent Subword Advantage Across Domains**: Across all three corpora, BPE subwords consistently shifted the optimal sweet spot rightward by **+2 orders** (from Trigram to 5-gram on Datasets 1 & 3; from Bigram to Trigram on Dataset 2).
-
----
-
-### Dataset 4 Empirical Ablation Log (`ewe_corpus.parquet`)
-
-- **Raw Rows Sampled**: 200,000 | **Deduplicated Sentences**: 80,385 (55,126 duplicates filtered).
-- **Split**: 64,308 Train (867,455 words) | 8,038 Val (108,613 words) | 8,039 Test (108,495 words).
-- **Domain**: Large-Scale Web and Scripture Aligned Sentences (HuggingFace corpus).
-- **Vocabulary Size $|V|$**: 67,097 raw tokens.
-
-#### Comprehensive Multi-Tokenizer Matrix for Dataset 4 (Large-Scale Web Domain - 64,308 Train Sents)
-*Values shown as: Perplexity (Sparsity % Unseen in Test Set)*
-
-| Order $N$ | Whitespace | Unicode Word | Ewe Stemmer | BPE (Subwords) | Character |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Unigram ($N=1$)** | 2,138.4 (3.6%) | 667.6 (1.3%) | 592.7 (1.2%) | 137.2 (0.0%) | 28.0 (0.0%) |
-| **Bigram ($N=2$)** | 585.7 (25.9%) | 195.2 (15.9%) | 180.5 (14.8%) | 45.0 (0.2%) | 14.1 (0.3%) |
-| **Trigram ($N=3$)** | **486.6** (56.4%) | **140.3** (43.1%) | **128.6** (41.9%) | 22.3 (5.3%) | 10.8 (2.5%) |
-| **4-gram ($N=4$)** | 547.2 (74.0%) | 145.9 (64.5%) | 132.7 (63.7%) | 15.7 (21.6%) | 8.9 (10.0%) |
-| **5-gram ($N=5$)** | 647.8 (81.0%) | 166.4 (75.9%) | 150.8 (75.4%) | **14.0** (39.3%) | 7.9 (23.5%) |
-| **6-gram ($N=6$)** | 761.0 (83.5%) | 191.8 (80.7%) | 173.5 (80.4%) | **14.0** (53.2%) | **7.6** (39.3%) |
-
----
-
-### Phase 5: Grand Unified Ewe Mega-Corpus Empirical Ablation Log (`data/processed/unified/`)
-
-- **Fused Sources**: All 4 Corpora (Folklore CSV + Micro-Bios JSON + Waxal Speech Transcripts + Web & Scripture Corpus).
-- **Cross-Source Deduplication**: Filtered 2,260 cross-domain duplicate sentences.
-- **Corpus Scale**: **124,396 Total Unique Sentences / 2,349,941 Total Words**.
-- **Split**: 99,516 Train (1,881,823 words) | 12,439 Val (234,312 words) | 12,441 Test (233,806 words).
-- **Evaluating Sample**: 4,000 held-out test sentences (75,599 test tokens).
-- **Vocabulary Diversity $|V|$**:
-  - Whitespace: 100,707 surface forms.
-  - Unicode Word: 54,753 clean word types.
-  - Ewe Rule Stemmer: 48,756 root lemmas (affix peeling compressed vocabulary by 5,997 types).
-  - BPE (150 merges): 485 subwords.
-  - Character: 123 atomic characters.
-
-#### Comprehensive Multi-Tokenizer Matrix for Grand Unified Corpus (99,516 Train Sents / 1.88M Words)
-*Values shown as: Perplexity (Sparsity % Unseen in Test Set)*
-
-| Order $N$ | Whitespace | Unicode Word | Ewe Stemmer | BPE (Subwords) | Character |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Unigram ($N=1$)** | 2,247.1 (3.1%) | 782.1 (1.4%) | 690.1 (1.2%) | 137.2 (0.0%) | 27.2 (0.0%) |
-| **Bigram ($N=2$)** | 586.0 (22.6%) | 225.9 (13.9%) | 208.2 (12.9%) | 47.1 (0.1%) | 13.9 (0.2%) |
-| **Trigram ($N=3$)** | **441.2** (52.8%) | 150.1 (39.9%) | 137.2 (38.6%) | 24.0 (3.7%) | 10.8 (2.0%) |
-| **4-gram ($N=4$)** | 470.2 (72.6%) | **147.8** (62.6%) | **134.0** (61.6%) | 16.5 (17.9%) | 8.9 (8.5%) |
-| **5-gram ($N=5$)** | 541.4 (81.0%) | 163.6 (75.2%) | 147.7 (74.7%) | 14.2 (35.7%) | 7.9 (21.4%) |
-| **6-gram ($N=6$)** | 624.8 (84.1%) | 185.8 (81.0%) | 167.4 (80.7%) | **13.8** (50.6%) | **7.6** (37.9%) |
-
----
-
-### The 5-Corpus Master Comparison: The Empirical Scaling Laws of Low-Resource NLP
-
-| Feature / Metric | Dataset 1 (`.csv`) | Dataset 2 (`.json`) | Dataset 3 (`.xlsx`) | Dataset 4 (`.parquet`) | **Grand Unified Mega-Corpus** | Scientific Takeaway |
-|---|---|---|---|---|---|---|
-| **Domain** | Cultural Folklore | Biographies (Micro) | Waxal Speech (Oral) | Web & Scripture | **Fused Multi-Domain** | Complete linguistic coverage |
-| **Train Sentences** | 21,275 | 420 | 15,320 | 64,308 | **99,516** | **236x scaling** from micro to mega |
-| **Train Words** | 517,444 | 9,642 | 508,655 | 867,455 | **1,881,823** | Reaches ~1.9 million tokens |
-| **Unigram Sparsity (Word)** | 1.4% | 17.6% | 2.4% | 1.3% | **1.4%** | OOV stabilized at ~1.4% |
-| **Trigram Sparsity (Word)** | 47.3% | 85.6% | 46.0% | 43.1% | **39.9%** | **Sub-40% sparsity** achieved! |
-| **Optimal Word Order** | Trigram ($N=3$) | Bigram ($N=2$) | Trigram ($N=3$) | Trigram ($N=3$) | **4-gram ($N=4$)** | **Scale shifted breaking point rightward!** |
-| **Best Word PPL** | 127.4 (Stemmer) | 2,539.1 (Stemmer) | 137.5 (Stemmer) | 128.6 (Stemmer) | **134.0 (Stemmer, $N=4$)** | 4-gram beats Trigram at scale |
-| **Best BPE PPL** | 14.0 ($N=5$) | 40.8 ($N=3$) | 17.8 ($N=5$) | 14.0 ($N=5,6$) | **13.8 ($N=6$)** | BPE scales cleanly to $N=6$ |
-| **Best Character PPL** | 7.0 ($N=6$) | 9.8 ($N=5$) | 5.5 ($N=6$) | 7.6 ($N=6$) | **7.6 ($N=6$)** | Stable char branching factor |
-
-#### Breakthrough Discoveries from the Unified Corpus:
-
-1. **The Rightward Shift of the Word Breaking Point ($N=3 \to N=4$):**
-   - On every individual dataset (Datasets 1, 3, and 4), word models hit their empirical ceiling at **Trigram ($N=3$)** and immediately degraded at $N=4$ ($139.4 \to 145.9$ on D1; $157.5 \to 176.4$ on D3; $140.3 \to 145.9$ on D4).
-   - In the Grand Unified Mega-Corpus (1.88M words), **4-grams beat Trigrams** for the first time ($150.1 \to 147.8$ on Unicode Word; $137.2 \to 134.0$ on Stemmer)!
-   - *Why?* At 1.88 million words, 4-word transition contexts recur with sufficient frequency that the reduction in conditioning entropy outweighs the sparsity penalty!
-2. **The Universal Stemming Advantage:**
-   - Peeling prefixes (`mí-`, `wó-`, `me-`) and suffixes (`-wo`) reduced perplexity at every single order ($N=1\dots 6$) on the Unified Corpus, dropping the 4-gram optimum from $147.8 \to 134.0$ ($9.3\%$ error reduction).
-3. **Subword Headroom (BPE Optimum at $N=6$):**
-   - By eliminating out-of-vocabulary words and compressing rare morphological constructions into frequent subwords, BPE achieved its best performance at **6-gram ($N=6$, PPL=13.8)** with over 49% of 6-gram test subword sequences found in training.
+### What the corrected sweep shows
+1. **No breaking point anywhere.** On every dataset the word-level models flatten from about $N=4$: validation perplexities for $N=4$, 5 and 6 are within 3% of each other. Which of them validation picks (3, 4 or 5) is noise, not a finding.
+2. **The tokenizer ranking per word is stable.** BPE is best on all five datasets; keeping affixes as tokens beats plain words on all five; attached punctuation (Whitespace) is worse than Unicode Word on all five; characters are last on four of five (on the 420-sentence Dataset 2 they beat Whitespace).
+3. **The smoothing choices hold up on validation.** Kneser-Ney beats equal-weight interpolation at every $N \ge 2$ on every dataset, and the Ney discount estimate is the best of the four discounts we tried on validation, or within 0.3% of it.
+4. **The religious skew shows in what the models generate.** The unified 4-gram model's seeded sample is "2 eye yehowa ƒe gbe va na yona , amitai vi ," (the opening of the Book of Jonah). A model for everyday Ewe speech needs more conversational text like Dataset 3.
 
 ---
 
 ## 6. Synthesis & Viva Exam Readiness (`clenam.ai`)
 
-This complete 5-phase empirical exploration equips us with ironclad answers for the automated Viva Quiz on `clenam.ai`:
-
-1. **Why n-grams for low-resource African languages?**  
-   *Defense*: With limited data (<100,000 sentences), neural models overfit by memorizing noise and incur severe GPU compute/latency penalties. Smoothed n-grams compile into lightweight Weighted Finite-State Transducers (WFSTs) that run with microsecond latency on edge CPUs for Ankora's speech recognition pipeline.
-2. **Why does Perplexity break down when comparing different tokenizers?**  
-   *Defense*: Perplexity represents the branching factor of the vocabulary. Character-level tokenizers have $|V| \approx 123$ and artificially low perplexity (~7.6), while word-level tokenizers have $|V| \approx 54,000$ and higher perplexity (~134–147). Cross-model perplexity comparisons are only scientifically valid when evaluated over identical token streams and vocabularies.
-3. **Why did $N=4$ outperform $N=3$ on the Unified Corpus, but fail on isolated datasets?**  
-   *Defense*: The bias-variance trade-off governed by corpus scale. On smaller corpora (e.g. 21k sentences), 4-gram contexts suffer >69% test sparsity, causing variance to explode. In the Unified Mega-Corpus (100k sentences / 1.88M words), recurring 4-gram frequencies stabilize, allowing lower model bias to dominate and pushing the empirical breaking point rightward from $N=3$ to $N=4$.
-4. **Why did the Ewe Stemmer outperform the Unicode Word Tokenizer across all corpora?**  
-   *Defense*: Ewe is an agglutinative language where pronouns (`mí-`, `wó-`) and plurals (`-wo`) attach to root words. Raw word tokenization fragments identical semantic concepts into separate vocabulary entries (e.g., `atí` vs. `atíwo`). Stemming clusters inflected tokens into shared lemma counts, compressing the vocabulary and mitigating statistical sparsity.
+1. **Why n-grams for a low-resource African language?**  
+   *Defense*: They train in minutes on a CPU from counts alone, their behaviour is fully explainable, and smoothed n-gram models are a common choice for the language model inside speech recognition decoders (compiled into weighted finite-state transducers). We did not build that export, and we did not train a neural baseline, so we cannot claim n-grams beat neural models at our 1.9M-word scale; with this much text a small neural model might well do better.
+2. **Can you compare the perplexity of your character model with your word model?**  
+   *Defense*: Not per token: a character model chooses among 227 symbols per step, a word model among 26,489. Per word it works, as long as every model pays for the whole text; a word model that predicts `<unk>` must also pay to spell the word. On that basis BPE is best (189.1 per word) and characters worst (447.1).
+3. **Does a longer context make an n-gram model worse?**  
+   *Defense*: Not with correct smoothing. Kneser-Ney passes the probability of an unseen long context down to shorter contexts, so perplexity flattens from $N=4$ even when 80% of test 6-grams are unseen. Our first curve rose after $N=4$ because of three bugs (Discovery 2), and we can name each one.
+4. **Did morphological stemming help?**  
+   *Defense*: Deleting affixes made the task easier, so its lower perplexity proved nothing. Keeping the affixes as separate tokens gives a small, consistent gain per word on all five datasets (2.6% on the unified corpus). Ewe is usually described as mostly isolating, so a small gain is what we would expect.
+5. **What probability does your model give an unknown word?**  
+   *Defense*: Words seen only once in training become `<unk>`, so `<unk>` gets a real estimate from those rare-word events. When we compare tokenizers per word we add the cost of spelling the word with a character model.
 
 ---
 
 ## 7. Section C: Domain-Specific English LLM Adaptation (Agro-Extension)
 
-### 7.1 Problem Motivation: From Low-Resource N-Grams to Neural Parameter Efficiency
-While Section B established n-gram statistical language models for spoken Ewe speech recognition, Ankora's downstream agricultural advisory assistants must operate in English to synthesize technical agronomic guidance for agricultural extension agents. 
+### 7.1 Problem Motivation
+Ankora's agricultural assistants work in English. A pretrained model such as `distilgpt2` writes fluent English but knows little agronomy, and given `Question: ... Answer:` it tends to loop on the prompt. We adapted it with LoRA under two constraints: training must run on a laptop CPU, and the damage to general English should be small, and measured rather than assumed.
 
-Pretrained English foundation models (such as `distilgpt2` or `Llama`) possess strong generalized syntactic fluency from web crawls, but they lack localized agronomic priors. When asked specific farming questions, they fail in two distinct ways:
-1. **Degenerative Repetition / Parroting**: Because the base causal model has no specific fine-tuning on question-answering, it often treats the prompt as an open-ended fragment and loops the prompt words indefinitely (e.g. *"why does crop rotation matter? Why does it matter?"*).
-2. **Factually Ungrounded Hallucinations**: In the absence of agricultural domain probability mass, the model samples generic tokens that sound grammatically plausible but provide zero actionable farming utility.
+### 7.2 Dataset
+`KisanVaani/agriculture-qa-english-only` has 22,615 rows but only 2,212 distinct questions. We keep one row per question before shuffling, then split 80/10/10 (seed 42): 1,769 training, 221 validation and 222 test pairs, stored as JSONL (`src/prepare_domain_data.py`). Training uses the first 500 training pairs (a CPU budget). A real test pair:
 
-We set out to adapt a pretrained causal language model to the agricultural domain under two strict real-world constraints:
-- **Zero Catastrophic Forgetting**: The model must retain its broad grasp of English syntax and grammar.
-- **Extreme Parameter Efficiency**: Training must execute on local CPU/laptop hardware without requiring dedicated multi-GPU compute clusters.
-
----
-
-### 7.2 Dataset Curation: Authentic KisanVaani Agricultural Extension Advisory Corpus
-Rather than using synthetic toy sentences, we sourced the authentic **KisanVaani English Agricultural Q&A Corpus** (`KisanVaani/agriculture-qa-english-only`), consisting of 22,615 real extension questions and expert agronomic advice.
-
-The corpus was formatted into clean question-and-answer prompt pairs:
 ```text
-Question: why is crop rotation important in farming?
-Answer: crop rotation is a key component in agriculture. It prevents pest build-up and maintains soil nutrient balance.
+Question: How does the Botrytis leaf blight pathogen survive during dormant periods?
+Answer: The pathogen overwinters as sclerotia, which are produced on infected onion bulbs left in cull piles, on mother bulbs stored for seed production, and on bulbs left in the field. Sclerotia also overwinter directly in the soil and on leaves that persist as debris in commercial onion fields.
 ```
 
-To eliminate any risk of train-test data leakage:
-- **Training Split**: 500 active extension pairs (17,280 words).
-- **Validation Split**: 100 extension pairs (3,696 words) strictly reserved for cross-entropy evaluation at epoch boundaries.
-- **Held-Out Test Split**: 100 extension pairs (3,710 words) completely isolated until final post-training evaluation.
+### 7.3 LoRA Mechanics
+LoRA freezes a pretrained weight matrix $W_0 \in \mathbb{R}^{d \times k}$ and learns $\Delta W = \frac{\alpha}{r} B A$ with $B \in \mathbb{R}^{d \times r}$, $A \in \mathbb{R}^{r \times k}$ and $r \ll \min(d, k)$. In distilgpt2 the target, `c_attn`, is one fused projection per layer that produces the query, key and value vectors: $W_0$ is $768 \times 2304$ (1,769,472 weights). With $r=8$ each layer adds $8 \times (768 + 2304) = 24,576$ weights; over 6 layers that is **147,456 trainable parameters, 0.18% of 82,060,032**. We use $\alpha = 32$ (scale $\alpha / r = 4$), dropout 0.05, and `fan_in_fan_out=True` because GPT-2 stores `c_attn` as a `Conv1D`.
 
----
+### 7.4 Training
+Both adapters train for 3 epochs with AdamW (learning rate $5 \times 10^{-4}$, linear decay), batch size 8, 96-token sequences, seed 42 (`src/train_domain_lora.py`).
 
-### 7.3 Mathematical & Neural Mechanics of LoRA (Low-Rank Adaptation)
-Rather than updating the entire weight tensor $W_0 \in \mathbb{R}^{d \times k}$ (which contains 82,060,032 parameters in `distilgpt2`), **LoRA** freezes $W_0$ completely and decomposes the task-specific update $\Delta W$ into two low-rank matrices:
-$$\Delta W = \frac{\alpha}{r} B \cdot A$$
-where $B \in \mathbb{R}^{d \times r}$, $A \in \mathbb{R}^{r \times k}$, and the rank $r \ll \min(d, k)$.
+| Epoch | Standard adapter: validation loss (full text) | Masked adapter: validation loss (answer tokens only) |
+|---|---:|---:|
+| 1 | 3.3963 | 3.3395 |
+| 2 | 3.3072 | 3.3005 |
+| 3 | 3.2874 | 3.2902 |
 
-For our architecture:
-- **Base Architecture**: `distilgpt2` (6 transformer layers, 12 attention heads, hidden dimension 768).
-- **Target Layers**: Multi-head attention projections (`c_attn` implemented via Hugging Face `Conv1D`).
-- **Hyperparameters**: Rank $r=8$, scaling factor $\alpha=32$ (scaling multiplier $\frac{\alpha}{r} = 4.0$), dropout rate $0.05$.
-- **Trainable Parameters**: **147,456** out of 82,060,032 total parameters (**0.18%** trainable; **99.82% of the network frozen**!).
+The two columns measure different tokens, so compare down a column, not across. The mean training loss (3.531 standard, 3.4869 masked) is above the final validation loss because the Trainer averages it over the whole run, early high-loss steps included, and dropout is only active during training. Each adapter took about 20 minutes this time because the CPU was shared with the n-gram sweeps; that is not a statement about LoRA's cost.
 
-```
-======================================================================
-Base Frozen Parameters:     81,912,576 (99.82%)
-Trainable LoRA Adapters:       147,456 (0.18%)
-Total Parameter Footprint:  82,060,032 (100.00%)
-======================================================================
-```
+### 7.5 Results on 222 Held-Out Questions
 
----
+| Model | Full Q&A perplexity | Answer-only perplexity | WikiText-2 perplexity |
+|---|---:|---:|---:|
+| distilgpt2 base | 56.08 | 37.77 | 73.19 |
+| LoRA, loss on all tokens | **28.13** | 30.00 | 78.44 |
+| LoRA, loss on answers only | 51.39 | **29.09** | 77.24 |
 
-### 7.4 Empirical Training Progression & Loss Dynamics
-We trained the causal next-token prediction objective $\mathcal{L} = -\sum \log P(w_t \mid w_{<t})$ over 3 epochs using the AdamW optimizer (learning rate $5 \times 10^{-4}$, linear decay, batch size 8, 189 total optimization steps). Total training runtime on local Intel CPU was **288.62 seconds** (~4.8 minutes).
+- **Standard adapter**: full-text perplexity down 49.8%, answer perplexity down 20.6%. Most of the extra full-text gain is on the question side (template tokens and question phrasing); the answer-only number is the cleaner measure of domain knowledge.
+- **Masked adapter**: answer perplexity down 23.0%, full text only 8.4%, because it never learns to predict questions.
+- **Cost**: WikiText-2 perplexity rises 7.2% (standard) and 5.5% (masked). LoRA limits forgetting; it does not prevent it.
+- The earlier headline of 62.38 to 29.33 was measured on the leaky test set and is superseded, not comparable.
 
-The validation loss converged monotonically without divergence or overfitting:
+Seeded samples (temperature 0.7, top-p 0.9, seed 42) for `Question: How can farmers control fall armyworm in maize?`:
+- *Base*: "The armyworm has been observed in the north-western part of the country. The main cause of fall armyworm was found in the south-western part of the country. It was found in the"
+- *Standard*: "The fall armyworm in maize affects the development of mites, insects and other insects. In addition, the fall armyworm affects the development of mites, insects and other insects. This affects the"
+- *Masked*: "The fall armyworm in maize can occur through a variety of diseases, such as arachnoid, cloverworm, and coca. The insect can be introduced to the soil, which is"
 
-| Epoch / Checkpoint | Step | Validation Loss | Observation |
-|---|---|---|---|
-| **Zero-Shot Base Baseline** | 0 | **4.1332** | Model is unfamiliar with agricultural Q&A pairings |
-| **Epoch 1** | 63 | **3.4002** | Steepest descent; model learns prompt-answer structure |
-| **Epoch 2** | 126 | **3.3050** | Refinement of agronomic vocabulary transitions |
-| **Epoch 3 (Final)** | 189 | **3.2778** | Stable convergence; training loss reached 3.5823 |
-
----
-
-### 7.5 Quantitative & Qualitative Evaluation Breakthroughs
-
-#### Intrinsic Quantitative Benchmark (Held-Out Test Set)
-
-| Model Variant | Trainable Parameters | Domain Test Loss | Test Perplexity (PPL) | Relative Improvement |
-|---|---|---|---|---|
-| **DistilGPT2 Base (Zero-Shot)** | 0 (100% Frozen) | 4.1332 | **62.38** | *Baseline* |
-| **DistilGPT2 + LoRA ($r=8, \alpha=32$)** | **147,456 (0.18%)** | **3.3785** | **29.33** | **52.99% Drop** |
-
-- **Perplexity Reduction**: Perplexity dropped by **33.05 points** (from 62.38 down to 29.33), representing a **52.99% relative reduction** in domain uncertainty.
-- **Efficiency Ratio**: A 53% error reduction was achieved while modifying fewer than 1 in every 500 parameters in the network.
-
-#### Qualitative Prompt Generation Audit
-
-```
-Prompt 1:
-"Question: why is crop rotation important in farming?
-Answer:"
-
-[Base Model Zero-Shot Completion]:
-"Question: why is crop rotation important in farming?
-Answer: because crop rotation is a popular part of farming, and it has a very long history of being associated with crop rotation.
-The question is: why does crop rotation matter? Why does it matter?"
--> FAILURE: Circular parroting; asks questions instead of providing agronomic facts.
-
-[LoRA-Adapted Model Completion]:
-"Question: why is crop rotation important in farming?
-Answer: crop rotation is a key component in agriculture.
-Answer: the rotation of a crop is important for the health of the crop. The root of the crop, called the root, is the root of..."
--> SUCCESS: Immediately grasps advisory persona; recognizes crop rotation as an agricultural health practice.
-```
-
-```
-Prompt 2:
-"Question: What farming practice helps prevent soil erosion?
-Answer:"
-
-[Base Model Zero-Shot Completion]:
-"Question: What farming practice helps prevent soil erosion?
-Answer: The answer to that question is: Do you have a practice that has an impact on soil erosion?
-Answer: The answer to that question is: Do you have a practice that has an impact on..."
--> FAILURE: Endless stalling; repeats prompt tokens.
-
-[LoRA-Adapted Model Completion]:
-"Question: What farming practice helps prevent soil erosion?
-Answer: It helps to keep soil level down and keep soil level down. It also helps to prevent erosion."
--> SUCCESS: Attempts direct factual answer addressing soil conservation.
-```
+The adapters have learned what an extension answer sounds like, not what is true. Of the nine seeded answers in `reports/domain_adaptation_results.json`, at best one (the masked adapter on crop rotation) is roughly right.
 
 ---
 
 ## 8. Deep Technical Gotchas & Systems Engineering Discoveries
 
-During the transition from statistical n-grams to deep neural fine-tuning on local macOS hardware, we encountered and solved four major system-level architectural hurdles:
+### Gotcha 1: No torch Wheel for Python 3.14 on an Intel Mac
+- **Symptom**: `pip install torch` on Python 3.14 on an Intel Mac found no matching distribution.
+- **Root Cause**: torch 2.2.2 is the last release with Intel-Mac wheels, and it supports Python only up to 3.12.
+- **Resolution**: rebuilt the virtual environment on Python 3.12 and pinned `torch==2.2.2`.
 
-### Gotcha 1: The macOS Python 3.14 PyTorch Wheel Desert
-- **Symptom**: Attempting `pip install torch` on Python 3.14 on macOS x86_64 failed with `No matching distribution found for torch`.
-- **Root Cause**: PyTorch does not publish pre-compiled C++/Metal wheels for Python 3.14. Furthermore, for macOS x86_64 (Intel), official PyTorch binary distribution ceased after version `2.2.2`.
-- **Resolution**: Rebuilt the project virtual environment using `/usr/local/bin/python3.12` and pinned `torch==2.2.2`, ensuring instant native wheel installation without compiling PyTorch from C++ source.
+### Gotcha 2: Choosing Library Versions That Work With torch 2.2.2
+- **What we did**: pinned `transformers==4.38.2`, `peft==0.10.0`, `accelerate==0.28.0` and `datasets==5.0.1`, a combination that runs every script here on torch 2.2.2. All exact versions are in `requirements.txt`.
+- **Correction**: this entry used to say newer transformers releases require torch 2.5 or later. Their PyPI metadata does not say that (4.45 declares no torch floor; 4.50 asks for 2.0 or later), so that explanation was not confirmed.
 
-### Gotcha 2: The Transformers 4.45 vs PyTorch 2.2 Version Deadlock
-- **Symptom**: Installing `transformers>=4.45` triggered runtime crashes because modern Transformers releases hard-code dependencies on `torch>=2.5`.
-- **Resolution**: Systematically pinned an interoperable, stable library stack: `transformers==4.38.2`, `peft==0.10.0`, `accelerate==0.28.0`, and `datasets==5.0.1`.
-
-### Gotcha 3: The NumPy 2.0 ABI C-Extension Incompatibility
-- **Symptom**: Running PyTorch 2.2.2 with NumPy 2.5 resulted in `A module that was compiled using NumPy 1.x cannot be run in NumPy 2.0...` C-extension segmentation faults.
-- **Resolution**: Enforced `numpy==1.26.4` along with `scipy==1.12.0` and `contourpy==1.2.1`, locking the entire scientific Python stack into ABI compliance.
+### Gotcha 3: The NumPy 2 ABI C-Extension Incompatibility
+- **Symptom**: torch 2.2.2 with NumPy 2.x failed with `A module that was compiled using NumPy 1.x cannot be run in NumPy 2.0`.
+- **Resolution**: pinned `numpy==1.26.4` and `scipy==1.12.0`.
 
 ### Gotcha 4: Python Module Shadowing of Hugging Face `tokenizers`
-- **Symptom**: Importing `transformers` failed with `ModuleNotFoundError: No module named 'tokenizers.pre_tokenizers'`.
-- **Root Cause**: The repository had a file named `src/tokenizers.py`. When Python searched for the third-party `tokenizers` package, it loaded our local file instead, shadowing the Hugging Face C++ binding library!
-- **Resolution**: Renamed `src/tokenizers.py` to `src/ewe_tokenizers.py` and updated all internal imports in `tests/test_pipeline.py`, `scripts/run_multi_tokenizer_ablation.py`, and notebooks.
+- **Symptom**: importing `transformers` failed with `ModuleNotFoundError: No module named 'tokenizers.pre_tokenizers'`.
+- **Root Cause**: our file `src/tokenizers.py` was imported instead of the Hugging Face `tokenizers` package.
+- **Resolution**: renamed it to `src/ewe_tokenizers.py`.
 
 ### Gotcha 5: DistilGPT2 `Conv1D` vs Linear Attention Projections
-- **Symptom**: Attaching standard LoRA produced matrix shape transposition warnings.
-- **Root Cause**: DistilGPT2 does not use standard `nn.Linear` layers for its multi-head attention projections; it uses Hugging Face's custom `Conv1D` module, where weights are stored in transposed $(d_{\text{in}}, d_{\text{out}})$ orientation.
-- **Resolution**: Configured `LoraConfig(fan_in_fan_out=True)`, instructing PEFT to transpose the low-rank update matrix during the forward pass.
+- **Symptom**: attaching LoRA produced a weight-orientation warning.
+- **Root Cause**: GPT-2 stores `c_attn` as a `Conv1D` with transposed weights.
+- **Resolution**: `LoraConfig(fan_in_fan_out=True)`.
+
+### Gotcha 6: Blank Lines Inside Answers
+- **Symptom**: 18 of the first 100 test "pairs" had no `Question:`.
+- **Root Cause**: 790 KisanVaani answers contain blank lines, and the old split files separated pairs with blank lines.
+- **Resolution**: one JSON object per pair (`.jsonl`).
 
 ---
 
-## 9. Comprehensive Viva Exam Readiness (`clenam.ai` Section C)
+## 9. Viva Exam Readiness (`clenam.ai`, Section C)
 
-1. **Why use Parameter-Efficient Fine-Tuning (LoRA) instead of Full Fine-Tuning?**  
-   *Defense*: Full fine-tuning updates all 82M parameters, requiring storing optimizer states (gradients, momentum, variance) for every weight, which causes severe memory overhead and risks catastrophic forgetting of general English syntax. LoRA freezes 99.82% of the base model and trains low-rank adapters ($r=8$) adding only 147,456 parameters (0.18%). This prevents catastrophic forgetting, speeds up training by >10x, and enables training on local hardware in ~4.8 minutes.
-
-2. **How did you mathematically prove that the model learned domain knowledge?**  
-   *Defense*: We evaluated test perplexity on a held-out set of 100 unseen agricultural Q&A pairs (3,710 words). The cross-entropy loss dropped from $4.1332$ to $3.3785$, which translates to a test perplexity drop from $62.38$ down to $29.33$—a **52.99% relative reduction in prediction uncertainty**. Concurrently, validation loss decreased monotonically across all 3 epochs ($3.4002 \to 3.3050 \to 3.2778$), confirming steady generalization without overfitting.
-
-3. **Why did the base zero-shot model repeat questions while the LoRA model gave agronomic answers?**  
-   *Defense*: Base causal language models are trained purely on autoregressive web text without instruction or conversational alignment; when fed a prompt like `"Question: ... Answer:"`, the base model often predicts question tokens as the most probable continuation, resulting in degenerative circular loops. Fine-tuning with LoRA on formatted Q&A pairs reweighted the attention layers to recognize the `"Answer:"` token as a transition trigger into authoritative agronomic explanations.
-
-4. **How did you prevent data leakage between training and evaluation?**  
-   *Defense*: We strictly partitioned our 22,615 raw Q&A records into disjoint document subsets before tokenization. The 100 test questions were completely withheld from gradient computation and validation checkpoint selection. Additionally, evaluation was performed using exact batch padding with label masking (`labels[labels == tokenizer.pad_token_id] = -100`) to guarantee that padding tokens did not corrupt the test perplexity computation.
+1. **Why LoRA instead of full fine-tuning?**  
+   *Defense*: Full fine-tuning updates all 82M parameters and needs optimizer state for each. LoRA trains 147,456 (0.18%) and leaves the pretrained weights untouched, which fits a laptop CPU and limits forgetting. It does not remove it: general-English perplexity still rose 7.2%.
+2. **How do you know the model learned the domain rather than the format?**  
+   *Defense*: We score the answer tokens separately. Answer perplexity fell from 37.77 to 30.00 (20.6%) on 222 test questions that never appear in training; the larger full-text drop (49.8%) also includes the template and the questions.
+3. **Why did the base model repeat the question?**  
+   *Defense*: A base causal LM has never been trained on this question-answer format, and once text starts repeating, more repetition becomes the likeliest continuation. After adaptation the model answers in the right shape, but often with wrong content.
+4. **How did you prevent leakage?**  
+   *Defense*: The raw data repeats each question about ten times. We keep one row per question before splitting, and the training script checks that none of the 222 test questions appear in training or validation (it finds 0). Our first split did not do this, and 16 of its 100 test pairs were copies of training pairs.
 
 ---
 
-## 10. Empirical Ablation: Decoding Strategies & Repetition Suppression
+## 10. Decoding Strategies & Repetition
 
-### 10.1 The Phenomenon: Self-Reinforcement Bias in Small Causal LMs
-During zero-shot and early LoRA evaluations, we noticed that unpenalized nucleus sampling ($T=0.7, \text{top\_p}=0.9$) frequently fell into degenerative looping:
-- *Observed Loop*: `"Nitrogen deficiency is associated with a high amount of nitrogen and nitrogen content. Nitrogen deficiency is associated with a high amount of nitrogen and nitrogen content. Nitrogen deficiency is associated with a high amount of nitrogen and nitrogen content."`
-- *Mathematical Root Cause*: Small causal language models suffer from **self-reinforcement bias**. When an autoregressive model samples a token or phrase that already appeared in its local context window, the multi-head self-attention mechanism attends heavily to that preceding occurrence. This artificially inflates the logits for identical transition paths, creating an inescapable positive feedback loop.
+### 10.1 The phenomenon
+Sampling from a small model sometimes loops. From the benchmark: "It helps to control soil erosion, which can lead to soil erosion. It also helps to improve soil drainage. It also helps to reduce soil erosion." Once a phrase is in the context, repeating it becomes more likely; this self-reinforcing repetition is well documented for neural text generation (Holtzman et al., 2020; Xu et al., 2022).
 
-### 10.2 Empirical Benchmarking of 5 Decoding Strategies
-To eliminate phrase looping, we tested five generation strategies across our agricultural diagnostic prompts, quantifying repetition using the **Distinct-3 Metric** ($\frac{\text{Unique Trigrams}}{\text{Total Trigrams}}$, where $1.0$ represents complete absence of verbatim phrase repetition):
+### 10.2 Benchmark (`reports/decoding_strategies_benchmark.json`)
+Four prompts; each sampled strategy is run with 5 fixed seeds per prompt, greedy search once. Distinct-3 is unique word trigrams divided by all word trigrams in an answer.
 
-| Strategy ID | Decoding Paradigm | Key Hyperparameters | Average Distinct-3 Ratio | Qualitative Behavior & Agronomic Utility |
-|---|---|---|---|---|
-| **S1** | Unpenalized Sampling (Baseline) | $T=0.7, p=0.9, r_{\text{rep}}=1.0$ | **49.1%** | Severe looping; repeats `"Answer:"` or question text endlessly |
-| **S2** | Repetition Penalty Only | $T=0.7, p=0.9, r_{\text{rep}}=1.3$ | **100.0%** | Loop broken; forces exploration of diverse agronomic terms |
-| **S3** | Strict N-gram Blocking | $T=0.7, p=0.9, \text{no\_repeat}=3$ | **99.4%** | Forbids identical 3-word chunks; occasional unnatural phrasing |
-| **S4** | **Conservative Agronomic (Recommended)** | **$T=0.35, p=0.85, r_{\text{rep}}=1.25, N=3$** | **100.0%** | **Optimal**: Fluent, stable advice; zero hallucination or looping |
-| **S5** | Deterministic Greedy Search | $r_{\text{rep}}=1.25, \text{no\_repeat}=3$, `do_sample=False` | **100.0%** | Highly structured advice; names specific crops (`maize`, `cassava`) |
+| Strategy | Settings | Mean Distinct-3 |
+|---|---|---:|
+| Unpenalized sampling | $T=0.7$, top-p 0.9 | 78.9% |
+| Repetition penalty | $T=0.7$, top-p 0.9, penalty 1.3 | 100.0% |
+| 3-gram blocking | $T=0.7$, top-p 0.9, `no_repeat_ngram_size=3` | 99.5% |
+| Low temperature + penalty + block | $T=0.35$, top-p 0.85, penalty 1.25, block 3 | 100.0% |
+| Greedy + penalty + block | penalty 1.25, block 3 | 100.0% |
 
-*Artifact Reference*: [`reports/decoding_strategies_benchmark.json`](file:///Users/macbookpro/Documents/Coding/Ashesi%20Uni/Natural%20Language%20Processing/nlp-group-1-prosit-1/reports/decoding_strategies_benchmark.json)
+- 3-gram blocking forbids the decoder to repeat any token trigram, so a Distinct-3 near 100% is guaranteed by construction; it shows the setting works, not that the answers are good.
+- A penalty buys variety at the cost of topic: one penalized answer about fall armyworm begins "The common disease, the malaria parasite-borne chikungunya virus, is transmitted by soil moisture."
+- An earlier version of this benchmark reported 49.1% for unpenalized sampling from one unseeded sample per prompt, dominated by a single answer that repeated `Answer:`; with 5 seeds per prompt it is 78.9%. It also called one setting "optimal" with "zero hallucination"; nothing measured supports that, and no setting here produces reliable advice.
 
 ---
 
-## 11. Empirical Ablation: Prompt Loss Masking vs Standard Causal LM
+## 11. Prompt-Loss Masking vs Standard Causal LM
 
-### 11.1 The Theoretical Flaw of Standard Causal LM on Q&A
-In standard causal language modeling:
-$$\mathcal{L}_{\text{standard}} = -\frac{1}{|Q| + |A|} \left[ \sum_{t \in Q} \log P(w_t \mid w_{<t}) + \sum_{t \in A} \log P(w_t \mid w_{<t}) \right]$$
-In this formulation, the model expends up to 50% of its parameter update budget learning how to predict the *farmer's question* ($Q$), which is already provided at inference time!
+### 11.1 The idea
+With the standard objective the loss covers the question and the answer. Masking sets the question's labels to `-100`, so `CrossEntropyLoss` ignores them and training optimizes only $P(\text{answer} \mid \text{question})$.
 
-### 11.2 The Prompt-Loss Masking Formulation
-By locating the `\nAnswer:` delimiter and setting all prompt label tokens to `-100`:
-$$\text{labels}[i] = \begin{cases} -100 & \text{if } i \le \text{len}(Q) \\ \text{input\_ids}[i] & \text{if } i > \text{len}(Q) \end{cases}$$
-PyTorch's `nn.CrossEntropyLoss(ignore_index=-100)` ignores all prompt tokens. 100% of the backpropagation gradients are dedicated strictly to the conditional distribution $P(\text{Answer} \mid \text{Question})$.
+### 11.2 A fair comparison
+Both adapters: same 500 training pairs, same seed, same hyperparameters, scored on the same 222 test questions.
 
-### 11.3 Empirical Comparison (Answer-Token Perplexity)
-We trained an isolated LoRA checkpoint for 3 epochs with prompt loss masking on 400 training pairs (`models/prompt_masked_lora_checkpoint/`):
+| Model | Answer-only perplexity | Full Q&A perplexity | WikiText-2 perplexity |
+|---|---:|---:|---:|
+| Base | 37.77 | 56.08 | 73.19 |
+| Standard | 30.00 | **28.13** | 78.44 |
+| Masked | **29.09** | 51.39 | 77.24 |
 
-| Model Variant | Training Objective | Answer-Token Cross-Entropy Loss | Answer-Token Perplexity (PPL) | Relative Answer PPL Drop |
-|---|---|---|---|---|
-| **DistilGPT2 Base (Zero-Shot)** | Unadapted Web Baseline | 3.6493 | **38.45** | *Baseline* |
-| **DistilGPT2 + LoRA (Prompt-Masked)** | **Loss strictly on Answer tokens** | **3.4037** | **30.08** | **-21.78%** |
+- On answers the two are comparable: masking is 3% better, from a single seed and 500 pairs.
+- Masking gives up almost all of the full-text gain, because the model never learns to predict questions.
+- **Which to use depends on the job.** For a question-answering assistant, masking is the usual choice. For Ankora's speech recognition setting, where the model scores whole transcripts including farmers' spoken questions, the standard objective is the one that learns them.
+- An earlier entry declared masking "the superior training paradigm" after comparing the masked adapter only with the base model, trained on 400 pairs instead of 500. On the repo's own answer metric the standard adapter from the same day already scored as well (29.92 vs 30.08), so that conclusion was not supported.
 
-#### Qualitative Answer Comparison
-- *Prompt*: `"Question: What farming practice helps prevent soil erosion?\nAnswer:"`
-- *Prompt-Masked Model*: `"planting crops that are suitable for the growing season, such as corn or soybeans. Planting plants with a high yield can reduce nutrient loss and promote crop growth in areas where soils have been degraded..."`
-- *Key Takeaway*: Conditioned exclusively on the answer space, the model generates practical agronomic actions (crop selection, nutrient retention) without echoing the question.
+---
 
-*Artifact Reference*: [`reports/prompt_masking_ablation_results.json`](file:///Users/macbookpro/Documents/Coding/Ashesi%20Uni/Natural%20Language%20Processing/nlp-group-1-prosit-1/reports/prompt_masking_ablation_results.json)
+## 12. Verification Audit (2026-09-21/22): What We Believed, What We Found, Why
+
+A review of the whole repository against its code and data, followed by the fixes above. Recorded here because the mistakes are the most useful thing this prosit taught.
+
+**Numbers no code produced.** Several report and journal numbers were written before or without the experiments they describe: the tables first drafted in section 2 (and the same values typed into notebook 03 and quoted in the Section B report), a general-English "forgetting" check reported as under 3.8% (never run; the measured cost is 7.2%), an ARPA-export capability, an example Q&A pair that is not in the corpus, a *Sitophilus zeamais* analysis for a term the corpus never contains, and slide figures from before the real data existed. All removed or replaced by measured values.
+
+**Bugs that produced the headline findings.** The "breaking point" and its "rightward shift" came from three smoothing bugs plus the unknown-word floor (Discovery 2). The tokenizer ranking came from comparing per-token perplexities, then from a per-word comparison built on the broken models (Discovery 4). The "stemming advantage" came from deleting affixes.
+
+**Data that was not what we said.** Dataset 1 was described as folklore and Section B said we had avoided relying on religious text; a large share of Datasets 1 and 4 is Bible and Jehovah's Witnesses material. Dataset 2 contains personal information. Lookalike letters split words (Discovery 3). Section C's test set shared 16 of 100 pairs with training.
+
+**Why it happened.** Text drafted with AI assistance was written ahead of the experiments and never reconciled with the result files. The tone ("Grand Unified Mega-Corpus", "undeniably superior", "ironclad") made the claims harder to question, and there was no test that a probability distribution sums to 1.
+
+**What changed.** Every Ewe split and every result is rebuilt by committed scripts; unit tests check that the smoothed distributions sum to 1; the order $N$ and the discount are chosen on validation; tokenizers are compared per word with unknown words charged; Section C is deduplicated before splitting and reports answer-only and general-English perplexity. `METHODOLOGY_GUIDE.md` gained a sixth pillar, *Verify Before You Write*.
+
+**What the corrected numbers say.** With correct smoothing, longer contexts stop helping from about $N=4$ but never hurt; BPE is the best tokenizer per word on every dataset; keeping Ewe affixes as tokens helps a little; LoRA adapts distilgpt2's probabilities to agricultural answers (20.6% lower answer perplexity) at a measurable cost to general English, and its answers are fluent but not reliable.

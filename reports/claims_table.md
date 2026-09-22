@@ -1,36 +1,46 @@
-# Claims & Traceability Table — Prosit 1
+# Claims & Traceability Table: Prosit 1
 
-Every quantitative claim, metric, or architectural statistic in the technical report or presentation slides must be directly traceable to a specific cell in a clean-running notebook and benchmark artifact.
-
-This table provides the authoritative evidence base for your group presentation and the individual Automated AI Viva Quiz on `clenam.ai`.
+Every number in the technical report, the slides and the learning journal must be copied from a file
+that a committed script writes. This table names that file, the exact key, and the script. Files under
+`data/` are gitignored; rebuild them with the commands in `README.md`. Rows marked *audit* are
+measurements from the 2026-09-21/22 verification, recorded in `WORKLOG.md`, of code or data that no
+longer exists in that form.
 
 ---
 
 ## Section B: Ewe Statistical Language Model (Èʋegbe)
 
-| # | Slide / Report Claim | Exact Figure / Value | Source / Benchmark Artifact | Justification / Methodology |
+| # | Claim | Value | Source (file → key) | Written by |
 |---|---|---|---|---|
-| 1 | Grand Unified Mega-Corpus Scale | **124,396 sentences / 2,349,941 tokens** | `data/processed/unified/stats.json` | 4 sources (Folklore, Bios, Waxal Speech, Web), 2,260 cross-duplicates removed |
-| 2 | Training / Test Partition Scale | **99,516 Train (1.88M words)** / 12,441 Test | `reports/results_unified_all_tokenizers.json` | Leak-free 80/10/10 split; evaluated on 4,000 held-out test sentences |
-| 3 | Rightward Word Breaking Point Shift | **$N=3 \to N=4$** (PPL: $150.1 \to 147.8$) | `reports/results_unified_all_tokenizers.json` | At 1.88M words, 4-gram contexts recur with sufficient frequency to beat Trigram |
-| 4 | Ewe Morphological Stemmer Optimum | **4-gram ($N=4$): PPL = 134.0** | `reports/results_unified_all_tokenizers.json` | Peeling affixes (`-wo`, `mí-`, `wó-`) pools inflections, achieving 9.3% error reduction |
-| 5 | Byte-Pair Encoding (BPE) Peak Context | **6-gram ($N=6$): PPL = 13.8** | `reports/results_unified_all_tokenizers.json` | Subwords eliminate OOV crashes (0.0% unigram sparsity) and sustain $N=6$ context |
-| 6 | Whitespace Glued Punctuation Penalty | **3.2x degradation** (PPL 470.2 vs 147.8) | `reports/results_unified_all_tokenizers.json` | Punctuation attached to words pollutes surface forms, inflating $|V|$ to 100,707 |
-| 7 | Character Model Branching Baseline | **6-gram ($N=6$): PPL = 7.6** | `reports/results_unified_all_tokenizers.json` | Compact character alphabet ($|V|=123$); proves Viva Perplexity Invariance Rule |
-| 8 | Combining Tone Mark Bug Resolution | **100% diacritic preservation** | `src/ewe_tokenizers.py` | Overcomes Python `isalnum()` failure on `\u0303` via regex `^[\w\u0300-\u036f]+$` |
-| 9 | Bigram Kneser-Ney vs Laplace Advantage | **PPL: 327.7 vs 1,879.6 (82.6% drop)** | `notebooks/01_low_resource_ngram_lm.ipynb` Cell 9 | Continuation probabilities discount fixed-idiom words on held-out test split |
-
----
+| 1 | Unified corpus size and split | 123,511 sentences; 98,808 / 12,351 / 12,352 | `data/processed/unified/stats.json` → `total_unique_sentences`, `train_sentences`, `val_sentences`, `test_sentences` | `scripts/build_ewe_datasets.py` |
+| 2 | Training words (unified) | 1,874,130 | same file → `train_words` | `scripts/build_ewe_datasets.py` |
+| 3 | Religious share | unified 5.1% mention Yehowa, 6.2% chapter:verse; Dataset 1: 10.6% and 6.8% | `data/processed/{unified,dataset_1_csv}/stats.json` → `pct_mentioning_yehowa`, `pct_with_chapter_verse` | `scripts/build_ewe_datasets.py` |
+| 4 | Unicode Word test perplexity, $N=1..6$ | 534.7, 121.2, 77.7, 70.5, 69.3, 69.7 | `reports/results_unified_all_tokenizers.json` → `results["Unicode Word"][N-1].perplexity` | `scripts/run_multi_tokenizer_ablation.py` |
+| 5 | Flat from $N=4$ | validation perplexities for $N=4..6$ within 3% on every dataset | all five `reports/results_*.json` → `val_perplexity` | `scripts/run_multi_tokenizer_ablation.py` |
+| 6 | Best order and per-word perplexity per tokenizer (unified) | BPE 189.1 ($N=6$), Stemmer 196.9, Unicode Word 202.2, Whitespace 261.6 ($N=5$), Character 447.1 ($N=6$) | `results_unified_all_tokenizers.json` → `best_order_by_val`, `results[...].per_word_perplexity` | `scripts/run_multi_tokenizer_ablation.py` |
+| 7 | Per-word perplexity with `<unk>` free (journal only) | Whitespace 120.1, Unicode Word 132.1, Stemmer 136.7, BPE 188.7, Character 446.2 | derived from the same rows: $\exp(\ln \text{PPL} \times (\text{test\_tokens} + 4000) / \text{test\_words})$ | computed from the JSON |
+| 8 | Kneser-Ney beats equal-weight interpolation | 77.7 vs 93.6 at $N=3$ (Unicode Word); true at every $N \ge 2$ on all datasets | `results[...].perplexity` vs `results[...].interpolation_perplexity` | `scripts/run_multi_tokenizer_ablation.py` |
+| 9 | Ney discount best on validation | unified: Ney 66.75 vs 0.5: 83.3, 0.75: 68.24, 0.9: 67.41 | `discount_check_val_unicode_word` in each results JSON | `scripts/run_multi_tokenizer_ablation.py` |
+| 10 | Sparsity of test 6-grams (Unicode Word) | 80.5% | `results["Unicode Word"][5].sparsity_pct` | `scripts/run_multi_tokenizer_ablation.py` |
+| 11 | Vocabulary, `<unk>` rate, tokens per word (unified) | e.g. Unicode Word 26,489 types, 1.93%, 1.16 tokens per word | `results[...][0]`: `vocab_size`, `oov_rate_pct`, `test_tokens / (test_words - 4000)` | `scripts/run_multi_tokenizer_ablation.py` |
+| 12 | Cross-dataset table (journal §5) | per-dataset best $N$, `<unk>` rate, sparsity, per-word perplexity | `reports/results_dataset_{1,2,3,4}_all_tokenizers.json` | `scripts/run_multi_tokenizer_ablation.py` |
+| 13 | Seeded sample reproducing Jonah 1:1 | "2 eye yehowa ƒe gbe va na yona , amitai vi ," | `results["Unicode Word"][3].sample_generation` | `scripts/run_multi_tokenizer_ablation.py` |
+| 14 | Smoothing comparison on a 10,000-sentence sample (illustrative) | Bigram Laplace 629.52, Bigram Kneser-Ney 119.87, Trigram Kneser-Ney 99.90 | `notebooks/01_low_resource_ngram_lm.ipynb`, cell 9 output | the notebook |
+| 15 | Old interpolation lost probability | sums of 0.667 (unseen trigram context) and 0.333 (unseen 6-gram context) | *audit*: probe of the pre-fix `src/ngram.py` | `WORKLOG.md`, 2026-09-21 |
+| 16 | Lookalike letters | 5,026 lines of the previous unified training split; "ɖe" 46,110 vs "ðe" 2,073 | *audit* | `WORKLOG.md`, 2026-09-22 |
+| 17 | Independent check of the new Kneser-Ney | 512.0, 115.1, 77.8, 72.4, 71.6, 72.1 on the old Dataset 1 split | *audit*: scratch implementation vs `src/ngram.py` | `WORKLOG.md`, 2026-09-22 |
 
 ## Section C: Agro-Extension Domain Adaptation (LoRA)
 
-| # | Slide / Report Claim | Exact Figure / Value | Source / Benchmark Artifact | Justification / Methodology |
+| # | Claim | Value | Source (file → key) | Written by |
 |---|---|---|---|---|
-| 10 | Base model zero-shot domain perplexity | **62.38** (Loss: 4.1332) | `reports/domain_adaptation_results.json` | Pretrained DistilGPT2 evaluated on 100 held-out agricultural Q&A test pairs |
-| 11 | Post-LoRA domain test perplexity | **29.33** (Loss: 3.3785) | `reports/domain_adaptation_results.json` | 3 epochs, $r=8, \alpha=32$, AdamW ($\text{lr} = 5 \times 10^{-4}$), 189 steps |
-| 12 | Relative perplexity reduction | **52.99% improvement** | `reports/domain_adaptation_results.json` | $\frac{62.38 - 29.33}{62.38} = 52.99\%$ drop in prediction uncertainty |
-| 13 | Trainable parameter percentage | **0.18%** (147,456 / 82,060,032) | `reports/domain_adaptation_results.json` | LoRA attached exclusively to attention projections (`c_attn` Conv1D) |
-| 14 | Training compute efficiency | **288.6 seconds** (~4.8 min) | `reports/domain_adaptation_results.json` | Parameter efficiency enables rapid fine-tuning on standard local CPU |
-| 15 | Repetition suppression via decoding | **Distinct-3: 49.1% $\to$ 100.0%** | `reports/decoding_strategies_benchmark.json` | Repetition penalty ($r=1.25\dots 1.3$) and $N=3$ block eliminates phrase looping |
-| 16 | Prompt-loss masking answer perplexity | **38.45 $\to$ 30.08 (21.8% drop)** | `reports/prompt_masking_ablation_results.json` | Masking prompt tokens (`-100`) dedicates all gradient updates to answer tokens |
-
+| 18 | Corpus size after deduplication | 22,615 rows, 2,212 distinct questions; 1,769 / 221 / 222 pairs | `data/processed/domain_english/stats.json` | `src/prepare_domain_data.py` |
+| 19 | No test question in training or validation | 0 | `reports/domain_adaptation_results.json` → `test_questions_seen_in_train_or_val` | `src/train_domain_lora.py` |
+| 20 | Trainable parameters | 147,456 of 82,060,032 (0.18%) | `results.standard.trainable_params`, `results.standard.total_params` | `src/train_domain_lora.py` |
+| 21 | Perplexities: full / answer-only / WikiText-2 | base 56.08 / 37.77 / 73.19; standard 28.13 / 30.00 / 78.44; masked 51.39 / 29.09 / 77.24 | `results.{base,standard,masked}.{full_ppl,answer_ppl,wikitext_ppl}` | `src/train_domain_lora.py` |
+| 22 | Relative changes | standard: full -49.8%, answer -20.6%, WikiText +7.2%; masked: answer -23.0%, full -8.4%, WikiText +5.5% | computed from row 21 | computed from the JSON |
+| 23 | Validation loss per epoch | standard (full text) 3.3963, 3.3072, 3.2874; masked (answers only) 3.3395, 3.3005, 3.2902 | `results.{standard,masked}.val_loss_per_epoch` | `src/train_domain_lora.py` |
+| 24 | Seeded completions quoted in the reports | e.g. "The fall armyworm in maize affects the development of mites, insects and other insects." | `results.{base,standard,masked}.samples` | `src/train_domain_lora.py` |
+| 25 | Decoding: mean Distinct-3 | unpenalized 78.9%, penalty 1.3: 100.0%, 3-gram block 99.5%, low temperature + penalty + block 100.0%, greedy + penalty + block 100.0% | `reports/decoding_strategies_benchmark.json` → `strategy_averages` | `scripts/benchmark_decoding_strategies.py` |
+| 26 | Leakage in the superseded split | 16 of 100 test pairs identical to training pairs; 18 of 100 test "pairs" were answer fragments | *audit* | `WORKLOG.md`, 2026-09-21 and 2026-09-22 |
+| 27 | Superseded masking comparison | standard 29.92 vs masked 30.08 answer perplexity on the old metric | *audit* | `WORKLOG.md`, 2026-09-22 |
