@@ -46,6 +46,8 @@ All report and slide numbers come from files these commands write (see `reports/
 ```bash
 python scripts/build_ewe_datasets.py                          # Ewe splits (raw files: see data/README.md)
 python scripts/run_multi_tokenizer_ablation.py --dataset all  # Section B sweep -> reports/results_*.json (hours on a laptop CPU)
+python scripts/run_lstm_baseline.py --dataset 2 --config small --max-epochs 200 --patience 3  # Q2 neural baseline, micro-data (minutes)
+python scripts/run_lstm_baseline.py --dataset unified --config large --max-epochs 10          # Q2 neural baseline, full corpus (~3 h per seed)
 python src/prepare_domain_data.py                             # Section C splits, one row per question
 python src/train_domain_lora.py                               # Section C training + evaluation -> reports/domain_adaptation_results.json (~15 min)
 python scripts/benchmark_decoding_strategies.py               # decoding benchmark -> reports/decoding_strategies_benchmark.json
@@ -74,6 +76,7 @@ python scripts/benchmark_decoding_strategies.py               # decoding benchma
 │   ├── ewe_tokenizers.py     # 5 tokenizers: Whitespace, Word, Stemmer, BPE, Char
 │   ├── evaluation.py         # Perplexity, cross-entropy, markdown table formatting
 │   ├── experiment_runner.py  # Automated ablation experiment harness
+│   ├── lstm_lm.py            # Section B Q2: LSTM baseline, scored exactly like the n-grams
 │   ├── prepare_domain_data.py # Section C: deduplicated KisanVaani splits (JSONL)
 │   ├── train_domain_lora.py  # Section C: standard vs prompt-masked LoRA, evaluation, figure
 │   └── viz.py                # Perplexity & frequency distribution plotting
@@ -85,6 +88,7 @@ python scripts/benchmark_decoding_strategies.py               # decoding benchma
 │   ├── section_c_domain_adaptation.md # Team report on domain-adapted English LM
 │   ├── claims_table.md       # Every quoted number -> the file and script that produce it
 │   ├── results_*.json        # Section B sweep results (one per dataset)
+│   ├── results_lstm_baseline.json # Section B Q2 LSTM baseline results
 │   ├── domain_adaptation_results.json    # Section C results
 │   ├── decoding_strategies_benchmark.json # Section C decoding benchmark
 │   ├── datasheet.md          # Gebru et al. datasheet for the Ewe and agriculture corpora
@@ -94,6 +98,7 @@ python scripts/benchmark_decoding_strategies.py               # decoding benchma
 ├── scripts/
 │   ├── build_ewe_datasets.py # Rebuilds all Ewe splits from the raw files
 │   ├── run_multi_tokenizer_ablation.py # Section B sweep: 5 tokenizers x N=1..6
+│   ├── run_lstm_baseline.py  # Section B Q2: LSTM vs Kneser-Ney on the same tokens, 3 seeds
 │   ├── benchmark_decoding_strategies.py # Section C decoding benchmark
 │   └── launch_notebook.sh    # 1-click browser JupyterLab launcher
 ├── tests/

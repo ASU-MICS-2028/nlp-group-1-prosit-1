@@ -36,6 +36,29 @@ Field notes:
 - **Decided** — only real decisions, the kind someone might otherwise reverse without knowing. Leave it out if nothing was decided.
 - **Blocked** — this is the field that saves the project. Write it even when it feels like admitting you're stuck. Especially then.
 
+## 2026-09-22 · 16:00 GMT – 2026-09-24 · 09:30 GMT · Eric Elikplim Sunu
+
+**Branch:** eric
+**Assistant:** Claude (Claude Code, Opus 5, then Opus 5.5 after a model switch on 2026-09-24), to train an LSTM baseline for Section B, Question 2 (n-grams vs neural models) and update the answer with measured results.
+**Did:**
+- Moved tokenization, the per-word denominator and the `<unk>` spelling charge out of `run_ngram_experiment` into `tokenize_splits`, `count_words` and `oov_spelling_nats` (`src/experiment_runner.py`), so the n-gram and LSTM pipelines share the same code. The Dataset 2 n-gram results file is byte-identical after the change.
+- Added `src/lstm_lm.py` (embedding, LSTM, linear layer; `<pad>` and `<s>` never predicted; each sentence scored from `<s>` like the n-gram) and `scripts/run_lstm_baseline.py`: same BPE-150 tokens and vocabulary as the best n-gram, with assertions that vocabulary size, token count and spelling charge match the n-gram results file; three seeds; early stopping on validation perplexity; results merged into `reports/results_lstm_baseline.json`. New unit test: a zeroed output layer gives perplexity equal to the number of predictable ids. 22 tests pass.
+- Dataset 2 (420 training sentences), small LSTM (479,964 parameters, about 50 per training word): per word 7,864.84, range 7,396.3 to 8,144.1 over seeds 42 to 44 (best epochs 30 to 34), against Kneser-Ney 5,806.95. The n-gram wins on micro-data. Re-running reproduces these numbers exactly.
+- The first Dataset 2 run was under-trained: capped at 20 epochs, all three seeds were still improving at epoch 20 and scored 9,243.16 per word. With up to 200 epochs and patience 3, early stopping chose epochs 30 to 34. The 20-epoch cap was a budget artifact, not a comparison.
+- Timing on Dataset 1, one epoch: small LSTM 42 s, large LSTM (2 layers, hidden 512) 235 s.
+- Lost two hours to buffered output: the first unified run printed its epoch lines through `print` without `flush`, and its output was redirected to a file, so the log looked frozen at the header and the run was killed while it was probably several epochs in. Training progress now flushes, logs every 50 batches with a tokens/s figure, and background runs use `python -u`. Measured throughput on unified: 6,173 tokens/s, about 12 minutes per epoch for the large model.
+- Unified corpus (98,808 training sentences), large LSTM (3,964,276 parameters), seed 42, 10 epochs in 2.9 hours: per word 167.54 against Kneser-Ney 189.07, so the neural model is 11.4% better at this scale. It was still improving when it hit the 10-epoch cap (validation perplexity 9.306, 9.200, 9.157 over the last three epochs), so 167.54 understates it and the comparison is conservative in the LSTM's favour.
+- Unified seeds 43 and 44, same settings: 164.88 and 165.70 per word (2.40 and 3.12 hours). Over the three seeds the LSTM scores 166.04 per word (164.88 to 167.54) against Kneser-Ney 189.07, 12% lower, with every seed on the same side. Every seed's best epoch was the 10th and last, with validation perplexity still falling, so the LSTM figure is a conservative lower bound on what it would reach.
+- The Claude Code session restarted while seeds 43 and 44 were training; the training process was unaffected and had written its results before work resumed.
+- Rewrote Section B Q2 from the measurements (n-gram wins on 420 sentences; LSTM wins by 12% on 1.9M words, at 2.4 to 3.1 hours of CPU per run against about 7 minutes for all six n-gram orders); added claims-table rows 28 to 34; journal §5 neural-baseline subsection, §6 answer 1 and §12 summary; slides 2 and 6; README reproduction commands.
+**Decided:**
+- Each LSTM was sized for its data (479,964 parameters on Dataset 2, 3,964,276 on the unified corpus) rather than one size for both; neither model saw the test set before scoring.
+- Kept the unified budget at 10 epochs for all three seeds so they are comparable, and report the result as a lower bound instead of running longer.
+**Next:**
+- Eric: decide whether to push these commits to origin/eric (not pushed).
+
+---
+
 ## 2026-09-22 · 10:20–13:50 GMT · Eric Elikplim Sunu
 
 **Branch:** eric

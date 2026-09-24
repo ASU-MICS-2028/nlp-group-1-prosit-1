@@ -45,3 +45,15 @@ longer exists in that form.
 | 25 | Decoding: mean Distinct-3 | unpenalized 78.9%, penalty 1.3: 100.0%, 3-gram block 99.5%, low temperature + penalty + block 100.0%, greedy + penalty + block 100.0% | `reports/decoding_strategies_benchmark.json` → `strategy_averages` | `scripts/benchmark_decoding_strategies.py` |
 | 26 | Leakage in the superseded split | 16 of 100 test pairs identical to training pairs; 18 of 100 test "pairs" were answer fragments | *audit* | `WORKLOG.md`, 2026-09-21 and 2026-09-22; journal Gotcha 6 |
 | 27 | Superseded masking comparison | standard 29.92 vs masked 30.08 answer perplexity on the old metric | *audit* | `WORKLOG.md`, 2026-09-22 |
+
+## Section B, Question 2: LSTM Baseline
+
+| # | Claim | Value | Source (file → key) | Written by |
+|---|---|---|---|---|
+| 28 | LSTM vs Kneser-Ney, Dataset 2 (420 sentences) | LSTM 7,864.84 per word (7,396.3 to 8,144.1, seeds 42 to 44) vs Kneser-Ney 5,806.95; LSTM 479,964 parameters | `reports/results_lstm_baseline.json` → `["2"].lstm_per_word_mean`, `lstm_per_word_min`, `lstm_per_word_max`, `kn_bpe.per_word_perplexity`, `runs[].params` | `scripts/run_lstm_baseline.py` |
+| 29 | LSTM vs Kneser-Ney, unified corpus | LSTM 166.04 per word (164.88 to 167.54) vs Kneser-Ney 189.07; LSTM 3,964,276 parameters; 2.40 to 3.12 hours per seed | same file → `["unified"]`, plus `runs[].train_seconds` | `scripts/run_lstm_baseline.py` |
+| 30 | Unified LSTM still improving at the 10-epoch budget | best epoch 10 of 10 for every seed; last two validation perplexities 9.200 → 9.157, 9.162 → 9.100, 9.249 → 9.147 | `["unified"].runs[].best_epoch`, `runs[].val_perplexity_per_epoch` | `scripts/run_lstm_baseline.py` |
+| 31 | Parameters per training word | about 50 (479,964 / 9,642) and about 2 (3,964,276 / 1,874,130) | row 28/29 parameters divided by `train_words` in `data/processed/{dataset_2_json,unified}/stats.json` | computed |
+| 32 | Same token stream as the n-gram | vocabulary, predicted-token count and spelling charge equal the BPE n-gram row | assertions in `scripts/run_lstm_baseline.py` against `results_*_all_tokenizers.json` | `scripts/run_lstm_baseline.py` |
+| 33 | Kneser-Ney time for all six BPE orders (unified) | 425 s | *audit*: sweep log | `WORKLOG.md`, 2026-09-22/24 |
+| 34 | First Dataset 2 LSTM run was under-trained | 9,243.16 per word with a 20-epoch cap, still improving | *audit* | `WORKLOG.md`, 2026-09-22/24 |

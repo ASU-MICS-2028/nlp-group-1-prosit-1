@@ -157,12 +157,27 @@ Dataset 2's per-word numbers are huge because, with only 420 training sentences,
 3. **The smoothing choices hold up on validation.** Kneser-Ney beats equal-weight interpolation at every $N \ge 2$ on every dataset, and the Ney discount estimate is the best of the four discounts we tried on validation, or within 0.3% of it.
 4. **The religious skew shows in what the models generate.** The unified 4-gram model's seeded sample is "2 eye yehowa ƒe gbe va na yona , amitai vi ," (the opening of the Book of Jonah). A model for everyday Ewe speech needs more conversational text like Dataset 3.
 
+
+### Neural baseline (Section B, Question 2)
+`scripts/run_lstm_baseline.py` trains an LSTM (`src/lstm_lm.py`) on exactly the BPE tokens of the best n-gram. It asserts that the vocabulary, the number of predicted tokens and the unknown-word spelling charge equal the n-gram run, then scores each test sentence on its own from `<s>`, like the n-gram. Results in `reports/results_lstm_baseline.json`, three seeds each:
+
+| | Dataset 2 (420 training sentences) | Unified (98,808 training sentences) |
+|---|---:|---:|
+| LSTM size | 479,964 parameters (about 50 per training word) | 3,964,276 parameters (about 2 per training word) |
+| LSTM, per word (mean, range) | 7,864.84 (7,396.3 to 8,144.1) | **166.04** (164.88 to 167.54) |
+| Kneser-Ney, BPE, per word | **5,806.95** | 189.07 |
+| Training time per LSTM seed | under a minute | 2.4 to 3.1 hours |
+
+- **A crossover, not a verdict.** The n-gram wins on micro-data and the LSTM wins at 1.9M words; in both cases every seed falls on the same side of the n-gram number.
+- **The unified LSTM is under-trained, so its win is conservative.** Every seed's best epoch was the last of the 10 we could afford, with validation perplexity still falling.
+- **A training budget can masquerade as a result.** Our first Dataset 2 run stopped at 20 epochs while all three seeds were still improving and scored 9,243.16 per word; letting early stopping decide (it chose epochs 30 to 34) gave 7,864.84. A cap set for convenience is a hidden hyperparameter.
+
 ---
 
 ## 6. Synthesis & Viva Exam Readiness (`clenam.ai`)
 
 1. **Why n-grams for a low-resource African language?**  
-   *Defense*: They train in minutes on a CPU from counts alone, their behaviour is fully explainable, and smoothed n-gram models are a common choice for the language model inside speech recognition decoders (compiled into weighted finite-state transducers). We did not build that export, and we did not train a neural baseline, so we cannot claim n-grams beat neural models at our 1.9M-word scale; with this much text a small neural model might well do better.
+   *Defense*: We tested it with an LSTM trained on the same BPE tokens and scored per word. On 420 sentences the n-gram wins (5,806.95 against 7,864.84, the LSTM's range 7,396.3 to 8,144.1 over three seeds): about 50 LSTM parameters per training word is more than the data can pin down. On our 1.9M-word corpus the LSTM wins by 12% (166.04, range 164.88 to 167.54, against 189.07), and it was still improving when our 10-epoch budget ran out. The n-gram trains in about 7 minutes where each LSTM took 2.4 to 3.1 hours on a CPU, is fully explainable, and fits speech recognition decoders as a weighted finite-state transducer. So: n-grams for tiny data or tight compute, a neural model once there is enough text and time.
 2. **Can you compare the perplexity of your character model with your word model?**  
    *Defense*: Not per token: a character model chooses among 227 symbols per step, a word model among 26,489. Per word it works, as long as every model pays for the whole text; a word model that predicts `<unk>` must also pay to spell the word. On that basis BPE is best (189.1 per word) and characters worst (447.1).
 3. **Does a longer context make an n-gram model worse?**  
@@ -325,4 +340,4 @@ A review of the whole repository against its code and data, followed by the fixe
 
 **What changed.** Every Ewe split and every result is rebuilt by committed scripts; unit tests check that the smoothed distributions sum to 1; the order $N$ and the discount are chosen on validation; tokenizers are compared per word with unknown words charged; Section C is deduplicated before splitting and reports answer-only and general-English perplexity. `METHODOLOGY_GUIDE.md` gained a sixth pillar, *Verify Before You Write*.
 
-**What the corrected numbers say.** With correct smoothing, longer contexts stop helping from about $N=4$ but never hurt; BPE is the best tokenizer per word on every dataset; keeping Ewe affixes as tokens helps a little; LoRA adapts distilgpt2's probabilities to agricultural answers (20.6% lower answer perplexity) at a measurable cost to general English, and its answers are fluent but not reliable.
+**What the corrected numbers say.** With correct smoothing, longer contexts stop helping from about $N=4$ but never hurt; BPE is the best tokenizer per word on every dataset; an LSTM on the same tokens loses to the n-gram on 420 sentences but beats it by 12% on the full corpus, at hours of CPU instead of minutes; keeping Ewe affixes as tokens helps a little; LoRA adapts distilgpt2's probabilities to agricultural answers (20.6% lower answer perplexity) at a measurable cost to general English, and its answers are fluent but not reliable.

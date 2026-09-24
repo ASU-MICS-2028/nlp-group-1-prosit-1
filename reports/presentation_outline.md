@@ -20,7 +20,7 @@
 ---
 
 ### Slide 2: Problem Formulation & the N-Gram Approach (1:00 - 2:30)
-- **Why n-grams first**: trained from counts in minutes on a CPU, fully explainable, and usable inside speech recognition decoders as weighted finite-state transducers. We did not train a neural baseline, so we claim "right first model", not "better than neural".
+- **N-grams vs neural, measured**: an LSTM trained on the same tokens loses to the n-gram on 420 sentences (7,864.84 vs 5,806.95 per word) but wins by 12% on the full 1.9M-word corpus (166.04 vs 189.07). The n-gram trains in minutes on a CPU and fits speech recognition decoders; each LSTM run took about 3 hours. So: n-grams first, neural once there is enough text.
 - **The sparsity problem, in our own numbers**: on the Ewe test set, 10.5% of bigrams and 80.5% of 6-grams never occur in training. Maximum likelihood gives those probability 0.
 - **The fix**: smoothing, from Laplace to interpolation to **interpolated Kneser-Ney**, which moves probability from rare events down to shorter contexts.
 
@@ -61,5 +61,6 @@
 ### Slide 6: Key Takeaways (8:30 - 10:00)
 1. **Smoothing decides everything.** With correct Kneser-Ney, Ewe n-grams improve up to about 4 words of context and then plateau; subword (BPE) units model the text best per word.
 2. **LoRA adapts cheaply but does not make the model reliable.** 0.18% of the parameters cut answer perplexity by a fifth, at a measurable cost to general English, and the answers are fluent rather than correct.
-3. **Verify before you write.** Our first draft reported a "breaking point" at $N=4$ and a tokenizer ranking that both came from bugs (probability lost for unseen contexts, padding counted as a word, per-token comparisons across tokenizers). Unit tests and committed scripts now guard every number.
+3. **N-grams vs neural is a data-size question.** The n-gram wins on micro-data; an LSTM wins by 12% once there are 1.9M words, at hours of CPU instead of minutes.
+4. **Verify before you write.** Our first draft reported a "breaking point" at $N=4$ and a tokenizer ranking that both came from bugs (probability lost for unseen contexts, padding counted as a word, per-token comparisons across tokenizers). Unit tests and committed scripts now guard every number.
 - **Q&A / Panel Defense**: ready for the automated Viva Quiz on `clenam.ai` and panel questions.
