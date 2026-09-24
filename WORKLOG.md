@@ -36,7 +36,7 @@ Field notes:
 - **Decided** — only real decisions, the kind someone might otherwise reverse without knowing. Leave it out if nothing was decided.
 - **Blocked** — this is the field that saves the project. Write it even when it feels like admitting you're stuck. Especially then.
 
-## 2026-09-24 · 11:10–12:20 GMT · Eric Elikplim Sunu
+## 2026-09-24 · 11:10–12:00 and 15:25–15:35 GMT · Eric Elikplim Sunu
 
 **Branch:** eric
 **Assistant:** Claude (Claude Code, Opus 5.5), to check whether everything was pushed and a pull request was open, and to build the 10-minute presentation on the Ashesi template used for the ICS553 Prosit 1 deck.
