@@ -36,6 +36,43 @@ Field notes:
 - **Decided** — only real decisions, the kind someone might otherwise reverse without knowing. Leave it out if nothing was decided.
 - **Blocked** — this is the field that saves the project. Write it even when it feels like admitting you're stuck. Especially then.
 
+## 2026-09-24 · 10:35–11:05 GMT · Eric Elikplim Sunu
+
+**Branch:** eric
+**Assistant:** Claude (Claude Code, Opus 5.5), to separate the three models into their own folders after teammates found the layout confusing, and to split the learning journal into a team version and a personal one.
+**Did:**
+- Restructured the repository by model with `git mv`, so each file keeps its history (`git log --follow`). Old to new paths (entries below this one use the old paths):
+
+| Old | New |
+|---|---|
+| `src/{data_pipeline,preprocessing,ewe_tokenizers,ngram,experiment_runner,viz}.py` | `src/section_b_ngram/`, same file names |
+| `scripts/build_ewe_datasets.py`, `scripts/run_multi_tokenizer_ablation.py` | `src/section_b_ngram/build_datasets.py`, `run_sweep.py` |
+| `src/lstm_lm.py`, `scripts/run_lstm_baseline.py` | `src/section_b_lstm/lstm_lm.py`, `run_baseline.py` |
+| `src/prepare_domain_data.py`, `src/train_domain_lora.py`, `scripts/benchmark_decoding_strategies.py` | `src/section_c_llm/prepare_data.py`, `train_lora.py`, `benchmark_decoding.py` |
+| `reports/results_dataset_N_all_tokenizers.json`, `reports/results_unified_all_tokenizers.json` | `results/section_b_ngram/dataset_N.json`, `unified.json` |
+| `figures/ngram_order_ablation.png`, `figures/ngram_perplexity_comparison.png` | `results/section_b_ngram/order_ablation.png`, `smoothing_comparison.png` |
+| `reports/results_lstm_baseline.json` | `results/section_b_lstm/lstm_vs_ngram.json` |
+| `reports/domain_adaptation_results.json`, `reports/decoding_strategies_benchmark.json`, `figures/domain_adaptation_perplexity.png` | `results/section_c_llm/lora_results.json`, `decoding_benchmark.json`, `lora_perplexity.png` |
+| `models/domain_adapted_checkpoint/`, `models/prompt_masked_lora_checkpoint/` | `models/section_c_llm/standard/`, `masked/` |
+| `notebooks/01_...`, `04_...`, `02_...`, `03_...` | `notebooks/b1_ngram_smoothing`, `b2_ngram_tokenizers`, `c1_llm_finetuning`, `summary_all_models` |
+
+- Scripts now run as modules from the repo root (`python -m src.section_b_ngram.run_sweep`); `ROOT` is defined once in `src/__init__.py` and the `sys.path` inserts are gone. Removed `scripts/launch_notebook.sh` (use `jupyter lab notebooks/`).
+- The README opens with a table of the three models, each `src/section_*/__init__.py` says what its model is and how to run it, and notebooks b2 and c1 state which model they cover (b2 was titled "Deep Learning Exploration" although it contains no neural network).
+- Summary notebook: added the LSTM against n-gram table, computed from the result file, and removed the hand-typed qualitative n-gram against neural table (some of its cells, such as GPU training for neural models, contradicted what we measured).
+- Journal: `reports/LEARNING_JOURNAL.md` is now a team journal (the three models, results, problems and fixes, lessons, open items). Eric's detailed individual journal moved to `personal/LEARNING_JOURNAL_detailed.md`, which is gitignored and exists only on Eric's machine; earlier versions stay in the public history.
+- Verified: every result file and figure is byte-identical after the move except two path labels inside `lora_results.json` and `decoding_benchmark.json` (changed on purpose). Re-running the Dataset 2 n-gram sweep reproduced its results file byte for byte. One LSTM seed (Dataset 2, seed 42) reproduced 7396.3 per word at best epoch 34 and passed the same-token-stream assertions. All four notebooks execute, and c1 re-scores both adapters to the published numbers. 22 tests pass. Every result number in the team journal traces to a result file.
+- Pushing everything to origin/eric (approved by Eric this session), including the three LSTM commits from the previous session.
+**Decided:**
+- Folders by model, not by file type, so the n-gram, the LSTM and the LLM cannot be mixed up; each folder name is the report section plus the model.
+- Left `data/` as it was: moving it would break everyone's local raw and processed data, which git does not track.
+- Did not rewrite history to remove old versions of the detailed journal: force-pushing a shared branch disrupts every clone, and the file may already have been copied.
+**Blocked / open questions:**
+- Anyone with uncommitted changes to moved files: commit or stash, then pull; git follows the renames. origin has no other branch besides `main`, which holds only the first commit.
+- `clenam.ai` (journal, quiz guide, slides) vs `klenam.ai` (README): the correct spelling is unconfirmed.
+- Still open from earlier sessions: teammates' review and a pull request to `main`; the licences and origins of Ewe Datasets 1 and 4; no Ewe speaker has judged the samples.
+**Next:**
+- Teammates: start from the README table and `notebooks/summary_all_models.ipynb`, then review and open a pull request from `eric` to `main`.
+
 ## 2026-09-22 · 16:00 GMT – 2026-09-24 · 09:30 GMT · Eric Elikplim Sunu
 
 **Branch:** eric
