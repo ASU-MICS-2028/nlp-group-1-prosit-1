@@ -46,14 +46,16 @@ env/
 *.bin
 *.safetensors
 checkpoint-*/
-# models/: track only the two small LoRA adapters (config + weights) and the README
+# models/: track only the two small Section C LoRA adapters (config + weights) and the README
 models/*
 !models/README.md
-!models/domain_adapted_checkpoint/
-!models/prompt_masked_lora_checkpoint/
-models/*/*
-!models/*/adapter_config.json
-!models/*/adapter_model.safetensors
+!models/section_c_llm/
+models/section_c_llm/*
+!models/section_c_llm/standard/
+!models/section_c_llm/masked/
+models/section_c_llm/*/*
+!models/section_c_llm/*/adapter_config.json
+!models/section_c_llm/*/adapter_model.safetensors
 runs/
 wandb/
 .cache/
@@ -79,3 +81,6 @@ data/processed/low_resource/
 *.txt
 !data/**/README.md
 !requirements.txt
+
+# Personal notes kept out of the shared repository (e.g. an individual learning journal)
+personal/

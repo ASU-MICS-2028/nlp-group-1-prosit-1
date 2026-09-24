@@ -31,7 +31,7 @@
 - **Ewe orthography**: NFC normalization, tone marks kept as part of the word (ɔ̃ has no single Unicode character), and lookalike letters fixed (Ð typed for Ɖ had split "ɖe" into two words).
 - **Result 1, context length**: test perplexity falls 534.7 → 121.2 → 77.7 → 70.5 from unigram to 4-gram, then stays flat (69.3, 69.7). Longer context never hurts with Kneser-Ney; it stops helping at about 4 words.
 - **Result 2, tokenizers (perplexity per word, the fair unit)**: BPE 189.1 < Ewe affixes kept 196.9 < words 202.2 < whitespace 261.6 < characters 447.1. Same ranking on every source dataset.
-- **Visual**: `figures/ngram_order_ablation.png`.
+- **Visual**: `results/section_b_ngram/order_ablation.png`.
 
 ---
 
@@ -54,7 +54,7 @@
 - **Cost**: general-English perplexity up 7.2%. LoRA limits forgetting; it does not prevent it.
 - **Masking** helps answers about as much (within noise) but never learns to predict questions, which speech recognition needs.
 - **Fluent is not correct**: "The fall armyworm in maize affects the development of mites, insects and other insects." Decoding tricks remove loops (Distinct-3 78.9% → 100%, partly by construction) but not errors.
-- **Visual**: `figures/domain_adaptation_perplexity.png`.
+- **Visual**: `results/section_c_llm/lora_perplexity.png`.
 
 ---
 

@@ -7,8 +7,8 @@ perplexity, per-word perplexity, and a seeded generation sample.
 from typing import List, Dict, Any
 import math
 import random
-from src.ngram import NGramLM
-from src.preprocessing import build_vocabulary, replace_oov_tokens, pad_sentence, SPECIAL_UNK
+from src.section_b_ngram.ngram import NGramLM
+from src.section_b_ngram.preprocessing import build_vocabulary, replace_oov_tokens, pad_sentence, SPECIAL_UNK
 
 RANDOM_SEED = 42
 

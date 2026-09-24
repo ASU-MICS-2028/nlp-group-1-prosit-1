@@ -1,5 +1,5 @@
 {
-  "dataset": "KisanVaani/agriculture-qa-english-only, one row per distinct question (src/prepare_domain_data.py)",
+  "dataset": "KisanVaani/agriculture-qa-english-only, one row per distinct question (src/section_c_llm/prepare_data.py)",
   "base_model": "distilgpt2",
   "lora": {
     "r": 8,

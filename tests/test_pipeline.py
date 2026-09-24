@@ -6,17 +6,17 @@ and N-gram smoothing algorithms.
 
 import math
 import pytest
-from src.preprocessing import normalize_ewe_text, basic_tokenize, build_vocabulary, replace_oov_tokens
-from src.ewe_tokenizers import (
+from src.section_b_ngram.preprocessing import normalize_ewe_text, basic_tokenize, build_vocabulary, replace_oov_tokens
+from src.section_b_ngram.ewe_tokenizers import (
     WhitespaceTokenizer,
     UnicodeWordTokenizer,
     CharacterTokenizer,
     EweRuleStemmerTokenizer,
     SimpleBPETokenizer,
 )
-from src.ngram import NGramLM
-from src.data_pipeline import clean_and_normalize_ewe_sentence
-from src.experiment_runner import run_ngram_experiment
+from src.section_b_ngram.ngram import NGramLM
+from src.section_b_ngram.data_pipeline import clean_and_normalize_ewe_sentence
+from src.section_b_ngram.experiment_runner import run_ngram_experiment
 
 
 class TestUnicodePreprocessing:
@@ -191,7 +191,7 @@ def test_lstm_scoring_is_a_proper_distribution():
     # With a zeroed output layer every allowed id is equally likely, so perplexity must equal the number of
     # predictable ids: everything except <pad> and <s>
     import torch
-    from src.lstm_lm import LSTMLM, build_index, encode, total_nll
+    from src.section_b_lstm.lstm_lm import LSTMLM, build_index, encode, total_nll
 
     stoi, blocked = build_index({"<s>", "</s>", "<unk>", "woezɔ", "loo"})
     model = LSTMLM(len(stoi))

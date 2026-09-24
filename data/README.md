@@ -3,7 +3,9 @@
 Raw and processed data are gitignored (size and licences). This file records where each raw file comes
 from, what is in it, and the one command that rebuilds the processed splits from it.
 
-## Section B: Ewe (`data/raw/low_resource/`)
+## Section B, n-gram and LSTM: Ewe (`data/raw/low_resource/`)
+
+Both Section B models (the n-gram and the LSTM baseline) use these splits.
 
 | File | What it actually contains | Column used | Rows |
 |---|---|---|---|
@@ -15,20 +17,21 @@ from, what is in it, and the one command that rebuilds the processed splits from
 Rebuild every split (per-dataset folders plus `unified`) with:
 
 ```bash
-python scripts/build_ewe_datasets.py
+python -m src.section_b_ngram.build_datasets
 ```
 
-Cleaning is in `src/data_pipeline.py`: drop binary garbage, strip HTML and URLs, Unicode NFC, remove
-zero-width characters, collapse whitespace, keep lines with at least 2 words and 1 letter, deduplicate on
-the lowercased text (within and across sources, first occurrence wins), shuffle with seed 42, split 80/10/10.
+Cleaning is in `src/section_b_ngram/data_pipeline.py`: drop binary garbage, strip HTML and URLs,
+Unicode NFC, remove zero-width characters, collapse whitespace, keep lines with at least 2 words and 1
+letter, deduplicate on the lowercased text (within and across sources, first occurrence wins), shuffle with
+seed 42, split 80/10/10.
 
-## Section C: English agriculture (`data/raw/domain_english/`)
+## Section C, fine-tuned LLM: English agriculture (`data/raw/domain_english/`)
 
-`agriculture_qa.parquet` is `KisanVaani/agriculture-qa-english-only` from Hugging Face (Apache-2.0): 22,615 rows but
-only 2,212 distinct questions. `python src/prepare_domain_data.py` downloads it if missing, keeps one row
-per question before shuffling (so no test question is also a training question), and writes
-`data/processed/domain_english/{train,val,test}.jsonl` plus `stats.json`.
+`agriculture_qa.parquet` is `KisanVaani/agriculture-qa-english-only` from Hugging Face (Apache-2.0):
+22,615 rows but only 2,212 distinct questions. `python -m src.section_c_llm.prepare_data` downloads it if
+missing, keeps one row per question before shuffling (so no test question is also a training question), and
+writes `data/processed/domain_english/{train,val,test}.jsonl` plus `stats.json`.
 
 ## Subdirectories
 - `raw/`: unprocessed downloads, as above.
-- `processed/`: cleaned splits written by the two scripts above. Never edit these by hand.
+- `processed/`: cleaned splits written by the two commands above. Never edit these by hand.

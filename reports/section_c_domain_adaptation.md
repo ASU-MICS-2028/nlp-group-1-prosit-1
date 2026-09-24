@@ -4,14 +4,14 @@
 **Team**: MICS 2028 · Group 1  
 **Deliverable**: Technical Report Section C (Group Sync, identical across team members) · Weight: 15% Implementation & Results + 5% Writing Quality = 20%  
 **Public Repository**: https://github.com/ASU-MICS-2028/nlp-group-1-prosit-1.git  
-**Numbers**: every figure below is copied from `reports/domain_adaptation_results.json` or `reports/decoding_strategies_benchmark.json` (see `reports/claims_table.md`).
+**Numbers**: every figure below is copied from `results/section_c_llm/lora_results.json` or `results/section_c_llm/decoding_benchmark.json` (see `reports/claims_table.md`).
 
 ---
 
 ### Question 1: What data did you use in building your model?
 *(Space Guide: 1 Paragraph)*
 
-We used the **KisanVaani agricultural question-answering corpus** (`KisanVaani/agriculture-qa-english-only` on Hugging Face): English farming questions with written answers on crops, pests, soil and livestock. The raw corpus has 22,615 rows but only **2,212 distinct questions**, because most questions are repeated. We therefore kept one row per question *before* shuffling, so no test question can also appear in training, and split the 2,212 pairs 80/10/10 (seed 42) into 1,769 training, 221 validation and 222 test pairs (`src/prepare_domain_data.py`); the training script re-checks this and finds 0 test questions in training or validation. Each pair is written as `Question: ...` followed by `Answer: ...` on the next line. To fit a laptop CPU budget we trained on the first 500 training pairs; validation and test use all of theirs. An earlier version of this experiment split the raw rows without deduplication, and 16 of its 100 test pairs were word-for-word copies of training pairs, so all results below replace that version.
+We used the **KisanVaani agricultural question-answering corpus** (`KisanVaani/agriculture-qa-english-only` on Hugging Face): English farming questions with written answers on crops, pests, soil and livestock. The raw corpus has 22,615 rows but only **2,212 distinct questions**, because most questions are repeated. We therefore kept one row per question *before* shuffling, so no test question can also appear in training, and split the 2,212 pairs 80/10/10 (seed 42) into 1,769 training, 221 validation and 222 test pairs (`src/section_c_llm/prepare_data.py`); the training script re-checks this and finds 0 test questions in training or validation. Each pair is written as `Question: ...` followed by `Answer: ...` on the next line. To fit a laptop CPU budget we trained on the first 500 training pairs; validation and test use all of theirs. An earlier version of this experiment split the raw rows without deduplication, and 16 of its 100 test pairs were word-for-word copies of training pairs, so all results below replace that version.
 
 ---
 
@@ -30,7 +30,7 @@ We considered three approaches:
 ### Question 3: How did you train your model and what convinced you your model was learning?
 *(Space Guide: 2–3 Paragraphs)*
 
-`src/train_domain_lora.py` loads `distilgpt2`, attaches LoRA ($r=8$, $\alpha=32$, dropout 0.05, target `c_attn`, with `fan_in_fan_out=True` because GPT-2 stores that layer as a `Conv1D`), and trains with the Hugging Face `Trainer`: next-token cross-entropy $\mathcal{L} = -\sum_t \log P(w_t \mid w_{<t})$, AdamW at learning rate $5 \times 10^{-4}$ with linear decay, batch size 8, 3 epochs, sequences truncated at 96 tokens, seed 42. The masked variant sets the label of every token up to and including `Answer:` to `-100`, which the loss ignores.
+`src/section_c_llm/train_lora.py` loads `distilgpt2`, attaches LoRA ($r=8$, $\alpha=32$, dropout 0.05, target `c_attn`, with `fan_in_fan_out=True` because GPT-2 stores that layer as a `Conv1D`), and trains with the Hugging Face `Trainer`: next-token cross-entropy $\mathcal{L} = -\sum_t \log P(w_t \mid w_{<t})$, AdamW at learning rate $5 \times 10^{-4}$ with linear decay, batch size 8, 3 epochs, sequences truncated at 96 tokens, seed 42. The masked variant sets the label of every token up to and including `Answer:` to `-100`, which the loss ignores.
 
 Three things convinced us the models were learning the domain:
 1. **Validation loss fell every epoch**: standard (full text) 3.3963, 3.3072, 3.2874; masked (answer tokens only, so not comparable with the standard numbers) 3.3395, 3.3005, 3.2902.
@@ -44,7 +44,7 @@ Three things convinced us the models were learning the domain:
 
 **Quantitatively**, we computed token-weighted perplexity (total negative log-likelihood of the scored tokens divided by their number) for the base model and both adapters on the same 222 held-out pairs, in three views: the **full** question-and-answer text, the **answer tokens only** given the question, and **general English**, 200 paragraphs from the WikiText-2 test split, to measure what the adaptation costs outside the domain. An earlier version of our evaluation averaged per-batch losses and treated fragments of split answers as pairs; both are fixed.
 
-**Qualitatively**, we sampled each model on three agricultural prompts with a fixed seed (42), temperature 0.7 and top-p 0.9, and read the answers for correctness as well as fluency. A separate benchmark (`scripts/benchmark_decoding_strategies.py`, 4 prompts, 5 seeds per sampled strategy) measures how decoding settings change repetition, using Distinct-3: unique word trigrams divided by all word trigrams in an answer.
+**Qualitatively**, we sampled each model on three agricultural prompts with a fixed seed (42), temperature 0.7 and top-p 0.9, and read the answers for correctness as well as fluency. A separate benchmark (`src/section_c_llm/benchmark_decoding.py`, 4 prompts, 5 seeds per sampled strategy) measures how decoding settings change repetition, using Distinct-3: unique word trigrams divided by all word trigrams in an answer.
 
 ---
 

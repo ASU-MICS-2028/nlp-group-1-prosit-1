@@ -1,41 +1,39 @@
 """
-Runs the Section B ablation: 5 tokenizers x N=1..6, interpolated Kneser-Ney, on one dataset at a time.
+Runs the Section B sweep: 5 tokenizers x N=1..6, interpolated Kneser-Ney, on one dataset at a time.
 Every tokenizer is trained on the same full training split and scored on the same validation and test
 sentences. The best order per tokenizer is picked on validation perplexity.
 
-Build the splits first (python scripts/build_ewe_datasets.py), then from the repo root:
-    python scripts/run_multi_tokenizer_ablation.py --dataset unified
+Build the splits first (python -m src.section_b_ngram.build_datasets), then from the repo root:
+    python -m src.section_b_ngram.run_sweep --dataset unified
 """
 
 import argparse
 import json
-import sys
 import time
 from pathlib import Path
 from typing import Any, Dict
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
-
-from src.ewe_tokenizers import (  # noqa: E402
+from src import ROOT
+from src.section_b_ngram.ewe_tokenizers import (
     WhitespaceTokenizer,
     UnicodeWordTokenizer,
     EweRuleStemmerTokenizer,
     CharacterTokenizer,
     SimpleBPETokenizer,
 )
-from src.experiment_runner import run_ngram_experiment  # noqa: E402
-from src.ngram import NGramLM  # noqa: E402
-from src.preprocessing import build_vocabulary, replace_oov_tokens  # noqa: E402
+from src.section_b_ngram.experiment_runner import run_ngram_experiment
+from src.section_b_ngram.ngram import NGramLM
+from src.section_b_ngram.preprocessing import build_vocabulary, replace_oov_tokens
 
+RESULTS = ROOT / "results" / "section_b_ngram"
 MAX_EVAL = 4000  # validation and test sentences scored per dataset, the same ones for every tokenizer
 
 DATASETS = {
-    "1": ("dataset_1_csv", "Dataset 1 (EWE_ENGLISH.csv)", "results_dataset_1_all_tokenizers.json"),
-    "2": ("dataset_2_json", "Dataset 2 (eweenglishsentence.json, micro-data)", "results_dataset_2_all_tokenizers.json"),
-    "3": ("dataset_3_speech", "Dataset 3 (Waxal speech transcriptions)", "results_dataset_3_all_tokenizers.json"),
-    "4": ("dataset_4_parquet", "Dataset 4 (ewe_corpus.parquet, first 200k rows)", "results_dataset_4_all_tokenizers.json"),
-    "unified": ("unified", "Unified corpus (all four sources)", "results_unified_all_tokenizers.json"),
+    "1": ("dataset_1_csv", "Dataset 1 (EWE_ENGLISH.csv)", "dataset_1.json"),
+    "2": ("dataset_2_json", "Dataset 2 (eweenglishsentence.json, micro-data)", "dataset_2.json"),
+    "3": ("dataset_3_speech", "Dataset 3 (Waxal speech transcriptions)", "dataset_3.json"),
+    "4": ("dataset_4_parquet", "Dataset 4 (ewe_corpus.parquet, first 200k rows)", "dataset_4.json"),
+    "unified": ("unified", "Unified corpus (all four sources)", "unified.json"),
 }
 
 
@@ -87,7 +85,7 @@ def run_dataset_sweep(key: str, max_order: int = 6) -> Dict[str, Any]:
         "discount_check_val_unicode_word": discount_check(train, val_eval, best["Unicode Word"]["order"]),
         "results": results,
     }
-    with open(ROOT / "reports" / out_name, "w", encoding="utf-8") as f:
+    with open(RESULTS / out_name, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2, ensure_ascii=False)
 
     print(f"\nTest perplexity per token | per word, {label}")

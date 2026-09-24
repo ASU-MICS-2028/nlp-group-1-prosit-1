@@ -8,20 +8,20 @@ in training, then split 80/10/10 with seed 42.
 Splits are JSONL, one {"question", "answer"} object per line. (Some answers contain blank lines, which
 broke the old blank-line-separated text files: one Q&A pair could turn into several fragments.)
 
-Run from the repo root:  python src/prepare_domain_data.py
+Run from the repo root:  python -m src.section_c_llm.prepare_data
 """
 
 import json
 import random
 import re
-from pathlib import Path
 
 import pandas as pd
 
+from src import ROOT
+
 RANDOM_SEED = 42
-REPO_ROOT = Path(__file__).resolve().parent.parent
-RAW_PARQUET = REPO_ROOT / "data" / "raw" / "domain_english" / "agriculture_qa.parquet"
-PROCESSED_DIR = REPO_ROOT / "data" / "processed" / "domain_english"
+RAW_PARQUET = ROOT / "data" / "raw" / "domain_english" / "agriculture_qa.parquet"
+PROCESSED_DIR = ROOT / "data" / "processed" / "domain_english"
 
 
 def normalize_question(question: str) -> str:

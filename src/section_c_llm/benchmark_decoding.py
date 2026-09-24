@@ -7,24 +7,24 @@ Distinct-3 measures repetition only, not whether the advice is correct. With no_
 the decoder is forbidden to repeat any token trigram, so Distinct-3 is close to 1 by construction.
 Every sampled strategy is run with N_SAMPLES fixed seeds per prompt, so the averages are reproducible.
 
-Run after src/train_domain_lora.py:  python scripts/benchmark_decoding_strategies.py
-Saves empirical results to reports/decoding_strategies_benchmark.json.
+Run from the repo root after training:  python -m src.section_c_llm.benchmark_decoding
+Saves empirical results to results/section_c_llm/decoding_benchmark.json.
 """
 
 import json
-from pathlib import Path
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, set_seed
 from peft import PeftModel
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-CHECKPOINT_DIR = REPO_ROOT / "models" / "domain_adapted_checkpoint"
-REPORTS_DIR = REPO_ROOT / "reports"
+from src import ROOT
+
+CHECKPOINT_DIR = ROOT / "models" / "section_c_llm" / "standard"
+RESULTS_DIR = ROOT / "results" / "section_c_llm"
 BASE_MODEL_NAME = "distilgpt2"
 RANDOM_SEED = 42
 N_SAMPLES = 5  # seeds per (prompt, strategy); greedy search is deterministic and runs once
 
-REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def calculate_repetition_metrics(text: str):
@@ -92,7 +92,7 @@ def run_decoding_benchmark():
     }
 
     benchmark_data = {
-        "model": "distilgpt2 + LoRA (r=8, alpha=32), models/domain_adapted_checkpoint",
+        "model": "distilgpt2 + LoRA (r=8, alpha=32), models/section_c_llm/standard",
         "prompts_evaluated": len(prompts),
         "samples_per_prompt": N_SAMPLES,
         "note": "Distinct-3 measures repetition, not correctness. no_repeat_ngram_size=3 makes it ~1 by construction.",
@@ -138,7 +138,7 @@ def run_decoding_benchmark():
         }
     benchmark_data["strategy_averages"] = strategy_averages
 
-    out_file = REPORTS_DIR / "decoding_strategies_benchmark.json"
+    out_file = RESULTS_DIR / "decoding_benchmark.json"
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump(benchmark_data, f, indent=2)
 

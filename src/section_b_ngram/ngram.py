@@ -14,7 +14,7 @@ from collections import defaultdict, Counter
 import math
 import random
 from typing import List, Tuple, Dict, Optional, Set
-from src.preprocessing import pad_sentence, SPECIAL_BOS, SPECIAL_EOS, SPECIAL_UNK
+from src.section_b_ngram.preprocessing import pad_sentence, SPECIAL_BOS, SPECIAL_EOS, SPECIAL_UNK
 
 
 class NGramLM:

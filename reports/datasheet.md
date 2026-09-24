@@ -2,7 +2,7 @@
 
 Based on Gebru et al., *Datasheets for Datasets* (2021). Documents provenance, composition and processing
 for Prosit 1. Every count below comes from `data/processed/*/stats.json`, written by
-`scripts/build_ewe_datasets.py` and `src/prepare_domain_data.py`; see `data/README.md` for the raw files.
+`src/section_b_ngram/build_datasets.py` and `src/section_c_llm/prepare_data.py`; see `data/README.md` for the raw files.
 
 ---
 
@@ -45,12 +45,12 @@ the first 500 training pairs (a CPU time budget) and are evaluated on all 222 te
 - Datasets 1, 2 and 4 were downloaded as files by the team; where each came from is recorded in
   `data/README.md` (two origins are not recorded and are listed as open items).
 - Dataset 3 is an export of transcriptions from the University of Ghana Waxal speech project.
-- The agriculture corpus is downloaded from Hugging Face by `src/prepare_domain_data.py`.
+- The agriculture corpus is downloaded from Hugging Face by `src/section_c_llm/prepare_data.py`.
 
 ---
 
 ## 4. Preprocessing & Cleaning
-All in `src/data_pipeline.py` (Ewe) and `src/prepare_domain_data.py` (English):
+All in `src/section_b_ngram/data_pipeline.py` (Ewe) and `src/section_c_llm/prepare_data.py` (English):
 1. **Corrupted rows dropped**: lines with control bytes or escaped binary (15 such rows in Dataset 1).
 2. **Markup removed**: HTML/XML tags and URLs.
 3. **Unicode NFC normalization**, so a base letter and its tone mark are stored the same way everywhere.
@@ -76,4 +76,4 @@ All in `src/data_pipeline.py` (Ewe) and `src/prepare_domain_data.py` (English):
   two LoRA adapters in `models/` can be shared with attribution. The licences of the four Ewe sources are
   unverified; do not redistribute the Ewe data or models trained on it.
 - **The English corpus is small once deduplicated** (2,212 questions), and the adapted model's answers are
-  fluent but often factually wrong (see `reports/domain_adaptation_results.json`); they are not advice.
+  fluent but often factually wrong (see `results/section_c_llm/lora_results.json`); they are not advice.

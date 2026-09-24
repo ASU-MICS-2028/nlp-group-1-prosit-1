@@ -6,22 +6,19 @@ Rebuilds every Ewe split used in Section B from the raw files in data/raw/low_re
     data/processed/unified                                                              all four, cross-deduplicated
 
 Each folder gets train/val/test.txt (80/10/10 after a seed-42 shuffle) and stats.json.
-Cleaning, deduplication and splitting all live in src/data_pipeline.py.
+Cleaning, deduplication and splitting all live in src/section_b_ngram/data_pipeline.py.
 
-Run from the repo root:  python scripts/build_ewe_datasets.py
+Run from the repo root:  python -m src.section_b_ngram.build_datasets
 """
 
 import json
 import re
-import sys
 from pathlib import Path
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
-
-from src.data_pipeline import harmonize_sentences  # noqa: E402
+from src import ROOT
+from src.section_b_ngram.data_pipeline import harmonize_sentences
 
 RANDOM_SEED = 42
 RAW = ROOT / "data" / "raw" / "low_resource"

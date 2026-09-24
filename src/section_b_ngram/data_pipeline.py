@@ -144,7 +144,7 @@ def harmonize_sentences(
 ) -> Dict[str, Any]:
     """
     Same pipeline as merge_and_harmonize_datasets, for sentences already in memory
-    ({source name: raw lines}). Used by scripts/build_ewe_datasets.py.
+    ({source name: raw lines}). Used by src/section_b_ngram/build_datasets.py.
     """
     random.seed(seed)
     stats_per_source = {}

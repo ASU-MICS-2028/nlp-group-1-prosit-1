@@ -3,31 +3,27 @@ Neural baseline for Section B, Question 2: a small LSTM trained on exactly the t
 (BPE with 150 merges learned from the training split, tokens seen once -> <unk>), compared per word with
 interpolated Kneser-Ney on the same test sentences. Three seeds by default.
 
-Run from the repo root after scripts/run_multi_tokenizer_ablation.py (it reads the n-gram results):
-    python scripts/run_lstm_baseline.py --dataset 2 --config small
-Results are merged into reports/results_lstm_baseline.json (use --dry-run to only time an epoch).
+Run from the repo root after the n-gram sweep (it reads results/section_b_ngram/):
+    python -m src.section_b_lstm.run_baseline --dataset 2 --config small
+Results are merged into results/section_b_lstm/lstm_vs_ngram.json (use --dry-run to only time an epoch).
 """
 
 import argparse
 import json
 import math
-import sys
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
-
-from scripts.run_multi_tokenizer_ablation import DATASETS, MAX_EVAL, read_lines  # noqa: E402
-from src.ewe_tokenizers import SimpleBPETokenizer  # noqa: E402
-from src.experiment_runner import count_words, oov_spelling_nats, tokenize_splits  # noqa: E402
-from src.lstm_lm import build_index, encode, train_and_score  # noqa: E402
+from src import ROOT
+from src.section_b_lstm.lstm_lm import build_index, encode, train_and_score
+from src.section_b_ngram.ewe_tokenizers import SimpleBPETokenizer
+from src.section_b_ngram.experiment_runner import count_words, oov_spelling_nats, tokenize_splits
+from src.section_b_ngram.run_sweep import DATASETS, MAX_EVAL, RESULTS as NGRAM_RESULTS, read_lines
 
 BPE = "Byte-Pair Encoding (BPE)"
 CONFIGS = {
     "small": {"emb": 128, "hidden": 256, "layers": 1, "dropout": 0.3},
     "large": {"emb": 256, "hidden": 512, "layers": 2, "dropout": 0.3},
 }
-OUT = ROOT / "reports" / "results_lstm_baseline.json"
+OUT = ROOT / "results" / "section_b_lstm" / "lstm_vs_ngram.json"
 
 
 def run(key, config_name, seeds, max_epochs, patience, dry_run):
@@ -45,7 +41,7 @@ def run(key, config_name, seeds, max_epochs, patience, dry_run):
     words = count_words(test)
 
     # The comparison only means something if both models score the same token stream
-    ngram = json.loads((ROOT / "reports" / ngram_file).read_text())
+    ngram = json.loads((NGRAM_RESULTS / ngram_file).read_text())
     best = ngram["best_order_by_val"][BPE]
     kn = next(r for r in ngram["results"][BPE] if r["order"] == best["order"])
     assert kn["vocab_size"] == len(vocab), "vocabulary differs from the n-gram run"

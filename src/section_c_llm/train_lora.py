@@ -5,22 +5,21 @@ Section C experiment: adapt distilgpt2 to agricultural Q&A with LoRA, trained tw
     masked     loss on the answer tokens only (question tokens get label -100)
 
 The base model and both adapters are scored on the same held-out test questions (none of them occur in
-training, see src/prepare_domain_data.py) with three token-weighted perplexities:
+training, see src/section_c_llm/prepare_data.py) with three token-weighted perplexities:
 
     full_ppl       every token of the test Q&A text
     answer_ppl     only the answer tokens, given the question
     wikitext_ppl   200 WikiText-2 test paragraphs: general English, i.e. what the adaptation costs
 
-Run from the repo root after src/prepare_domain_data.py (about 15 minutes on a laptop CPU):
-    python src/train_domain_lora.py
-Writes reports/domain_adaptation_results.json and figures/domain_adaptation_perplexity.png.
+Run from the repo root after python -m src.section_c_llm.prepare_data (about 15 minutes on a laptop CPU):
+    python -m src.section_c_llm.train_lora
+Saves both adapters under models/section_c_llm/ and writes results/section_c_llm/lora_results.json and
+results/section_c_llm/lora_perplexity.png.
 """
 
 import json
 import math
-import sys
 import time
-from pathlib import Path
 
 import torch
 from datasets import Dataset, load_dataset
@@ -34,18 +33,16 @@ from transformers import (
     set_seed,
 )
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT))
-from src.prepare_domain_data import load_split, normalize_question  # noqa: E402
+from src import ROOT
+from src.section_c_llm.prepare_data import load_split, normalize_question
 
 RANDOM_SEED = 42
 BASE_MODEL = "distilgpt2"
 MAX_LENGTH = 96
 TRAIN_PAIRS = 500  # ponytail: CPU budget (~5 min per adapter); a GPU can take all 1,769 training pairs
-MODEL_DIRS = {
-    "standard": REPO_ROOT / "models" / "domain_adapted_checkpoint",
-    "masked": REPO_ROOT / "models" / "prompt_masked_lora_checkpoint",
-}
+MODELS = ROOT / "models" / "section_c_llm"
+MODEL_DIRS = {"standard": MODELS / "standard", "masked": MODELS / "masked"}
+RESULTS = ROOT / "results" / "section_c_llm"
 PROMPTS = [
     "Question: why is crop rotation important in farming?\nAnswer:",
     "Question: What farming practice helps prevent soil erosion?\nAnswer:",
@@ -119,7 +116,7 @@ def train(mask_prompt: bool, train_texts, val_texts):
     set_seed(RANDOM_SEED)
     model = get_peft_model(AutoModelForCausalLM.from_pretrained(BASE_MODEL), lora_config())
     args = TrainingArguments(
-        output_dir=str(REPO_ROOT / "models" / "temp_train"),
+        output_dir=str(MODELS / "trainer_tmp"),  # scratch: save_strategy="no" keeps no checkpoints
         num_train_epochs=3,
         per_device_train_batch_size=8,
         learning_rate=5e-4,
@@ -175,7 +172,7 @@ def plot(results: dict) -> None:
     ax.tick_params(colors="#898781", length=0)
     ax.legend(frameon=False, labelcolor="#0b0b0b")
     fig.tight_layout()
-    fig.savefig(REPO_ROOT / "figures" / "domain_adaptation_perplexity.png", dpi=200)
+    fig.savefig(RESULTS / "lora_perplexity.png", dpi=200)
 
 
 def main():
@@ -196,7 +193,7 @@ def main():
         print(name, {k: v for k, v in results[name].items() if k != "samples"}, flush=True)
 
     report = {
-        "dataset": "KisanVaani/agriculture-qa-english-only, one row per distinct question (src/prepare_domain_data.py)",
+        "dataset": "KisanVaani/agriculture-qa-english-only, one row per distinct question (src/section_c_llm/prepare_data.py)",
         "base_model": BASE_MODEL,
         "lora": {"r": 8, "alpha": 32, "dropout": 0.05, "target_modules": ["c_attn"], "epochs": 3, "lr": 5e-4, "batch_size": 8},
         "split_sizes": {"train_used": len(train_texts), "val": len(val_texts), "test": len(test_texts), "wikitext_paragraphs": len(wiki)},
@@ -206,7 +203,7 @@ def main():
         "prompts": PROMPTS,
         "results": results,
     }
-    with open(REPO_ROOT / "reports" / "domain_adaptation_results.json", "w", encoding="utf-8") as f:
+    with open(RESULTS / "lora_results.json", "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2, ensure_ascii=False)
     plot(results)
 

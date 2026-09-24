@@ -6,7 +6,7 @@
 **Project**: Prosit 1 (Ankora AI Research Lab: Language Modeling & Domain Adaptation)  
 **Branch**: `eric` · **Public Repository**: https://github.com/ASU-MICS-2028/nlp-group-1-prosit-1.git  
 
-> **Status, 2026-09-22.** Sections 2 to 11 were rewritten after a verification audit of this repository. Section 12 records what we first believed, what it turned out to be, and why. Every number here is copied from a file in `reports/` written by a committed script; `reports/claims_table.md` lists which.
+> **Status, 2026-09-22.** Sections 2 to 11 were rewritten after a verification audit of this repository. Section 12 records what we first believed, what it turned out to be, and why. Every number here is copied from a file in `results/` written by a committed script; `reports/claims_table.md` lists which.
 
 ---
 
@@ -24,7 +24,7 @@ For this prosit, we set out to test the interaction between:
 
 ## 2. The Two Core Experiments (Unified Corpus)
 
-All numbers in this section come from `reports/results_unified_all_tokenizers.json`, written by `scripts/run_multi_tokenizer_ablation.py`. Setup: 98,808 training sentences (1,874,130 words), scored on 4,000 validation and 4,000 test sentences; interpolated Kneser-Ney smoothing; tokens seen only once in training become `<unk>`; the best order $N$ is chosen on validation, never on test.
+All numbers in this section come from `results/section_b_ngram/unified.json`, written by `src/section_b_ngram/run_sweep.py`. Setup: 98,808 training sentences (1,874,130 words), scored on 4,000 validation and 4,000 test sentences; interpolated Kneser-Ney smoothing; tokens seen only once in training become `<unk>`; the best order $N$ is chosen on validation, never on test.
 
 *The first draft of this section (2026-09-17) was written before any Ewe data was in the repository and contained illustrative tables (a vocabulary of about 1,250 words, a Kneser-Ney trigram perplexity of 71.4, and so on). Those numbers were never measured and have been removed; see section 12.*
 
@@ -72,7 +72,7 @@ The last column is the old code's result (from the committed JSON before this re
 
 ### Discovery 2: The "Breaking Point" Was Our Smoothing, Not the Language
 - **What we believed**: on each dataset, word n-grams peak at $N=3$ and get worse from $N=4$; with 1.9M words the peak "shifts rightward" to $N=4$. Both claims were in the report and the slides.
-- **What it was**: three bugs in `src/ngram.py`, each of which grows with $N$:
+- **What it was**: three bugs in `src/section_b_ngram/ngram.py`, each of which grows with $N$:
   1. *Equal-weight interpolation threw probability away.* An order whose context never occurred in training contributed 0 but kept its weight, so the probabilities summed to less than 1: 0.667 for an unseen trigram context, 0.333 for an unseen 6-gram context.
   2. *The `<s>` padding was counted as a word.* A 6-gram model pads each sentence with five `<s>` and counted them in the unigram table (in our unit-test corpus, 10 of 18 unigram tokens), so the distribution everything backs off to got worse as $N$ grew.
   3. *"Kneser-Ney" above bigrams was not Kneser-Ney.* For $N \ge 3$ it backed off to a uniform $1/|V|$ instead of the continuation-count distribution.
@@ -107,16 +107,16 @@ The old stemmer *deleted* the affixes it found. That made each prediction easier
 
 | # | Problem | Symptom | Root cause | Fix (and where) |
 |---|---|---|---|---|
-| 1 | Combining diacritic splitting | `nusrɔ̃lawo` split into three tokens | `\w` excludes combining marks; ɔ̃ has no precomposed form | token regex accepts U+0300 to U+036F (`src/ewe_tokenizers.py`) |
+| 1 | Combining diacritic splitting | `nusrɔ̃lawo` split into three tokens | `\w` excludes combining marks; ɔ̃ has no precomposed form | token regex accepts U+0300 to U+036F (`src/section_b_ngram/ewe_tokenizers.py`) |
 | 2 | Zero probability under MLE | unseen n-gram gives $P=0$ | MLE has no mass for unseen events | interpolated Kneser-Ney; `perplexity()` now returns infinity for MLE instead of hiding it behind a $10^{-12}$ floor |
-| 3 | Probability thrown away at high $N$ | perplexity rose from $N=4$ | equal-weight interpolation kept weight on orders with unseen contexts | renormalize over orders whose context was seen (`src/ngram.py`) |
+| 3 | Probability thrown away at high $N$ | perplexity rose from $N=4$ | equal-weight interpolation kept weight on orders with unseen contexts | renormalize over orders whose context was seen (`src/section_b_ngram/ngram.py`) |
 | 4 | `<s>` counted as a word | unigram mass on `<s>` grew with $N$ | counting started at the padding | count only positions that are predicted |
 | 5 | Trigram "Kneser-Ney" was uniform backoff | lower orders never used | wrong lookup table for the lower order | recursive Kneser-Ney with continuation counts, checked against an independent implementation |
 | 6 | Unknown words | each got $P \approx 10^{-12}$ | `<unk>` never occurred in training | tokens seen once become `<unk>`; per-word comparisons charge the spelling |
-| 7 | Lookalike letters | `ðe` and `ɖe` counted separately | Ð (eth) typed for Ɖ | mapped in `src/data_pipeline.py` |
+| 7 | Lookalike letters | `ðe` and `ɖe` counted separately | Ð (eth) typed for Ɖ | mapped in `src/section_b_ngram/data_pipeline.py` |
 | 8 | Corrupted rows | 15 binary lines in Dataset 1 | broken rows in the CSV | dropped by the cleaner |
-| 9 | Irreproducible splits | nobody else could rebuild the data | build steps were never committed | `scripts/build_ewe_datasets.py` |
-| 10 | Section C answers split into fragments | 18 of 100 test "pairs" had no question | answers contain blank lines; files were split on blank lines | JSONL splits (`src/prepare_domain_data.py`) |
+| 9 | Irreproducible splits | nobody else could rebuild the data | build steps were never committed | `src/section_b_ngram/build_datasets.py` |
+| 10 | Section C answers split into fragments | 18 of 100 test "pairs" had no question | answers contain blank lines; files were split on blank lines | JSONL splits (`src/section_c_llm/prepare_data.py`) |
 | 11 | Section C test questions seen in training | 16 of 100 test pairs were copies of training pairs | 22,615 rows but only 2,212 distinct questions, split without deduplication | one row per question before the split |
 
 (An earlier version of this table listed a Colab memory problem; it never happened in this project and has been removed.)
@@ -125,7 +125,7 @@ The old stemmer *deleted* the affixes it found. That made each prediction easier
 
 ## 5. Multi-Source Dataset Harmonization Protocol & Empirical Sweep
 
-`scripts/build_ewe_datasets.py` builds every split from the raw files; `data/README.md` records their origin.
+`src/section_b_ngram/build_datasets.py` builds every split from the raw files; `data/README.md` records their origin.
 
 1. **Dataset 1 (`EWE_ENGLISH.csv`)**: 28,614 English/Ewe rows. Earlier described as cultural folklore; in fact a large share is Jehovah's Witnesses publications and Bible verses (10.6% of kept sentences mention Yehowa, 6.8% carry chapter:verse references). Kept: 25,837 sentences.
 2. **Dataset 2 (`eweenglishsentence(3).json`)**: 600 rows from a dictionary database: 477 Glosbe example sentences and 123 sentences from peterlin.pl, including personal introductions that name real people. Kept: 526.
@@ -159,7 +159,7 @@ Dataset 2's per-word numbers are huge because, with only 420 training sentences,
 
 
 ### Neural baseline (Section B, Question 2)
-`scripts/run_lstm_baseline.py` trains an LSTM (`src/lstm_lm.py`) on exactly the BPE tokens of the best n-gram. It asserts that the vocabulary, the number of predicted tokens and the unknown-word spelling charge equal the n-gram run, then scores each test sentence on its own from `<s>`, like the n-gram. Results in `reports/results_lstm_baseline.json`, three seeds each:
+`src/section_b_lstm/run_baseline.py` trains an LSTM (`src/section_b_lstm/lstm_lm.py`) on exactly the BPE tokens of the best n-gram. It asserts that the vocabulary, the number of predicted tokens and the unknown-word spelling charge equal the n-gram run, then scores each test sentence on its own from `<s>`, like the n-gram. Results in `results/section_b_lstm/lstm_vs_ngram.json`, three seeds each:
 
 | | Dataset 2 (420 training sentences) | Unified (98,808 training sentences) |
 |---|---:|---:|
@@ -195,7 +195,7 @@ Dataset 2's per-word numbers are huge because, with only 420 training sentences,
 Ankora's agricultural assistants work in English. A pretrained model such as `distilgpt2` writes fluent English but knows little agronomy, and given `Question: ... Answer:` it tends to loop on the prompt. We adapted it with LoRA under two constraints: training must run on a laptop CPU, and the damage to general English should be small, and measured rather than assumed.
 
 ### 7.2 Dataset
-`KisanVaani/agriculture-qa-english-only` has 22,615 rows but only 2,212 distinct questions. We keep one row per question before shuffling, then split 80/10/10 (seed 42): 1,769 training, 221 validation and 222 test pairs, stored as JSONL (`src/prepare_domain_data.py`). Training uses the first 500 training pairs (a CPU budget). A real test pair:
+`KisanVaani/agriculture-qa-english-only` has 22,615 rows but only 2,212 distinct questions. We keep one row per question before shuffling, then split 80/10/10 (seed 42): 1,769 training, 221 validation and 222 test pairs, stored as JSONL (`src/section_c_llm/prepare_data.py`). Training uses the first 500 training pairs (a CPU budget). A real test pair:
 
 ```text
 Question: How does the Botrytis leaf blight pathogen survive during dormant periods?
@@ -206,7 +206,7 @@ Answer: The pathogen overwinters as sclerotia, which are produced on infected on
 LoRA freezes a pretrained weight matrix $W_0 \in \mathbb{R}^{d \times k}$ and learns $\Delta W = \frac{\alpha}{r} B A$ with $B \in \mathbb{R}^{d \times r}$, $A \in \mathbb{R}^{r \times k}$ and $r \ll \min(d, k)$. In distilgpt2 the target, `c_attn`, is one fused projection per layer that produces the query, key and value vectors: $W_0$ is $768 \times 2304$ (1,769,472 weights). With $r=8$ each layer adds $8 \times (768 + 2304) = 24,576$ weights; over 6 layers that is **147,456 trainable parameters, 0.18% of 82,060,032**. We use $\alpha = 32$ (scale $\alpha / r = 4$), dropout 0.05, and `fan_in_fan_out=True` because GPT-2 stores `c_attn` as a `Conv1D`.
 
 ### 7.4 Training
-Both adapters train for 3 epochs with AdamW (learning rate $5 \times 10^{-4}$, linear decay), batch size 8, 96-token sequences, seed 42 (`src/train_domain_lora.py`).
+Both adapters train for 3 epochs with AdamW (learning rate $5 \times 10^{-4}$, linear decay), batch size 8, 96-token sequences, seed 42 (`src/section_c_llm/train_lora.py`).
 
 | Epoch | Standard adapter: validation loss (full text) | Masked adapter: validation loss (answer tokens only) |
 |---|---:|---:|
@@ -234,7 +234,7 @@ Seeded samples (temperature 0.7, top-p 0.9, seed 42) for `Question: How can farm
 - *Standard*: "The fall armyworm in maize affects the development of mites, insects and other insects. In addition, the fall armyworm affects the development of mites, insects and other insects. This affects the"
 - *Masked*: "The fall armyworm in maize can occur through a variety of diseases, such as arachnoid, cloverworm, and coca. The insect can be introduced to the soil, which is"
 
-The adapters have learned what an extension answer sounds like, not what is true. Of the nine seeded answers in `reports/domain_adaptation_results.json`, at best one (the masked adapter on crop rotation) is roughly right.
+The adapters have learned what an extension answer sounds like, not what is true. Of the nine seeded answers in `results/section_c_llm/lora_results.json`, at best one (the masked adapter on crop rotation) is roughly right.
 
 ---
 
@@ -256,7 +256,7 @@ The adapters have learned what an extension answer sounds like, not what is true
 ### Gotcha 4: Python Module Shadowing of Hugging Face `tokenizers`
 - **Symptom**: importing `transformers` failed with `ModuleNotFoundError: No module named 'tokenizers.pre_tokenizers'`.
 - **Root Cause**: our file `src/tokenizers.py` was imported instead of the Hugging Face `tokenizers` package.
-- **Resolution**: renamed it to `src/ewe_tokenizers.py`.
+- **Resolution**: renamed it to `ewe_tokenizers.py` (now in `src/section_b_ngram/`).
 
 ### Gotcha 5: DistilGPT2 `Conv1D` vs Linear Attention Projections
 - **Symptom**: attaching LoRA produced a weight-orientation warning.
@@ -288,7 +288,7 @@ The adapters have learned what an extension answer sounds like, not what is true
 ### 10.1 The phenomenon
 Sampling from a small model sometimes loops. From the benchmark: "It helps to control soil erosion, which can lead to soil erosion. It also helps to improve soil drainage. It also helps to reduce soil erosion." Once a phrase is in the context, repeating it becomes more likely; this self-reinforcing repetition is well documented for neural text generation (Holtzman et al., 2020; Xu et al., 2022).
 
-### 10.2 Benchmark (`reports/decoding_strategies_benchmark.json`)
+### 10.2 Benchmark (`results/section_c_llm/decoding_benchmark.json`)
 Four prompts; each sampled strategy is run with 5 fixed seeds per prompt, greedy search once. Distinct-3 is unique word trigrams divided by all word trigrams in an answer.
 
 | Strategy | Settings | Mean Distinct-3 |
@@ -330,7 +330,7 @@ Both adapters: same 500 training pairs, same seed, same hyperparameters, scored 
 
 A review of the whole repository against its code and data, followed by the fixes above. Recorded here because the mistakes are the most useful thing this prosit taught.
 
-**Numbers no code produced.** Several report and journal numbers were written before or without the experiments they describe: the tables first drafted in section 2 (and the same values typed into notebook 03 and quoted in the Section B report), a general-English "forgetting" check reported as under 3.8% (never run; the measured cost is 7.2%), an ARPA-export capability, an example Q&A pair that is not in the corpus, a *Sitophilus zeamais* analysis for a term the corpus never contains, and slide figures from before the real data existed. All removed or replaced by measured values.
+**Numbers no code produced.** Several report and journal numbers were written before or without the experiments they describe: the tables first drafted in section 2 (and the same values typed into notebook 03, now `summary_all_models`, and quoted in the Section B report), a general-English "forgetting" check reported as under 3.8% (never run; the measured cost is 7.2%), an ARPA-export capability, an example Q&A pair that is not in the corpus, a *Sitophilus zeamais* analysis for a term the corpus never contains, and slide figures from before the real data existed. All removed or replaced by measured values.
 
 **Bugs that produced the headline findings.** The "breaking point" and its "rightward shift" came from three smoothing bugs plus the unknown-word floor (Discovery 2). The tokenizer ranking came from comparing per-token perplexities, then from a per-word comparison built on the broken models (Discovery 4). The "stemming advantage" came from deleting affixes.
 

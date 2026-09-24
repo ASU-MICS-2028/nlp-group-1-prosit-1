@@ -76,7 +76,7 @@ Every session must append an entry to the top of `WORKLOG.md` adhering to this e
 **Assistant:** [e.g., Gemini / Antigravity], to [concise 1-sentence summary of the task].
 **Did:**
 - Concrete action 1 (e.g., ran ablation sweep on Dataset 3 Waxal speech).
-- Concrete action 2 (e.g., fixed combining diacritic regex in `src/tokenizers.py`).
+- Concrete action 2 (e.g., fixed combining diacritic regex in `src/section_b_ngram/ewe_tokenizers.py`).
 **Decided:**
 - Real decisions made and their technical justification (e.g., kept the first 200k rows of Dataset 4 for continuity with earlier runs, knowing they are largely Bible text).
 **Blocked / open questions:**
@@ -101,7 +101,7 @@ Every session must append an entry to the top of `WORKLOG.md` adhering to this e
 3. **Strict Data Hygiene:**
    - **Never commit raw data files, large `.parquet`, `.csv`, `.xlsx`, or `.txt` corpora to git.**
    - All data paths must be covered by `.gitignore`.
-   - Only commit: source code (`src/`), experiment scripts (`scripts/`), reproducible JSON benchmarks (`reports/results_*.json`), figures (`figures/`), and markdown documentation.
+   - Only commit: source code and experiment scripts (`src/`, one folder per model), result files and figures (`results/`, one folder per model), the two small LoRA adapters (`models/section_c_llm/`), and markdown documentation.
 
 ---
 

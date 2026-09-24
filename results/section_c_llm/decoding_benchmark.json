@@ -1,5 +1,5 @@
 {
-  "model": "distilgpt2 + LoRA (r=8, alpha=32), models/domain_adapted_checkpoint",
+  "model": "distilgpt2 + LoRA (r=8, alpha=32), models/section_c_llm/standard",
   "prompts_evaluated": 4,
   "samples_per_prompt": 5,
   "note": "Distinct-3 measures repetition, not correctness. no_repeat_ngram_size=3 makes it ~1 by construction.",

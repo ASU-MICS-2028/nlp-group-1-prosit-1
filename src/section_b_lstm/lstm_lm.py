@@ -2,8 +2,9 @@
 Small LSTM language model: the neural baseline for Section B, Question 2.
 
 It is scored exactly like the n-gram models so the numbers compare: the same tokens and <unk> rule
-(src/experiment_runner.tokenize_splits), each sentence scored on its own starting from <s>, every token
-plus </s> predicted, and <pad> and <s> never predictable (the n-gram's distribution excludes <s> too).
+(tokenize_splits in src/section_b_ngram/experiment_runner.py), each sentence scored on its own starting
+from <s>, every token plus </s> predicted, and <pad> and <s> never predictable (the n-gram's distribution
+excludes <s> too).
 """
 
 import copy
@@ -16,7 +17,7 @@ from typing import Dict, List, Tuple
 import torch
 from torch import nn
 
-from src.preprocessing import SPECIAL_BOS, SPECIAL_EOS
+from src.section_b_ngram.preprocessing import SPECIAL_BOS, SPECIAL_EOS
 
 PAD = "<pad>"
 
