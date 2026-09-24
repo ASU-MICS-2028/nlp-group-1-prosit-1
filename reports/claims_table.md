@@ -19,12 +19,12 @@ longer exists in that form.
 | 4 | Unicode Word test perplexity, $N=1..6$ | 534.7, 121.2, 77.7, 70.5, 69.3, 69.7 | `results/section_b_ngram/unified.json` → `results["Unicode Word"][N-1].perplexity` | `src/section_b_ngram/run_sweep.py` |
 | 5 | Flat from $N=4$ | validation perplexities for $N=4..6$ are 3% or less apart on every dataset | all five `results/section_b_ngram/*.json` → `val_perplexity` | `src/section_b_ngram/run_sweep.py` |
 | 6 | Best order and per-word perplexity per tokenizer (unified) | BPE 189.1 ($N=6$), Stemmer 196.9, Unicode Word 202.2, Whitespace 261.6 ($N=5$), Character 447.1 ($N=6$) | `results/section_b_ngram/unified.json` → `best_order_by_val`, `results[...].per_word_perplexity` | `src/section_b_ngram/run_sweep.py` |
-| 7 | Per-word perplexity with `<unk>` free (journal only) | Whitespace 120.1, Unicode Word 132.1, Stemmer 136.7, BPE 188.7, Character 446.2 | derived from the same rows: $\exp(\ln \text{PPL} \times (\text{test\_tokens} + 4000) / \text{test\_words})$ | computed from the JSON |
+| 7 | Per-word perplexity with `<unk>` free (journal §2.2 only) | Whitespace 120.1, Unicode Word 132.1, Stemmer 136.7, BPE 188.7, Character 446.2 | derived from the same rows: $\exp(\ln \text{PPL} \times (\text{test\_tokens} + 4000) / \text{test\_words})$ | computed from the JSON |
 | 8 | Kneser-Ney beats equal-weight interpolation | 77.7 vs 93.6 at $N=3$ (Unicode Word); true at every $N \ge 2$ on all datasets | `results[...].perplexity` vs `results[...].interpolation_perplexity` | `src/section_b_ngram/run_sweep.py` |
 | 9 | Ney discount best on validation | unified: Ney 66.75 vs 0.5: 83.3, 0.75: 68.24, 0.9: 67.41 | `discount_check_val_unicode_word` in each results JSON | `src/section_b_ngram/run_sweep.py` |
 | 10 | Sparsity of test 6-grams (Unicode Word) | 80.5% | `results["Unicode Word"][5].sparsity_pct` | `src/section_b_ngram/run_sweep.py` |
 | 11 | Vocabulary, `<unk>` rate, tokens per word (unified) | e.g. Unicode Word 26,489 types, 1.93%, 1.16 tokens per word | `results[...][0]`: `vocab_size`, `oov_rate_pct`, `test_tokens / (test_words - 4000)` | `src/section_b_ngram/run_sweep.py` |
-| 12 | Cross-dataset table (journal §5) | per-dataset best $N$, `<unk>` rate, sparsity, per-word perplexity | `results/section_b_ngram/dataset_{1,2,3,4}.json` | `src/section_b_ngram/run_sweep.py` |
+| 12 | Cross-dataset table (journal §2.3) | per-dataset best $N$, `<unk>` rate, sparsity, per-word perplexity | `results/section_b_ngram/dataset_{1,2,3,4}.json` | `src/section_b_ngram/run_sweep.py` |
 | 13 | Seeded sample reproducing Jonah 1:1 | "2 eye yehowa ƒe gbe va na yona , amitai vi ," | `results["Unicode Word"][3].sample_generation` | `src/section_b_ngram/run_sweep.py` |
 | 14 | Smoothing comparison on a 10,000-sentence sample (illustrative) | Bigram Laplace 629.52, Bigram Kneser-Ney 119.87, Trigram Kneser-Ney 99.90 | `notebooks/b1_ngram_smoothing.ipynb`, cell 9 output | the notebook |
 | 15 | Old interpolation lost probability | sums of 0.667 (unseen trigram context) and 0.333 (unseen 6-gram context) | *audit*: probe of the pre-fix n-gram code (then `src/ngram.py`) | `WORKLOG.md`, 2026-09-21 |
@@ -43,7 +43,7 @@ longer exists in that form.
 | 23 | Validation loss per epoch | standard (full text) 3.3963, 3.3072, 3.2874; masked (answers only) 3.3395, 3.3005, 3.2902 | `results.{standard,masked}.val_loss_per_epoch` | `src/section_c_llm/train_lora.py` |
 | 24 | Seeded completions quoted in the reports | e.g. "The fall armyworm in maize affects the development of mites, insects and other insects." | `results.{base,standard,masked}.samples` | `src/section_c_llm/train_lora.py` |
 | 25 | Decoding: mean Distinct-3 | unpenalized 78.9%, penalty 1.3: 100.0%, 3-gram block 99.5%, low temperature + penalty + block 100.0%, greedy + penalty + block 100.0% | `results/section_c_llm/decoding_benchmark.json` → `strategy_averages` | `src/section_c_llm/benchmark_decoding.py` |
-| 26 | Leakage in the superseded split | 16 of 100 test pairs identical to training pairs; 18 of 100 test "pairs" were answer fragments | *audit* | `WORKLOG.md`, 2026-09-21 and 2026-09-22; journal Gotcha 6 |
+| 26 | Leakage in the superseded split | 16 of 100 test pairs identical to training pairs; 18 of 100 test "pairs" were answer fragments | *audit* | `WORKLOG.md`, 2026-09-21 and 2026-09-22; journal §5, row 10 |
 | 27 | Superseded masking comparison | standard 29.92 vs masked 30.08 answer perplexity on the old metric | *audit* | `WORKLOG.md`, 2026-09-22 |
 
 ## Section B, Question 2: LSTM baseline, `src/section_b_lstm/`
