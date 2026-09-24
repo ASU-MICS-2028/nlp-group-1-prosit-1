@@ -185,3 +185,18 @@ def test_unknown_words_pay_spelling_cost_per_word():
     rows = run_ngram_experiment(train, ["kofi yi suku"], ["woezɔ loo keta"], UnicodeWordTokenizer(), max_order=2)
     assert rows[0]["oov_rate_pct"] > 0
     assert rows[0]["oov_spelling_nats"] > 0
+
+
+def test_lstm_scoring_is_a_proper_distribution():
+    # With a zeroed output layer every allowed id is equally likely, so perplexity must equal the number of
+    # predictable ids: everything except <pad> and <s>
+    import torch
+    from src.lstm_lm import LSTMLM, build_index, encode, total_nll
+
+    stoi, blocked = build_index({"<s>", "</s>", "<unk>", "woezɔ", "loo"})
+    model = LSTMLM(len(stoi))
+    torch.nn.init.zeros_(model.out.weight)
+    torch.nn.init.zeros_(model.out.bias)
+    nll, n = total_nll(model, encode([["woezɔ", "loo"], ["loo"]], stoi), blocked)
+    assert n == 5  # 2 + 1 tokens, plus one </s> per sentence
+    assert math.isclose(math.exp(nll / n), len(stoi) - 2, rel_tol=1e-6)  # torch computes in float32

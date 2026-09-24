@@ -39,6 +39,39 @@ def compute_ngram_sparsity(train_tokens: List[List[str]], test_tokens: List[List
     return (unseen_test / total_test) * 100.0
 
 
+def tokenize_splits(train_corpus, val_corpus, test_corpus, tokenizer):
+    """
+    Tokenizes the three splits the same way for every model (n-gram or LSTM). The closed vocabulary comes
+    from the training partition only; tokens seen once in training become <unk>, so <unk> gets a real
+    probability estimate for the unknown words it stands for at test time.
+    Returns (vocab, raw train tokens, raw test tokens, (clean train, clean val, clean test)).
+    """
+    tok = lambda corpus: [tokenizer.tokenize(line) for line in corpus if line.strip()]
+    raw_train, raw_val, raw_test = tok(train_corpus), tok(val_corpus), tok(test_corpus)
+    vocab, _ = build_vocabulary(raw_train, min_freq=2)
+    return vocab, raw_train, raw_test, tuple(replace_oov_tokens(x, vocab) for x in (raw_train, raw_val, raw_test))
+
+
+def count_words(corpus: List[str]) -> int:
+    """Whitespace words plus one end-of-sentence per sentence: the shared per-word denominator."""
+    return sum(len(line.split()) + 1 for line in corpus if line.strip())
+
+
+def oov_spelling_nats(raw_train, vocab, raw_test, clean_test) -> float:
+    """
+    Nats needed to spell out every test token that became <unk>, with a character trigram "speller"
+    trained on the tokens that became <unk> in training. Added to a model's test log-loss before
+    dividing by the word count, so a model that only says "<unk>" still pays for the whole word.
+    """
+    speller = NGramLM(n=3, smoothing="kneser_ney").fit([list(t) for s in raw_train for t in s if t not in vocab] or [[SPECIAL_UNK]])
+
+    def spell(token: str) -> float:
+        chars = replace_oov_tokens([list(token)], speller.vocab)[0]
+        return math.log(speller.perplexity([chars])) * (len(chars) + 1)
+
+    return sum(spell(orig) for raw, clean in zip(raw_test, clean_test) for orig, c in zip(raw, clean) if c == SPECIAL_UNK)
+
+
 def run_ngram_experiment(
     train_corpus: List[str],
     val_corpus: List[str],
@@ -59,33 +92,13 @@ def run_ngram_experiment(
     text: predicting <unk> does not say which word it was, so each <unk> is also charged the cost of
     spelling the word with a small character model of the rare training words (oov_spelling_nats).
     """
-    tokenized_train = [tokenizer.tokenize(line) for line in train_corpus if line.strip()]
-    tokenized_val = [tokenizer.tokenize(line) for line in val_corpus if line.strip()]
-    tokenized_test = [tokenizer.tokenize(line) for line in test_corpus if line.strip()]
-
-    # Closed vocabulary from the training partition only. Tokens seen once in training become <unk>,
-    # so <unk> gets a real probability estimate for the unknown words it stands for at test time.
-    vocab, _ = build_vocabulary(tokenized_train, min_freq=2)
-    clean_train = replace_oov_tokens(tokenized_train, vocab)
-    clean_val = replace_oov_tokens(tokenized_val, vocab)
-    clean_test = replace_oov_tokens(tokenized_test, vocab)
-
+    vocab, tokenized_train, tokenized_test, (clean_train, clean_val, clean_test) = tokenize_splits(
+        train_corpus, val_corpus, test_corpus, tokenizer
+    )
     test_tokens = sum(len(s) + 1 for s in clean_test)  # the denominator perplexity() uses (+1 for </s>)
-    test_words = sum(len(line.split()) + 1 for line in test_corpus if line.strip())
+    test_words = count_words(test_corpus)
     oov_tokens = sum(t == SPECIAL_UNK for s in clean_test for t in s)
-
-    # Character trigram "speller" trained on the tokens that became <unk> in training
-    speller = NGramLM(n=3, smoothing="kneser_ney").fit(
-        [list(t) for s in tokenized_train for t in s if t not in vocab] or [[SPECIAL_UNK]]
-    )
-
-    def spell_nats(token: str) -> float:
-        chars = replace_oov_tokens([list(token)], speller.vocab)[0]
-        return math.log(speller.perplexity([chars])) * (len(chars) + 1)
-
-    spelling = sum(
-        spell_nats(orig) for raw, clean in zip(tokenized_test, clean_test) for orig, c in zip(raw, clean) if c == SPECIAL_UNK
-    )
+    spelling = oov_spelling_nats(tokenized_train, vocab, tokenized_test, clean_test)
 
     results = []
 
