@@ -5,7 +5,8 @@
 **Lab Context**: Ankora AI Research Lab (Ghana)  
 **Deliverable Link**: https://github.com/ASU-MICS-2028/nlp-group-1-prosit-1.git  
 *(Must appear on Slide 1 as required by assignment guidelines)*  
-**Every number below is in `reports/claims_table.md` with the file and script that produce it.**
+**Every number below is in `reports/claims_table.md` with the file and script that produce it.**  
+**The deck**: `presentation/Prosit1_Language_Models.pptx` (11 slides on the Ashesi Presentation Red template), built from this plan by `python presentation/build_deck.py`, which reads every number from the result files. Its speaker notes hold what to say on each slide and where each number comes from.
 
 ---
 

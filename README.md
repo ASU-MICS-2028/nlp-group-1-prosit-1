@@ -76,6 +76,9 @@ python -m src.section_b_lstm.run_baseline --dataset unified --config large --max
 python -m src.section_c_llm.prepare_data        # KisanVaani splits, one row per question
 python -m src.section_c_llm.train_lora          # both adapters -> models/section_c_llm/, scores -> results/section_c_llm/ (~15 min)
 python -m src.section_c_llm.benchmark_decoding  # decoding benchmark -> results/section_c_llm/decoding_benchmark.json
+
+# The 10-minute presentation, rebuilt from the result files above
+python presentation/build_deck.py               # -> presentation/Prosit1_Language_Models.pptx
 ```
 
 ---
@@ -111,12 +114,16 @@ python -m src.section_c_llm.benchmark_decoding  # decoding benchmark -> results/
 │   ├── b2_ngram_tokenizers.ipynb # tokenizers and N=1..6, from the sweep results
 │   ├── c1_llm_finetuning.ipynb   # loads the adapters, re-scores them, samples answers
 │   └── summary_all_models.ipynb  # all three models, from the result files
+├── presentation/                 # the 10-minute group presentation
+│   ├── Prosit1_Language_Models.pptx   # the deck (speaker notes: what to say, and each number's source)
+│   ├── build_deck.py             # builds the deck; reads every number from results/ and data/processed/
+│   ├── ashesi_presentation_red.pptx   # Ashesi Presentation Red template, as used for the ICS553 Prosit 1 deck
+│   └── presentation_outline.md   # the slide plan and timings
 ├── reports/                      # the written deliverables
 │   ├── section_a_theory.md       # theory (14 questions with space constraints)
 │   ├── section_b_low_resource_lm.md   # Section B report: n-gram, plus the LSTM in Question 2
 │   ├── section_c_domain_adaptation.md # Section C report: distilgpt2 + LoRA
 │   ├── claims_table.md           # every quoted number -> the file, key and script behind it
-│   ├── presentation_outline.md   # 10-minute presentation outline (6 slides)
 │   ├── datasheet.md              # Gebru et al. datasheet for the Ewe and agriculture corpora
 │   ├── quiz_revision_guide.md    # viva quiz revision guide
 │   └── LEARNING_JOURNAL.md       # team journal: what we built, what we found, what we fixed

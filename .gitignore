@@ -84,3 +84,6 @@ data/processed/low_resource/
 
 # Personal notes kept out of the shared repository (e.g. an individual learning journal)
 personal/
+
+# Office lock files, left beside a document while it is open (e.g. the deck in presentation/)
+~$*

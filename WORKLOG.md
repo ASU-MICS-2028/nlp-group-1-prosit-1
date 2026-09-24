@@ -36,6 +36,31 @@ Field notes:
 - **Decided** — only real decisions, the kind someone might otherwise reverse without knowing. Leave it out if nothing was decided.
 - **Blocked** — this is the field that saves the project. Write it even when it feels like admitting you're stuck. Especially then.
 
+## 2026-09-24 · 11:10–12:20 GMT · Eric Elikplim Sunu
+
+**Branch:** eric
+**Assistant:** Claude (Claude Code, Opus 5.5), to check whether everything was pushed and a pull request was open, and to build the 10-minute presentation on the Ashesi template used for the ICS553 Prosit 1 deck.
+**Did:**
+- Checked the push: local `eric` and `origin/eric` were both at 53e019f.
+- Correction to the entry below: pull request #1 (`eric` into `main`) already existed. It was opened on 2026-09-22 at 15:25 UTC, right after `main` was pushed, and it tracks `eric`, so it already contained today's commits. The entry below wrongly lists opening a pull request as still to do; I had not checked. (The 2026-09-22 entry's note that origin had no `main` was true when written: `main` was pushed 34 seconds before the PR was opened.) PR #1 has no reviews yet.
+- PR #1's description, written on 2026-09-22, still stated retracted numbers (a breaking point from 150.1 to 147.8, the stemmer's 134.0, BPE's 13.8, 124,396 sentences, a 500/100/100 split, 62.38 to 29.33, Distinct-3 from 49.1%, masking from 38.45 to 30.08) and named files that no longer exist. With Eric's go-ahead, replaced its title and description: the three-model table, the current headline numbers, and a note that the earlier numbers were retracted.
+- Built the presentation. `presentation/build_deck.py` fills `presentation/ashesi_presentation_red.pptx` (copied from the ICS553 repo, whose `scripts/build_ashesi_deck.py` supplied the slide helpers) and writes `presentation/Prosit1_Language_Models.pptx`: 11 slides following the outline's 10-minute plan. Every number is read from `results/` and `data/processed/*/stats.json` at build time, except three audit figures cited in the notes (the sweep's 425 s, the 16 of 100 leaked test pairs, the three smoothing bugs). The speaker notes say what to say and name each number's file and key.
+- Moved `reports/presentation_outline.md` to `presentation/` so everything about the talk is in one folder, and added `python-pptx==1.0.2` to `requirements.txt` (the same pin as the ICS553 repo; it installs only python-pptx, lxml and xlsxwriter).
+- Added `~$*` to `.gitignore`: PowerPoint leaves a lock file such as `presentation/~$Prosit1_Language_Models.pptx` while the deck is open.
+- Verified: rendered every slide with macOS Quick Look (there is no PowerPoint or LibreOffice on this machine) and fixed one caption that overflowed its card; dumped all slide and note text and traced every number to a result file (the only untraced ones are dates); no em dashes; 22 tests pass.
+**Decided:**
+- A top-level `presentation/` folder rather than `src/` or `scripts/`: `src/` holds only the three models, and one folder for the talk is the easiest to find.
+- Words containing Ewe letters are set in Arial, which has every Ewe letter (checked with fontTools); the template's body font, Candara, may not.
+- Charts are native PowerPoint charts, so teammates can edit them. Quick Look ignores per-bar colours and number formats, so chart values are pre-rounded and each series has a grey base colour.
+**Blocked / open questions:**
+- Open the deck once in PowerPoint: Quick Look substitutes a serif font for Poppins and Candara, so its line breaks are approximate, and the Ewe letters on slide 3 need a look.
+- Presenters' names go on slide 1, and the group should agree the AI declaration on slide 11.
+- The deck is generated: running `build_deck.py` again overwrites any edits made by hand in PowerPoint. Make lasting changes in the script, or stop rebuilding once the group starts editing by hand.
+- PR #1 needs a teammate's review; Eric cannot approve his own pull request.
+- Pushed to origin/eric with Eric's go-ahead.
+**Next:**
+- Rehearse against the timings in the speaker notes (about 10 minutes in total).
+
 ## 2026-09-24 · 10:35–11:05 GMT · Eric Elikplim Sunu
 
 **Branch:** eric
