@@ -1,0 +1,338 @@
+{
+ "data": {
+  "health": {
+   "train_docs": 8000,
+   "train_words": 1931213,
+   "test_docs": 500,
+   "example": "To determine the clinical course and long term outcome of empyema treated without decortication. Fourteen consecutive admissions to one hospital were studied; radiological resolution and lung function were subsequently followed. The childre"
+  },
+  "agriculture": {
+   "train_docs": 2112,
+   "train_words": 84262,
+   "test_docs": 115,
+   "example": "why is soil health vital? Soil health is critical to crop growth and productivity, as it provides the necessary nutrients and support for plants to thrive."
+  },
+  "general": {
+   "train_docs": 500,
+   "train_words": 67144,
+   "test_docs": 500,
+   "example": "Robert Boulter is an English film , television and theatre actor . He had a guest @-@ starring role on the television series The Bill in 2000 . This was followed by a starring role in the play Herons written by Simon Stephens , which was pe"
+  }
+ },
+ "settings": {
+  "iters": 600,
+  "batch": 4,
+  "max_len": 512,
+  "layers": 16,
+  "lr_sweep": [
+   1e-05,
+   3e-05,
+   0.0001
+  ],
+  "full_lr": 1e-05
+ },
+ "runs": {
+  "data/models/Qwen2.5-0.5B": {
+   "base": {
+    "health": 9.057,
+    "agriculture": 15.91,
+    "general": 19.704
+   },
+   "health/lora_r2@0.0001": {
+    "health": 8.629,
+    "agriculture": 14.733,
+    "general": 21.087,
+    "train_seconds": 1829,
+    "trainable_pct": 0.148,
+    "trainable_millions": 0.733
+   },
+   "health/lora_r8@0.0001": {
+    "health": 9.071,
+    "agriculture": 17.167,
+    "general": 24.803,
+    "train_seconds": 1975,
+    "trainable_pct": 0.594,
+    "trainable_millions": 2.933,
+    "valid": 8.493,
+    "lr": 0.0001
+   },
+   "health/lora_r8@1e-05": {
+    "health": 8.486,
+    "agriculture": 14.264,
+    "general": 19.733,
+    "valid": 7.956,
+    "lr": 1e-05,
+    "train_seconds": 1929,
+    "trainable_pct": 0.594,
+    "trainable_millions": 2.933
+   },
+   "health/lora_r8@3e-05": {
+    "health": 8.569,
+    "agriculture": 14.845,
+    "general": 20.835,
+    "valid": 8.026,
+    "lr": 3e-05,
+    "train_seconds": 1883,
+    "trainable_pct": 0.594,
+    "trainable_millions": 2.933
+   },
+   "health/lora_r2@1e-05": {
+    "health": 8.515,
+    "agriculture": 14.19,
+    "general": 19.283,
+    "valid": 7.986,
+    "lr": 1e-05,
+    "train_seconds": 1863,
+    "trainable_pct": 0.148,
+    "trainable_millions": 0.733
+   },
+   "health/lora_r32@1e-05": {
+    "health": 8.564,
+    "agriculture": 14.562,
+    "general": 20.628,
+    "valid": 8.027,
+    "lr": 1e-05,
+    "train_seconds": 1782,
+    "trainable_pct": 2.375,
+    "trainable_millions": 11.731
+   },
+   "health/dora_r8@1e-05": {
+    "health": 8.485,
+    "agriculture": 14.267,
+    "general": 19.739,
+    "valid": 7.956,
+    "lr": 1e-05,
+    "train_seconds": 1964,
+    "trainable_pct": 0.635,
+    "trainable_millions": 3.135
+   },
+   "health/full@1e-05": {
+    "health": 8.62,
+    "agriculture": 13.679,
+    "general": 19.679,
+    "valid": 8.076,
+    "lr": 1e-05,
+    "train_seconds": 1767,
+    "trainable_pct": 48.296,
+    "trainable_millions": 238.598
+   },
+   "agriculture/lora_r2@1e-05": {
+    "health": 9.369,
+    "agriculture": 7.589,
+    "general": 19.441,
+    "valid": 7.656,
+    "lr": 1e-05,
+    "train_seconds": 788,
+    "trainable_pct": 0.148,
+    "trainable_millions": 0.733
+   },
+   "agriculture/lora_r8@1e-05": {
+    "health": 9.837,
+    "agriculture": 6.658,
+    "general": 20.355,
+    "valid": 6.892,
+    "lr": 1e-05,
+    "train_seconds": 715,
+    "trainable_pct": 0.594,
+    "trainable_millions": 2.933
+   },
+   "agriculture/lora_r32@1e-05": {
+    "health": 10.827,
+    "agriculture": 5.854,
+    "general": 23.707,
+    "valid": 6.265,
+    "lr": 1e-05,
+    "train_seconds": 823,
+    "trainable_pct": 2.375,
+    "trainable_millions": 11.731
+   },
+   "agriculture/dora_r8@1e-05": {
+    "health": 9.839,
+    "agriculture": 6.653,
+    "general": 20.376,
+    "valid": 6.894,
+    "lr": 1e-05,
+    "train_seconds": 1139,
+    "trainable_pct": 0.635,
+    "trainable_millions": 3.135
+   },
+   "agriculture/full@1e-05": {
+    "health": 9.844,
+    "agriculture": 6.407,
+    "general": 20.55,
+    "valid": 6.749,
+    "lr": 1e-05,
+    "train_seconds": 700,
+    "trainable_pct": 48.296,
+    "trainable_millions": 238.598
+   },
+   "agriculture/lora_r2@1e-05#seed1": {
+    "health": 9.433,
+    "agriculture": 7.639,
+    "general": 19.554,
+    "valid": 7.694,
+    "lr": 1e-05,
+    "seed": 1,
+    "train_seconds": 454,
+    "trainable_pct": 0.148,
+    "trainable_millions": 0.733
+   },
+   "agriculture/lora_r2@1e-05#seed2": {
+    "health": 9.438,
+    "agriculture": 7.61,
+    "general": 19.602,
+    "valid": 7.703,
+    "lr": 1e-05,
+    "seed": 2,
+    "train_seconds": 446,
+    "trainable_pct": 0.148,
+    "trainable_millions": 0.733
+   },
+   "agriculture/lora_r8@1e-05#seed1": {
+    "health": 9.804,
+    "agriculture": 6.772,
+    "general": 20.548,
+    "valid": 6.907,
+    "lr": 1e-05,
+    "seed": 1,
+    "train_seconds": 485,
+    "trainable_pct": 0.594,
+    "trainable_millions": 2.933
+   },
+   "agriculture/lora_r8@1e-05#seed2": {
+    "health": 9.78,
+    "agriculture": 6.667,
+    "general": 20.61,
+    "valid": 6.91,
+    "lr": 1e-05,
+    "seed": 2,
+    "train_seconds": 448,
+    "trainable_pct": 0.594,
+    "trainable_millions": 2.933
+   },
+   "agriculture/dora_r8@1e-05#seed1": {
+    "health": 9.808,
+    "agriculture": 6.768,
+    "general": 20.556,
+    "valid": 6.903,
+    "lr": 1e-05,
+    "seed": 1,
+    "train_seconds": 734,
+    "trainable_pct": 0.635,
+    "trainable_millions": 3.135
+   },
+   "agriculture/dora_r8@1e-05#seed2": {
+    "health": 9.789,
+    "agriculture": 6.654,
+    "general": 20.631,
+    "valid": 6.899,
+    "lr": 1e-05,
+    "seed": 2,
+    "train_seconds": 822,
+    "trainable_pct": 0.635,
+    "trainable_millions": 3.135
+   },
+   "agriculture/full@1e-05#seed1": {
+    "health": 9.916,
+    "agriculture": 6.558,
+    "general": 20.861,
+    "valid": 6.703,
+    "lr": 1e-05,
+    "seed": 1,
+    "train_seconds": 654,
+    "trainable_pct": 48.296,
+    "trainable_millions": 238.598
+   },
+   "agriculture/full@1e-05#seed2": {
+    "health": 9.908,
+    "agriculture": 6.602,
+    "general": 20.749,
+    "valid": 6.778,
+    "lr": 1e-05,
+    "seed": 2,
+    "train_seconds": 641,
+    "trainable_pct": 48.296,
+    "trainable_millions": 238.598
+   },
+   "health/lora_r8@1e-05#seed1": {
+    "health": 8.487,
+    "agriculture": 14.121,
+    "general": 19.611,
+    "valid": 7.971,
+    "lr": 1e-05,
+    "seed": 1,
+    "train_seconds": 2126,
+    "trainable_pct": 0.594,
+    "trainable_millions": 2.933
+   },
+   "health/lora_r8@1e-05#seed2": {
+    "health": 8.484,
+    "agriculture": 14.149,
+    "general": 19.632,
+    "valid": 7.962,
+    "lr": 1e-05,
+    "seed": 2,
+    "train_seconds": 3553,
+    "trainable_pct": 0.594,
+    "trainable_millions": 2.933
+   },
+   "health/lora_r2@1e-05#seed1": {
+    "health": 8.518,
+    "agriculture": 13.852,
+    "general": 19.151,
+    "valid": 7.997,
+    "lr": 1e-05,
+    "seed": 1,
+    "train_seconds": 1621,
+    "trainable_pct": 0.148,
+    "trainable_millions": 0.733
+   },
+   "health/lora_r2@1e-05#seed2": {
+    "health": 8.517,
+    "agriculture": 14.119,
+    "general": 19.132,
+    "valid": 7.994,
+    "lr": 1e-05,
+    "seed": 2,
+    "train_seconds": 1740,
+    "trainable_pct": 0.148,
+    "trainable_millions": 0.733
+   }
+  },
+  "data/models/SmolLM2-135M": {
+   "base": {
+    "health": 12.732,
+    "agriculture": 23.199,
+    "general": 26.067
+   },
+   "health/lora_r8@1e-05": {
+    "health": 11.56,
+    "agriculture": 19.219,
+    "general": 25.016,
+    "valid": 10.899,
+    "lr": 1e-05,
+    "train_seconds": 591,
+    "trainable_pct": 0.968,
+    "trainable_millions": 1.303
+   },
+   "agriculture/lora_r8@1e-05": {
+    "health": 13.305,
+    "agriculture": 11.229,
+    "general": 26.109,
+    "valid": 11.137,
+    "lr": 1e-05,
+    "train_seconds": 195,
+    "trainable_pct": 0.968,
+    "trainable_millions": 1.303
+   }
+  }
+ },
+ "lr_choice": {
+  "validation_perplexity_by_lr": {
+   "1e-05": 7.956,
+   "3e-05": 8.026,
+   "0.0001": 8.493
+  },
+  "chosen": 1e-05
+ }
+}

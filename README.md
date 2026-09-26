@@ -1,160 +1,48 @@
 # Prosit 1: Building and Adapting Language Models
 
-ICS554 Natural Language Processing · MICS 2028 · Group 1
+ICS554 Natural Language Processing, Ashesi University. Two models: an **n-gram language model for Ewe** (a low-resource language), compared against neural models trained from scratch, and an **English model adapted to a domain** (health and agriculture) by fine-tuning a pretrained LLM.
 
-**The Scenario.** We are working as an intern engineering team at **Ankora**, an AI research lab based in Ghana specializing in speech recognition systems. An essential component of specialized ASR pipelines is effective language modeling. 
+## Start here
 
-Ankora has tasked us with two core deliverables:
-1. Build a specialized language model for a **low-resource African language** using statistical n-gram techniques rather than neural models due to severe data scarcity.
-2. Build an **English-based language model adapted to a specialized domain** (e.g., healthcare, agriculture, or finance) and demonstrate empirical proof of learning and domain effectiveness.
+`main.ipynb` is the whole project, top to bottom, with every output saved. Stages 0–3 (data audit, the worked example, the n-gram counter, smoothing and tokenisation) run inside the notebook in about an hour. Stages 4–5 (neural models, domain adaptation) and the follow-up experiments took many GPU-hours; their scripts save to `results/`, and the notebook reads those files, so opening the notebook needs no training.
 
----
+## Files
 
-## Three Models, Kept Apart
+| | |
+|---|---|
+| `stage0_audit.py` | Cleaning, the Ewe filter, and the train/dev/test splits (used by the notebook) |
+| `stage2_ngram.py` | The n-gram counter, MLE probabilities, perplexity and generation, written from scratch |
+| `stage3_smoothing.py` | Six smoothing methods (add-k, Good-Turing, interpolation, Katz, Kneser-Ney, modified Kneser-Ney), perplexity and bits per character |
+| `bpe.py` | BPE tokenisers, learned from the training split |
+| `stage4_neural.py` | LSTM and transformer from scratch; the n-gram-vs-neural scaling curve; width and tokeniser sweeps; the English side |
+| `stage4_english.py`, `stage4_wikitext.py` | English as a high-resource language: the same pipeline on the English side of the corpus and on WikiText-103 |
+| `stage5_domain.py`, `stage5_generate.py` | Domain adaptation of Qwen2.5-0.5B and SmolLM2-135M with LoRA, DoRA and full fine-tuning; seed repeats; generated text |
+| `stage0_splits.py`, `stage0_ablation.py`, `stage0_filter_test.py`, `stage2_samples.py`, `stage3_extra.py` | Follow-up experiments: every split ratio, every cleaning step left out, the filter graded by a language identifier, and more |
+| `notebook_stage45.py`, `notebook_extras.py` | Rebuild the notebook's Stage 4/5 and follow-up sections from `results/` |
+| `build_slides.py` | Builds `presentation.pptx` from `results/` |
+| `results/` | Every table, chart and generated sample the report cites |
 
-The repository holds three separate models. Each one has its own code folder and its own results folder.
-
-| | 1. N-gram | 2. LSTM baseline | 3. Fine-tuned LLM |
-|---|---|---|---|
-| **Report section** | B (the main model) | B, Question 2 only | C |
-| **Language and data** | Ewe: 123,511 sentences from four sources | the same Ewe sentences, cut into the same BPE tokens as the n-gram | English: 2,212 agricultural questions with answers |
-| **What it is** | counts plus smoothing (interpolated Kneser-Ney); no neural network | a small neural network trained from scratch | pretrained distilgpt2 (82M parameters), 0.18% of it trained with LoRA |
-| **Why it exists** | the Section B deliverable | to answer Section B, Question 2: are n-grams better than neural models for a low-resource language? | the Section C deliverable |
-| **Code** | `src/section_b_ngram/` | `src/section_b_lstm/` | `src/section_c_llm/` |
-| **Results** | `results/section_b_ngram/` | `results/section_b_lstm/` | `results/section_c_llm/`, adapters in `models/section_c_llm/` |
-| **Notebooks** | `b1_ngram_smoothing`, `b2_ngram_tokenizers` | shown in `summary_all_models` | `c1_llm_finetuning` |
-
-**The LSTM and the LLM are not related.** The LSTM exists only to answer Section B's n-gram-versus-neural question on Ewe; the LLM is Section C's English model. They share no code, data or weights. The LSTM does reuse the n-gram's data, tokenizer and scoring, on purpose, so the two Ewe models can be compared number for number. `notebooks/summary_all_models.ipynb` shows all three side by side, read straight from the result files.
-
----
-
-## Deliverables & Links
-
-- **GitHub Repository**: [https://github.com/ASU-MICS-2028/nlp-group-1-prosit-1.git](https://github.com/ASU-MICS-2028/nlp-group-1-prosit-1.git)
-- **Technical Report**: Divided into Section A (Theory), Section B (Low-Resource Model), and Section C (Domain Model). Submitted to Canvas.
-- **10-Minute Group Presentation**: Summarizing Sections B and C. Slides submitted to Canvas.
-- **klenam.ai Submission**: Repository link submitted on klenam.ai.
-
----
-
-## Setup & Environment
-
-```bash
-git clone https://github.com/ASU-MICS-2028/nlp-group-1-prosit-1.git
-cd nlp-group-1-prosit-1
-
-# Create and activate a Python 3.12 virtual environment (the pins in requirements.txt need 3.12)
-python3.12 -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-Verify setup:
-```bash
-python -c "import torch, transformers, datasets, peft; print('Environment ready!')"
-python -m pytest
-```
-
-Open the notebooks with `jupyter lab notebooks/`.
-
-## Reproducing Every Number
-
-All report and slide numbers come from files these commands write (see `reports/claims_table.md`). Run them from the repository root:
-
-```bash
-# 1. N-gram (Section B)
-python -m src.section_b_ngram.build_datasets           # Ewe splits from the raw files (see data/README.md)
-python -m src.section_b_ngram.run_sweep --dataset all  # 5 tokenizers x N=1..6 -> results/section_b_ngram/ (hours on a laptop CPU)
-
-# 2. LSTM baseline (Section B, Question 2); reads the n-gram results above
-python -m src.section_b_lstm.run_baseline --dataset 2 --config small --max-epochs 200 --patience 3  # 420 sentences (minutes)
-python -m src.section_b_lstm.run_baseline --dataset unified --config large --max-epochs 10          # full corpus (~3 h per seed)
-
-# 3. Fine-tuned LLM (Section C)
-python -m src.section_c_llm.prepare_data        # KisanVaani splits, one row per question
-python -m src.section_c_llm.train_lora          # both adapters -> models/section_c_llm/, scores -> results/section_c_llm/ (~15 min)
-python -m src.section_c_llm.benchmark_decoding  # decoding benchmark -> results/section_c_llm/decoding_benchmark.json
-
-# The 10-minute presentation, rebuilt from the result files above
-python presentation/build_deck.py               # -> presentation/Prosit1_Language_Models.pptx
-```
-
----
-
-## Repository Layout
+## Running it
 
 ```
-.
-├── src/
-│   ├── section_b_ngram/          # 1. Ewe n-gram models (Section B)
-│   │   ├── data_pipeline.py      #    clean, deduplicate and split the Ewe sources
-│   │   ├── build_datasets.py     #    raw files -> data/processed/ (run first)
-│   │   ├── preprocessing.py      #    special tokens, vocabulary from training only, <unk>
-│   │   ├── ewe_tokenizers.py     #    Whitespace, Unicode Word, Ewe Stemmer, BPE, Character
-│   │   ├── ngram.py              #    MLE, Laplace, interpolation, Kneser-Ney
-│   │   ├── experiment_runner.py  #    one tokenizer, N=1..6, perplexity per token and per word
-│   │   ├── run_sweep.py          #    5 tokenizers x N=1..6 on each dataset
-│   │   └── viz.py                #    plots for notebook b1
-│   ├── section_b_lstm/           # 2. LSTM baseline (Section B, Question 2)
-│   │   ├── lstm_lm.py            #    the network, its training loop and scoring
-│   │   └── run_baseline.py       #    LSTM vs Kneser-Ney on the same tokens, 3 seeds
-│   └── section_c_llm/            # 3. distilgpt2 + LoRA (Section C)
-│       ├── prepare_data.py       #    KisanVaani, one row per question, 80/10/10
-│       ├── train_lora.py         #    trains both adapters, scores base, standard and masked
-│       └── benchmark_decoding.py #    decoding settings vs repetition
-├── results/                      # every number in the reports comes from a file here
-│   ├── section_b_ngram/          #    dataset_1..4.json, unified.json, two figures
-│   ├── section_b_lstm/           #    lstm_vs_ngram.json
-│   └── section_c_llm/            #    lora_results.json, decoding_benchmark.json, lora_perplexity.png
-├── models/section_c_llm/         # the two LoRA adapters, standard/ and masked/ (see models/README.md)
-├── notebooks/
-│   ├── b1_ngram_smoothing.ipynb  # smoothing methods compared on a 10,000-sentence sample
-│   ├── b2_ngram_tokenizers.ipynb # tokenizers and N=1..6, from the sweep results
-│   ├── c1_llm_finetuning.ipynb   # loads the adapters, re-scores them, samples answers
-│   └── summary_all_models.ipynb  # all three models, from the result files
-├── presentation/                 # the 10-minute group presentation
-│   ├── Prosit1_Language_Models.pptx   # the deck (speaker notes: what to say, and each number's source)
-│   ├── build_deck.py             # builds the deck; reads every number from results/ and data/processed/
-│   ├── ashesi_presentation_red.pptx   # Ashesi Presentation Red template, as used for the ICS553 Prosit 1 deck
-│   └── presentation_outline.md   # the slide plan and timings
-├── reports/                      # the written deliverables
-│   ├── section_a_theory.md       # theory (14 questions with space constraints)
-│   ├── section_b_low_resource_lm.md   # Section B report: n-gram, plus the LSTM in Question 2
-│   ├── section_c_domain_adaptation.md # Section C report: distilgpt2 + LoRA
-│   ├── claims_table.md           # every quoted number -> the file, key and script behind it
-│   ├── datasheet.md              # Gebru et al. datasheet for the Ewe and agriculture corpora
-│   ├── quiz_revision_guide.md    # viva quiz revision guide
-│   └── LEARNING_JOURNAL.md       # team journal: what we built, what we found, what we fixed
-├── data/                         # raw and processed data, gitignored except stats.json (see data/README.md)
-├── tests/test_pipeline.py        # unit tests (python -m pytest)
-├── METHODOLOGY_GUIDE.md          # best practices playbook & instructions
-├── WORKLOG.md                    # shared AI-use and contribution log
-├── RULES.md                      # team working agreement & code standards
-├── CLAUDE.md                     # AI assistant constraints & context
-├── pytest.ini
-└── requirements.txt
+uv sync                                   # Python 3.14, dependencies from pyproject.toml
+# put the dataset at data/train-00000-of-00001.parquet (HuggingFace: ghananlpcommunity/english-ewe-sentence-pairs-4m)
+uv run --with nbconvert jupyter nbconvert --to notebook --execute --inplace main.ipynb   # Stages 0-3, ~1 hour
+uv run python stage4_neural.py            # hours on a GPU; resumes from results/
+uv run python stage5_domain.py            # Apple Silicon only (mlx-lm); base models go in data/models/
 ```
 
----
+`data/` is not in the repository (about 20 GB: splits, tokenisers, base models, adapters, WikiText). The scripts recreate everything except the trained LSTM and transformer weights, which were scored and discarded.
 
-## Team Roles & Ownership
+Stage 3.5b compares our Kneser-Ney with KenLM, built from source into `.tools/kenlm`; the cell skips itself if KenLM is absent.
 
-| Seat | Technical Ownership | PBL Role |
-| --- | --- | --- |
-| **Statistical Modeler** | N-gram implementations, smoothing algorithms, vocabulary OOV policy | Chairperson |
-| **Neural Adaptation Lead** | LoRA/PEFT pipeline, base model selection, training loop | Secretary |
-| **Evaluation & Benchmarks** | Perplexity calculations, loss tracking, comparison tables | Scribe |
-| **Data & Ethics Lead** | Corpus acquisition, orthography tokenization, Section A & C writeups | Steward |
+## Team contributions
 
----
+`contrib/eric/` holds Eric Elikplim Sunu's parallel implementation of the same prosit (his commits are in this repository's history). It is self-contained and runnable (`cd contrib/eric && python -m pytest`), and it covers ground the main project does not:
 
-## Conventions & Working Rules
+- **A four-source Ewe corpus** (123,511 sentences), including University of Ghana Waxal speech transcriptions, the only conversational Ewe in either project.
+- **A rule-based Ewe stemmer tokenizer** that keeps affixes as tokens (2.6% better per word than plain words).
+- **Section C on distilgpt2**: standard vs **prompt-masked** LoRA loss, **answer-only perplexity**, and a **decoding benchmark** (repetition penalty, n-gram blocking, Distinct-3).
+- **A datasheet** (Gebru et al.) recording personal data and unverified licences in the Ewe sources, a claims table tying every number to its script, and 22 unit tests.
 
-See [`RULES.md`](RULES.md) for the complete rules. In summary:
-- **No data leakage**: Vocabularies and parameter thresholds are induced strictly on the training partition.
-- **Reproducibility**: Explicit random seeds (`RANDOM_SEED = 42`) and relative paths (`ROOT` in `src/__init__.py`, derived from `Path(__file__)`).
-- **Clean notebooks**: Strip notebook output cells before committing to avoid git conflicts (`nbstripout`).
-- **AI-use declarations**: Log every assistant session at the top of [`WORKLOG.md`](WORKLOG.md) before pushing.
-- **Branch per task**: Feature branches with peer review before merging into `main`.
+The two projects reached the same conclusions independently: the Ð/Ɖ look-alike letter, the interpolation bug that loses probability on unseen contexts, per-word/per-character comparison with unknown words charged for spelling, BPE as the best tokenizer, and a crossover (not a verdict) between n-gram and neural models as data grows. His finding that the agriculture corpus repeats questions led us to re-score our agriculture models on a leak-free test set (`rescore_agri.py`, `results/agriculture_leakfree.json`); the result was unchanged.
