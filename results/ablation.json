@@ -1,0 +1,63 @@
+{
+ "baseline (all steps)": {
+  "train": 265882,
+  "dev": 14705,
+  "vocab": 169245,
+  "dev_pp": 100.84368913775245,
+  "dev_pp_known": 102.67056429033197,
+  "dev_bpc": 1.4474976953528074,
+  "note": "the Stage 0 pipeline",
+  "same_dev_as_baseline": true
+ },
+ "without NFC": {
+  "train": 265882,
+  "dev": 14705,
+  "vocab": 169245,
+  "dev_pp": 100.84368913775245,
+  "dev_pp_known": 102.67056429033197,
+  "dev_bpc": 1.4474976953528074,
+  "note": "NFC changed 0 rows, so this is identical",
+  "same_dev_as_baseline": true
+ },
+ "without whitespace cleanup": {
+  "train": 266817,
+  "dev": 14752,
+  "vocab": 169245,
+  "dev_pp": 100.83282271008481,
+  "dev_pp_known": 102.63873125871177,
+  "dev_bpc": 1.4471913054133,
+  "note": "extra/leading spaces kept; ' s' and 's' no longer merge in dedupe or the split key",
+  "same_dev_as_baseline": false
+ },
+ "without the \u00d0\u2192\u0189 fix": {
+  "train": 249693,
+  "dev": 13831,
+  "vocab": 164209,
+  "dev_pp": 103.2322588808076,
+  "dev_pp_known": 105.3222400258646,
+  "dev_bpc": 1.4562246094685038,
+  "note": "\u00d0-spelled words stay separate vocabulary entries",
+  "same_dev_as_baseline": false
+ },
+ "without dedupe": {
+  "train": 2303964,
+  "dev": 14705,
+  "vocab": 169245,
+  "dev_pp": 142.5819377227023,
+  "dev_pp_known": 135.96043856306764,
+  "dev_bpc": 1.556162703941888,
+  "note": "training keeps all copies (a hub sentence 1,000+ times); dev is deduped so the exam is the same",
+  "same_dev_as_baseline": true
+ },
+ "random split (leakage)": {
+  "train": 280493,
+  "dev": 14705,
+  "vocab": 174358,
+  "dev_pp": 93.11576637934463,
+  "dev_pp_known": 94.50405361709672,
+  "dev_bpc": 1.4239087252673803,
+  "note": "352 of 14,705 dev sentences (2.4%) have a near-copy in train",
+  "same_dev_as_baseline": false,
+  "leaked": 352
+ }
+}

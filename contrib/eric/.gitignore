@@ -1,0 +1,89 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# IDEs and OS
+.DS_Store
+.vscode/
+.idea/
+.zed/
+
+# Large model checkpoints, weights, datasets
+*.pt
+*.pth
+*.bin
+*.safetensors
+checkpoint-*/
+# models/: track only the two small Section C LoRA adapters (config + weights) and the README
+models/*
+!models/README.md
+!models/section_c_llm/
+models/section_c_llm/*
+!models/section_c_llm/standard/
+!models/section_c_llm/masked/
+models/section_c_llm/*/*
+!models/section_c_llm/*/adapter_config.json
+!models/section_c_llm/*/adapter_model.safetensors
+runs/
+wandb/
+.cache/
+hf_cache/
+
+# Data files (keep raw & processed data local/untracked if large or licensed)
+data/raw/*
+!data/raw/**/.gitkeep
+!data/raw/**/README.md
+data/processed/*
+# keep each split's small stats.json so the corpus counts in the reports can be checked
+!data/processed/*/
+data/processed/*/*
+!data/processed/*/stats.json
+# stale copy of an old unified split, used by nothing
+data/processed/low_resource/
+!data/processed/**/.gitkeep
+!data/processed/**/README.md
+*.csv
+*.tsv
+*.parquet
+*.jsonl
+*.txt
+!data/**/README.md
+!requirements.txt
+
+# Personal notes kept out of the shared repository (e.g. an individual learning journal)
+personal/
+
+# Office lock files, left beside a document while it is open (e.g. the deck in presentation/)
+~$*

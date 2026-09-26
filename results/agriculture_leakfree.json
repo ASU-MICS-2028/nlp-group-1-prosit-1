@@ -1,0 +1,10 @@
+{
+ "Qwen2.5-0.5B/base": 15.956,
+ "Qwen2.5-0.5B/lora_r2": 7.567,
+ "Qwen2.5-0.5B/lora_r8": 6.693,
+ "Qwen2.5-0.5B/lora_r32": 5.998,
+ "Qwen2.5-0.5B/dora_r8": 6.689,
+ "Qwen2.5-0.5B/full": 6.473,
+ "SmolLM2-135M/base": 23.385,
+ "SmolLM2-135M/lora_r8": 11.187
+}

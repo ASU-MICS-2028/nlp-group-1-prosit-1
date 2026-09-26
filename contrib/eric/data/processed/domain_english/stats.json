@@ -1,0 +1,7 @@
+{
+  "raw_rows": 22615,
+  "unique_questions": 2212,
+  "train_pairs": 1769,
+  "val_pairs": 221,
+  "test_pairs": 222
+}

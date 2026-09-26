@@ -1,0 +1,79 @@
+{
+  "dataset": "KisanVaani/agriculture-qa-english-only, one row per distinct question (src/section_c_llm/prepare_data.py)",
+  "base_model": "distilgpt2",
+  "lora": {
+    "r": 8,
+    "alpha": 32,
+    "dropout": 0.05,
+    "target_modules": [
+      "c_attn"
+    ],
+    "epochs": 3,
+    "lr": 0.0005,
+    "batch_size": 8
+  },
+  "split_sizes": {
+    "train_used": 500,
+    "val": 221,
+    "test": 222,
+    "wikitext_paragraphs": 200
+  },
+  "test_questions_seen_in_train_or_val": 0,
+  "max_length_tokens": 96,
+  "sampling": "seed 42 before each prompt; do_sample, temperature 0.7, top_p 0.9, 40 new tokens",
+  "prompts": [
+    "Question: why is crop rotation important in farming?\nAnswer:",
+    "Question: What farming practice helps prevent soil erosion?\nAnswer:",
+    "Question: How can farmers control fall armyworm in maize?\nAnswer:"
+  ],
+  "results": {
+    "base": {
+      "full_ppl": 56.08,
+      "answer_ppl": 37.77,
+      "wikitext_ppl": 73.19,
+      "samples": [
+        "crop rotation is important in farming.\nAnswer: crop rotation is important in farming.\nAnswer: crop rotation is important in farming.\nAnswer: crop rotation is important in farming.\nAnswer:",
+        "It’s the answer to the question. You’re not going to do that. The answer to that question is: You’re going to be able to use soil erosion to",
+        "The armyworm has been observed in the north-western part of the country. The main cause of fall armyworm was found in the south-western part of the country. It was found in the"
+      ]
+    },
+    "standard": {
+      "train_seconds": 1230.6,
+      "mean_train_loss": 3.531,
+      "val_loss_per_epoch": [
+        3.3963,
+        3.3072,
+        3.2874
+      ],
+      "trainable_params": 147456,
+      "total_params": 82060032,
+      "full_ppl": 28.13,
+      "answer_ppl": 30.0,
+      "wikitext_ppl": 78.44,
+      "samples": [
+        "crop rotation is important in farming because it allows for improved yields and improved productivity. It also allows for improved crop rotation because it allows for better crop rotation because it allows for improved productivity.\n\nAnswer",
+        "It helps to control soil erosion, which can lead to soil erosion. It also helps to improve soil drainage. It also helps to reduce soil erosion.\n\nQuestion: How can planting practices help reduce",
+        "The fall armyworm in maize affects the development of mites, insects and other insects. In addition, the fall armyworm affects the development of mites, insects and other insects. This affects the"
+      ]
+    },
+    "masked": {
+      "train_seconds": 1201.5,
+      "mean_train_loss": 3.4869,
+      "val_loss_per_epoch": [
+        3.3395,
+        3.3005,
+        3.2902
+      ],
+      "trainable_params": 147456,
+      "total_params": 82060032,
+      "full_ppl": 51.39,
+      "answer_ppl": 29.09,
+      "wikitext_ppl": 77.24,
+      "samples": [
+        "crop rotation is important in farming because it allows for improved crop rotation and reduces soil erosion. In addition, it allows for better soil quality, reducing soil erosion and increasing yields. It also helps to reduce",
+        "The most effective practices are planting organic soil and using compost to reduce soil erosion. Most practices, such as the planting of organic soil, include planting compost with organic matter, composting with soil from a",
+        "The fall armyworm in maize can occur through a variety of diseases, such as arachnoid, cloverworm, and coca. The insect can be introduced to the soil, which is"
+      ]
+    }
+  }
+}

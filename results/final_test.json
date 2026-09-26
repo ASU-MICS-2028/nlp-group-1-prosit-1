@@ -1,0 +1,50 @@
+{
+ "main: whitespace, order 5": {
+  "dev": {
+   "perplexity": 100.84368913773649,
+   "bits_per_char": 1.4474976953527576,
+   "perplexity_known_only": 102.67056429033697,
+   "tokens": 240596,
+   "oov": 0.023869919562975062
+  },
+  "test": {
+   "perplexity": 99.76408715010854,
+   "bits_per_char": 1.4468574730993808,
+   "perplexity_known_only": 101.49829912884967,
+   "tokens": 235646,
+   "oov": 0.023267808265659284
+  }
+ },
+ "best bits/char on dev: lower_punct, order 6": {
+  "dev": {
+   "perplexity": 46.95739560490643,
+   "bits_per_char": 1.428642398812794,
+   "perplexity_known_only": 46.56874707995833,
+   "tokens": 284614,
+   "oov": 0.008688113401183362
+  },
+  "test": {
+   "perplexity": 46.45665951797671,
+   "bits_per_char": 1.426091449794178,
+   "perplexity_known_only": 46.08721313469576,
+   "tokens": 278510,
+   "oov": 0.008268314771939265
+  }
+ },
+ "best BPE on dev: bpe2k, order 8": {
+  "dev": {
+   "perplexity": 20.29714611397418,
+   "bits_per_char": 1.4962748753191217,
+   "perplexity_known_only": 20.29714611397418,
+   "tokens": 381139,
+   "oov": 0.0
+  },
+  "test": {
+   "perplexity": 20.19898893022573,
+   "bits_per_char": 1.4914623008450887,
+   "perplexity_known_only": 20.19898893022573,
+   "tokens": 371992,
+   "oov": 0.0
+  }
+ }
+}

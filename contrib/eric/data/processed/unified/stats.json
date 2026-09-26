@@ -1,0 +1,34 @@
+{
+  "sources_count": 4,
+  "source_breakdown": {
+    "dataset_1_csv": {
+      "raw_lines": 28614,
+      "unique_valid_lines": 25837,
+      "duplicates_removed": 1410
+    },
+    "dataset_2_json": {
+      "raw_lines": 600,
+      "unique_valid_lines": 413,
+      "duplicates_removed": 127
+    },
+    "dataset_3_speech": {
+      "raw_lines": 19151,
+      "unique_valid_lines": 19150,
+      "duplicates_removed": 0
+    },
+    "dataset_4_parquet": {
+      "raw_lines": 200000,
+      "unique_valid_lines": 78111,
+      "duplicates_removed": 121887
+    }
+  },
+  "total_unique_sentences": 123511,
+  "train_sentences": 98808,
+  "val_sentences": 12351,
+  "test_sentences": 12352,
+  "train_words": 1874130,
+  "val_words": 234924,
+  "test_words": 236947,
+  "pct_mentioning_yehowa": 5.1,
+  "pct_with_chapter_verse": 6.2
+}

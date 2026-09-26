@@ -1,0 +1,225 @@
+{
+ "religious": {
+  "train_sentences": 265882,
+  "religious_markers": 93005,
+  "share": 0.3497980307053505,
+  "verse_number_prefix": 33907,
+  "verse_share": 0.12752649671658856,
+  "note": "sentences containing a Bible/church keyword (Yehowa, Mawu, Yesu, Kristo, Biblia, Israel, Mose, Paulo, Ɖasefo, ...) or starting with a verse number; a lower bound"
+ },
+ "glotlid": {
+  "kept": 295198,
+  "kept_called_ewe": 272893,
+  "kept_called_ewe_share": 0.9244405449901422,
+  "rejected": 700390,
+  "rejected_called_ewe": 74923,
+  "rejected_called_ewe_share": 0.10697325775639287,
+  "dev_called_ewe_share": 0.9213872832369943,
+  "top_languages_in_kept": [
+   [
+    "ewe_Latn",
+    272893
+   ],
+   [
+    "gaa_Latn",
+    2769
+   ],
+   [
+    "ajg_Latn",
+    2480
+   ],
+   [
+    "nzi_Latn",
+    1370
+   ],
+   [
+    "akp_Latn",
+    1257
+   ],
+   [
+    "ada_Latn",
+    1159
+   ],
+   [
+    "dyi_Latn",
+    800
+   ],
+   [
+    "men_Latn",
+    799
+   ]
+  ],
+  "top_languages_in_rejected": [
+   [
+    "ewe_Latn",
+    74923
+   ],
+   [
+    "pcm_Latn",
+    53357
+   ],
+   [
+    "bew_Latn",
+    52702
+   ],
+   [
+    "eng_Latn",
+    13909
+   ],
+   [
+    "kiu_Latn",
+    13555
+   ],
+   [
+    "dag_Latn",
+    12929
+   ],
+   [
+    "nrm_Latn",
+    12525
+   ],
+   [
+    "nap_Latn",
+    12028
+   ]
+  ],
+  "examples_kept_not_ewe": [
+   [
+    "JW January 2019 Na'am Mɔɔlegɔ Yetɔɣum",
+    "gur_Latn",
+    0.96
+   ],
+   [
+    "George Young vale nyevile zo fane dɔɔnwo dule adenle bɔle edwɛkpa nolo",
+    "nzi_Latn",
+    1.0
+   ],
+   [
+    "Maybe ʌ lɔkɔ lɔm",
+    "men_Latn",
+    0.51
+   ],
+   [
+    "\"Ɛseta Dule Ɔ Nwo Maanle Gyihova Nee Ye Menli Ne\": (Mit.",
+    "nzi_Latn",
+    1.0
+   ],
+   [
+    "ge>ge: lulɔ",
+    "tod_Latn",
+    0.77
+   ],
+   [
+    "Nu Enɛ: Nwīekpo kpa ama aara \"le yereue loo lenu\" nyɔnɛbee a lu yereue a le bu Baibol.",
+    "ogo_Latn",
+    1.0
+   ],
+   [
+    "$1 vaseɖe $2",
+    "und_Lina",
+    0.37
+   ],
+   [
+    "Kɛ́ amrɔ nɛɛ ojeee gbɛgbalɔ lɛ, mɛɛ tsakemɔi obaanyɛ ofee koni obatsɔ gbɛgbalɔ?",
+    "gaa_Latn",
+    1.0
+   ],
+   [
+    "Shi ni owo lɛ, ye nɔ.\" - Jajelɔ 5:4",
+    "gaa_Latn",
+    1.0
+   ],
+   [
+    "Gbɔmɛi kome -",
+    "gaa_Latn",
+    0.99
+   ],
+   [
+    "Namɔ Ji Nuu ni Woloŋmaa Tɔ Ŋmɔ Ehɛ Lɛ? - Ezekiel 9:2 _ Nikasemɔ",
+    "gaa_Latn",
+    1.0
+   ],
+   [
+    "59 Yː Ni yɔɔ dzaanɔ̄ ...",
+    "gaa_Latn",
+    0.93
+   ]
+  ],
+  "examples_rejected_but_ewe": [
+   [
+    "Late Lammas 4 kpl",
+    0.39
+   ],
+   [
+    "Zigbee Enabled Tablets _ eBay",
+    0.49
+   ],
+   [
+    "9 eye dzi beads power",
+    1.0
+   ],
+   [
+    "Wo, wo, wo, un moment, Mme la Présidente.",
+    0.5
+   ],
+   [
+    "Archive - You make me feel?",
+    0.25
+   ],
+   [
+    "Egbe Vado - Alone Soul uploaded by Egbe Vado - Listen",
+    0.76
+   ],
+   [
+    "Tso - Nafusi",
+    1.0
+   ],
+   [
+    "Vanessa Paradis Joe Le Taxi Meme",
+    0.64
+   ],
+   [
+    "Send private message to agbadza",
+    0.57
+   ],
+   [
+    "'Nu wowwie Wunnie, id nu be wong time.'",
+    0.32
+   ],
+   [
+    "My Two Cents: Home Again, Home Again",
+    0.37
+   ],
+   [
+    "Eye Am That Eye Am: The Hipnotic Eye",
+    0.85
+   ]
+  ]
+ },
+ "filter_on_off": {
+  "letter filter (ours)": {
+   "train_sentences": 265882,
+   "vocab": 169245,
+   "dev_pp": 123.78302505761324,
+   "dev_pp_known": 126.619007468003,
+   "dev_bpc": 1.511802977231966,
+   "build_note": "order 3"
+  },
+  "no filter": {
+   "train_sentences": 896230,
+   "vocab": 558960,
+   "dev_pp": 155.2416827225835,
+   "dev_pp_known": 161.79729344989852,
+   "dev_bpc": 1.5828520665305574,
+   "build_note": "order 3"
+  },
+  "GlotLID filter": {
+   "train_sentences": 313315,
+   "vocab": 186700,
+   "dev_pp": 124.44428762719738,
+   "dev_pp_known": 129.13535893271046,
+   "dev_bpc": 1.5134745912545584,
+   "build_note": "order 3"
+  }
+ }
+}
