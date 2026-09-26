@@ -1,0 +1,31 @@
+# Exact versions of the environment every number in reports/ was produced with:
+# Python 3.12, macOS on Intel. torch 2.2.2 is the last torch release with Intel-Mac wheels, and it
+# holds transformers, peft, accelerate and numpy (1.x ABI) at these versions. Keep the pins together.
+
+# Core NLP and machine learning
+torch==2.2.2
+transformers==4.38.2
+peft==0.10.0
+accelerate==0.28.0
+datasets==5.0.1
+
+# Scientific computing, data loading (parquet, xlsx) and plotting
+numpy==1.26.4
+scipy==1.12.0
+pandas==3.0.6
+pyarrow==25.0.1
+openpyxl==3.1.5
+matplotlib==3.11.2
+seaborn==0.13.2
+
+# Presentation deck (presentation/build_deck.py fills the Ashesi template)
+python-pptx==1.0.2
+
+# Notebooks, tests and hygiene
+jupyterlab==4.6.4
+ipykernel==7.3.0
+nbconvert==7.17.1
+nbstripout==0.9.1
+pytest==9.1.1
+black==26.5.1
+ruff==0.16.8

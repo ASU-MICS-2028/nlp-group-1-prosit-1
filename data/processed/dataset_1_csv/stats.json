@@ -1,0 +1,19 @@
+{
+  "sources_count": 1,
+  "source_breakdown": {
+    "dataset_1_csv": {
+      "raw_lines": 28614,
+      "unique_valid_lines": 25837,
+      "duplicates_removed": 1410
+    }
+  },
+  "total_unique_sentences": 25837,
+  "train_sentences": 20669,
+  "val_sentences": 2583,
+  "test_sentences": 2585,
+  "train_words": 518219,
+  "val_words": 65044,
+  "test_words": 65017,
+  "pct_mentioning_yehowa": 10.6,
+  "pct_with_chapter_verse": 6.8
+}
