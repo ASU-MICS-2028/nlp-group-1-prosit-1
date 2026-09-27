@@ -1,0 +1,106 @@
+{
+ "sources": {
+  "bible_csv": {
+   "raw": 28614,
+   "kept": 27247,
+   "unique_new": 18156,
+   "already_in_corpus": 7721,
+   "train": 16300,
+   "dev": 931,
+   "test": 925,
+   "train_words": 463492,
+   "religious_share": 0.2200925313945803,
+   "passes_letter_filter": 0.9488323419255342
+  },
+  "dictionary": {
+   "raw": 540,
+   "kept": 540,
+   "unique_new": 367,
+   "already_in_corpus": 159,
+   "train": 327,
+   "dev": 18,
+   "test": 22,
+   "train_words": 7896,
+   "religious_share": 0.1553133514986376,
+   "passes_letter_filter": 0.9918256130790191
+  },
+  "speech": {
+   "raw": 19151,
+   "kept": 19150,
+   "unique_new": 19150,
+   "already_in_corpus": 0,
+   "train": 17213,
+   "dev": 982,
+   "test": 955,
+   "train_words": 570893,
+   "religious_share": 0.0,
+   "passes_letter_filter": 0.9999477806788512
+  },
+  "web (main corpus)": {
+   "train": 265882,
+   "dev": 14705,
+   "religious_share": 0.1281621170293589,
+   "train_words": 4057669
+  }
+ },
+ "scores": {
+  "web only (main path)": {
+   "train_sentences": 265882,
+   "dev": {
+    "web": {
+     "pp": 100.84368913773649,
+     "pp_known": 102.67056429033697,
+     "bpc": 1.4474976953527576,
+     "oov": 0.023869919562975062
+    },
+    "bible_csv": {
+     "pp": 65.95775960721973,
+     "pp_known": 66.68834773068373,
+     "bpc": 1.3044585082861608,
+     "oov": 0.030861371786068514
+    },
+    "dictionary": {
+     "pp": 132.68007213998018,
+     "pp_known": 138.3694144909927,
+     "bpc": 1.5191298233973087,
+     "oov": 0.0399002493765586
+    },
+    "speech": {
+     "pp": 919.522450101394,
+     "pp_known": 1315.3883218536191,
+     "bpc": 2.118601813616685,
+     "oov": 0.11006541594667983
+    }
+   }
+  },
+  "web + three sources": {
+   "train_sentences": 299722,
+   "dev": {
+    "web": {
+     "pp": 92.88704601808087,
+     "pp_known": 94.21682702171418,
+     "bpc": 1.4217115561064941,
+     "oov": 0.022634810594490264
+    },
+    "bible_csv": {
+     "pp": 54.01242658795167,
+     "pp_known": 54.1089257279277,
+     "bpc": 1.242240696537565,
+     "oov": 0.01617456321049821
+    },
+    "dictionary": {
+     "pp": 135.06645857800424,
+     "pp_known": 139.22723549445095,
+     "bpc": 1.5246700480096222,
+     "oov": 0.029925187032418952
+    },
+    "speech": {
+     "pp": 237.6599499904235,
+     "pp_known": 249.5733737441877,
+     "bpc": 1.6985317402718223,
+     "oov": 0.030671439150826957
+    }
+   }
+  }
+ }
+}

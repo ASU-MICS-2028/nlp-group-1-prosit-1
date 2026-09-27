@@ -17,10 +17,15 @@ ICS554 Natural Language Processing, Ashesi University. Two models: an **n-gram l
 | `stage4_neural.py` | LSTM and transformer from scratch; the n-gram-vs-neural scaling curve; width and tokeniser sweeps; the English side |
 | `stage4_english.py`, `stage4_wikitext.py` | English as a high-resource language: the same pipeline on the English side of the corpus and on WikiText-103 |
 | `stage5_domain.py`, `stage5_generate.py` | Domain adaptation of Qwen2.5-0.5B and SmolLM2-135M with LoRA, DoRA and full fine-tuning; seed repeats; generated text |
-| `stage0_splits.py`, `stage0_ablation.py`, `stage0_filter_test.py`, `stage2_samples.py`, `stage3_extra.py` | Follow-up experiments: every split ratio, every cleaning step left out, the filter graded by a language identifier, and more |
+| `stage0_sources.py` | Three more Ewe sources (Bible/JW sentence pairs, a dictionary export, Waxal **spoken** Ewe transcriptions): cleaned, added to training, and scored separately |
+| `ewe_stemmer.py`, `stage3_stemmer.py` | A rule-based Ewe tokenizer that splits affixes off words and keeps them as tokens, and its fair comparison |
+| `stage5_distilgpt2.py` | A CPU-sized second Section C experiment: distilgpt2 + LoRA with the loss on all tokens vs on answers only, answer-only perplexity, and a decoding benchmark; its adapters are in `models/distilgpt2_agriculture/` |
+| `stage0_splits.py`, `stage0_ablation.py`, `stage0_filter_test.py`, `stage2_samples.py`, `stage3_extra.py`, `rescore_agri.py` | Follow-up experiments: every split ratio, every cleaning step left out, the filter graded by a language identifier, a leak-free re-score of the agriculture models, and more |
 | `notebook_stage45.py`, `notebook_extras.py` | Rebuild the notebook's Stage 4/5 and follow-up sections from `results/` |
 | `build_slides.py` | Builds `presentation.pptx` from `results/` |
 | `results/` | Every table, chart and generated sample the report cites |
+| `DATASHEET.md` | Where every corpus comes from, what is in it, personal data, licences and limits |
+| `tests/` | Fast checks of the core logic (`uv run --with pytest python -m pytest`) |
 
 ## Running it
 
@@ -30,19 +35,11 @@ uv sync                                   # Python 3.14, dependencies from pypro
 uv run --with nbconvert jupyter nbconvert --to notebook --execute --inplace main.ipynb   # Stages 0-3, ~1 hour
 uv run python stage4_neural.py            # hours on a GPU; resumes from results/
 uv run python stage5_domain.py            # Apple Silicon only (mlx-lm); base models go in data/models/
+uv run python stage0_sources.py           # the three extra Ewe sources go in data/raw/ (see DATASHEET.md)
 ```
+
+`stage5_distilgpt2.py` was run in its own environment (Python 3.12, `requirements-distilgpt2.txt`); its data split is reproducible with `uv run python stage5_distilgpt2.py prepare`.
 
 `data/` is not in the repository (about 20 GB: splits, tokenisers, base models, adapters, WikiText). The scripts recreate everything except the trained LSTM and transformer weights, which were scored and discarded.
 
 Stage 3.5b compares our Kneser-Ney with KenLM, built from source into `.tools/kenlm`; the cell skips itself if KenLM is absent.
-
-## Team contributions
-
-`contrib/eric/` holds Eric Elikplim Sunu's parallel implementation of the same prosit (his commits are in this repository's history). It is self-contained and runnable (`cd contrib/eric && python -m pytest`), and it covers ground the main project does not:
-
-- **A four-source Ewe corpus** (123,511 sentences), including University of Ghana Waxal speech transcriptions, the only conversational Ewe in either project.
-- **A rule-based Ewe stemmer tokenizer** that keeps affixes as tokens (2.6% better per word than plain words).
-- **Section C on distilgpt2**: standard vs **prompt-masked** LoRA loss, **answer-only perplexity**, and a **decoding benchmark** (repetition penalty, n-gram blocking, Distinct-3).
-- **A datasheet** (Gebru et al.) recording personal data and unverified licences in the Ewe sources, a claims table tying every number to its script, and 22 unit tests.
-
-The two projects reached the same conclusions independently: the Ð/Ɖ look-alike letter, the interpolation bug that loses probability on unseen contexts, per-word/per-character comparison with unknown words charged for spelling, BPE as the best tokenizer, and a crossover (not a verdict) between n-gram and neural models as data grows. His finding that the agriculture corpus repeats questions led us to re-score our agriculture models on a leak-free test set (`rescore_agri.py`, `results/agriculture_leakfree.json`); the result was unchanged.

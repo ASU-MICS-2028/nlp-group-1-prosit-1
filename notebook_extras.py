@@ -5,8 +5,10 @@ re-run whenever a results file changes. Sections are tagged with ids starting "x
 
 Run: uv run python notebook_extras.py
 """
+import hashlib
 import json
 import os
+import re
 import subprocess
 
 md = lambda s: {"cell_type": "markdown", "metadata": {}, "source": s.strip()}
@@ -69,6 +71,22 @@ GlotLID (Kargaran et al., 2023) recognises about 2,100 languages including Ewe, 
 code(r'''
 show_md("filter_test.md")
 '''),
+md("""
+## Three more Ewe sources, and spoken Ewe
+Our corpus is one mined web source, 35% religious text. Three more sources exist: a Bible/JW sentence-pair CSV, a dictionary export (Glosbe and peterlin.pl examples), and the University of Ghana **Waxal** project's transcribed *spoken* image descriptions, the only conversational Ewe we have. `stage0_sources.py` cleans them with the Stage 0 rules plus the extras these files need (broken binary rows, HTML, URLs, zero-width characters, the Greek ε and lower-case ð look-alikes), removes sentences already in our corpus, and splits them with the same hash rule.
+
+Two questions: how does the web-only model do on each source, especially speech? And does adding the sources to training help?
+"""),
+code(r'''
+show_md("multisource.md")
+r = load("multisource.json")["scores"]
+a, b = r["web only (main path)"]["dev"], r["web + three sources"]["dev"]
+print(f"Spoken Ewe: bits/char {a['speech']['bpc']:.3f} -> {b['speech']['bpc']:.3f}; unknown words {a['speech']['oov']:.1%} -> {b['speech']['oov']:.1%}")
+print(f"Web dev:    bits/char {a['web']['bpc']:.3f} -> {b['web']['bpc']:.3f}")
+'''),
+md("""
+**Reading it.** A model of written, largely religious web Ewe is a poor model of speech: 11% of the words people say are unknown to it, and its bits per character jump from 1.45 to 2.12. Adding 34,000 sentences from three sources (13% more data) brings speech down to 1.70 and even improves the web dev set. For Ankora, whose models score *spoken* transcripts, source variety matters more than raw size.
+"""),
 ],
 # ------------------------------------------------------------------ after Stage 2 summary
 "after:## Stage 2 summary": [
@@ -113,6 +131,17 @@ Section 3.7 left a caveat: a word model pays one flat cost for an unknown word w
 """),
 code(r'''
 show_md("stage3_extra.md")
+'''),
+md("""
+## Splitting Ewe affixes off words
+`ewe_stemmer.py` is a rule-based tokenizer that splits common Ewe affixes off words and keeps them as tokens (nusrɔ̃lawo → nu+ | srɔ̃la | +wo). It lower-cases and splits punctuation, so the fair comparison is `lower_punct`, the same tokenization without the affix splits. Same model, same dev set, bits per character with unknown words charged for spelling. (Script: `stage3_stemmer.py`.)
+"""),
+code(r'''
+r = load("stemmer.json")
+print(f"{'tokenizer':<12} {'vocabulary':>10} {'tokens/sentence':>16}   bits/char at order 4 / 5 / 6 (unknown words spelled)")
+for name, v in r.items():
+    orders = " / ".join(f"{v['orders'][o]['bpc_fair']:.3f}" for o in ("4", "5", "6"))
+    print(f"{name:<12} {v['vocab']:>10,} {v['tokens_per_sentence']:>16.1f}   {orders}")
 '''),
 md("""
 ## The same smoothing ladder on English
@@ -191,6 +220,23 @@ if wt:
             print(f"{int(n):>10,} {g('ngram'):>8} {g('lstm'):>8} {g('transformer'):>12}")
 '''),
 ]
+SECTIONS["before:## Stage 4 summary"] += [
+md("""
+## 4.8 The crossover at the very small end, on the four-source corpus
+A second, independent n-gram and LSTM implementation (in the repository history) ran the same comparison on the four-source corpus, including a 420-sentence dictionary corpus, smaller than any size in 4.1. Both models read the same BPE tokens and are scored per word, with unknown words charged for spelling; three LSTM seeds.
+"""),
+code(r'''
+r = load("lstm_vs_ngram_multisource.json")
+for key, label in (("2", "dictionary corpus"), ("unified", "four-source corpus")):
+    d = r[key]
+    print(f"{label}: {d['train_sentences']:,} training sentences, LSTM {d['runs'][0]['params']:,} weights, {len(d['runs'])} seeds")
+    print(f"   n-gram (Kneser-Ney, BPE) per word {d['kn_bpe']['per_word_perplexity']:,.1f} | LSTM per word {d['lstm_per_word_mean']:,.1f} ({d['lstm_per_word_min']:,.1f} to {d['lstm_per_word_max']:,.1f})")
+'''),
+md("""
+With 420 sentences the n-gram wins by 26%: the LSTM has about 50 weights per training word, far more than the data can pin down. With 98,808 sentences (about 2 weights per word) the LSTM wins by 12%. The same crossover as 4.1, found with separate code on a different corpus.
+"""),
+]
+
 SECTIONS["before:## Stage 5 summary"] = [
 md("""
 ## 5.3 Are the differences real? Repeats with other random seeds
@@ -218,7 +264,55 @@ Same prompt, greedy decoding, base model vs each adapter. Adaptation shows up as
 code(r'''
 show_md("stage5_generation.md")
 '''),
+md("""
+## 5.5 A CPU-sized second experiment: distilgpt2, and which tokens carry the loss
+`stage5_distilgpt2.py` adapts distilgpt2 (82M parameters) to agricultural Q&A with LoRA rank 8 on a laptop CPU, one row per distinct question (22,615 rows but only 2,212 distinct questions), trained two ways on identical data:
+- **standard**: loss on every token of "Question: … Answer: …"
+- **masked**: loss on the answer tokens only
+
+Scored three ways on 222 held-out questions: the full text, the **answer tokens only** (given the question), and general English (WikiText-2).
+"""),
+code(r'''
+r = load("distilgpt2_lora.json")["results"]
+print(f"{'model':<34} {'full Q&A':>9} {'answer only':>12} {'WikiText-2':>11}")
+for key, label in (("base", "distilgpt2 base"), ("standard", "+ LoRA, loss on all tokens"), ("masked", "+ LoRA, loss on answers only")):
+    print(f"{label:<34} {r[key]['full_ppl']:>9.2f} {r[key]['answer_ppl']:>12.2f} {r[key]['wikitext_ppl']:>11.2f}")
+print("\nSampled answers to 'How can farmers control fall armyworm in maize?':")
+for key in ("base", "standard", "masked"):
+    print(f"  {key:<9} {r[key]['samples'][2][:140]}")
+'''),
+md("""
+**Reading it.** The standard adapter halves full-text perplexity (56.1 → 28.1) but cuts answer perplexity by only 21% (37.8 → 30.0): much of the full-text gain is learning the question template. That is also a caution for our Qwen agriculture result (−58%), which was scored on full question+answer text. Masking the loss is the standard way to train an assistant, but a speech recogniser's language model scores whole transcripts, including the farmer's question, so the standard loss is the right one for Ankora. And the answers are fluent and wrong: perplexity measures style, not truth.
+
+## 5.6 Do decoding settings fix repetition, or correctness?
+Distinct-3 = unique word trigrams ÷ all word trigrams in an answer (1.0 = no repeated phrase). Four prompts, five seeds per sampled strategy.
+"""),
+code(r'''
+r = load("distilgpt2_decoding.json")
+for key, v in r["strategy_averages"].items():
+    print(f"{v['name']:<44} Distinct-3 {v['avg_distinct_3']:.1%}")
+print("\nA repetition penalty or 3-gram blocking removes loops (blocking guarantees it by construction), but neither makes answers correct, and the penalty can push text off topic.")
+'''),
 ]
+
+
+def with_headers(block):
+    """Give every code cell a leading comment saying what it does, taken from the markdown heading above it."""
+    heading = ""
+    for c in block:
+        text = src(c)
+        if c["cell_type"] == "markdown":
+            m = re.search(r"^#+\s*(.+)$", text, re.M)
+            heading = re.sub(r"[*`]", "", m.group(1)).strip() if m else heading
+        elif not text.lstrip().startswith("#"):
+            if text.startswith("import json"):
+                header = "# Helpers: load(...) reads a results/*.json file written by the experiment scripts; show_md(...) displays a results/*.md table. Nothing here recomputes anything."
+            elif text.startswith("show_md("):
+                header = f"# {heading}: display the table the experiment script wrote to results/."
+            else:
+                header = f"# {heading}: read the saved results and print them."
+            c["source"] = header + "\n" + text
+    return block
 
 
 def main():
@@ -238,8 +332,8 @@ def main():
         else:
             pos = idx
         for j, c in enumerate(block):
-            c["id"] = f"x-{abs(hash(anchor)) % 10**6}-{j:02d}"
-        cells[pos:pos] = block
+            c["id"] = f"x-{hashlib.md5(anchor.encode()).hexdigest()[:6]}-{j:02d}"  # stable across runs
+        cells[pos:pos] = with_headers(block)
         new_cells += block
     # execute only the new cells, in a scratch notebook, then copy their outputs back
     tmp = {"cells": [dict(c) for c in new_cells], "metadata": nb["metadata"], "nbformat": 4, "nbformat_minor": 5}
