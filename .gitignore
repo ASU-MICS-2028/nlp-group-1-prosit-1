@@ -1,5 +1,17 @@
 .venv/
-data/
+# data/ holds big or unlicensed files (Ewe corpus, splits, Qwen adapters, n-gram model): they live on the Drive,
+# see the README. The small, redistributable pieces below are committed.
+data/*
+!data/bpe/
+!data/wikitext/
+data/wikitext/*
+!data/wikitext/bpe_4000.json
+!data/domain/
+data/domain/raw/
+data/domain/adapters/*
+!data/domain/adapters/SmolLM2-135M/
+data/domain/adapters/SmolLM2-135M/**/0*_adapters.safetensors
+.DS_Store
 __pycache__/
 .ipynb_checkpoints/
 .tools/

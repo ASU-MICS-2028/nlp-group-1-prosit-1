@@ -54,7 +54,7 @@ mostly Ga, Aja, Nzema and Adangme, which share Ewe's letters. No Ewe speaker has
 - The dictionary export includes personal introductions that name real people with birth dates and family details
   (public web pages).
 - The speech spreadsheet holds speaker ID, gender, age and recording device. We use only the transcription column.
-- No data is committed to the repository.
+- No Ewe data is committed to the repository. The English Section C splits are (their sources are MIT, Apache-2.0 and CC BY-SA).
 
 ## 4. Processing
 

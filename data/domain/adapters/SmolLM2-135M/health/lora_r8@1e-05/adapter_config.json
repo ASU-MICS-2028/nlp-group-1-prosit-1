@@ -1,0 +1,41 @@
+{
+    "adapter_path": "data/domain/adapters/SmolLM2-135M/health/lora_r8@1e-05",
+    "batch_size": 4,
+    "clear_cache_threshold": 0,
+    "config": "data/domain/rank8.yaml",
+    "data": "data/domain/health",
+    "fine_tune_type": "lora",
+    "grad_accumulation_steps": 1,
+    "grad_checkpoint": false,
+    "iters": 600,
+    "learning_rate": 1e-05,
+    "lora_parameters": {
+        "rank": 8,
+        "scale": 20.0,
+        "dropout": 0.0
+    },
+    "lr_schedule": null,
+    "mask_prompt": false,
+    "max_seq_length": 512,
+    "model": "data/models/SmolLM2-135M",
+    "num_layers": 16,
+    "optimizer": "adam",
+    "optimizer_config": {
+        "adam": {},
+        "adamw": {},
+        "muon": {},
+        "sgd": {},
+        "adafactor": {}
+    },
+    "project_name": null,
+    "report_to": null,
+    "resume_adapter_file": null,
+    "save_every": 100,
+    "seed": 0,
+    "steps_per_eval": 300,
+    "steps_per_report": 10,
+    "test": false,
+    "test_batches": 500,
+    "train": true,
+    "val_batches": 25
+}

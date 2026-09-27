@@ -40,6 +40,14 @@ uv run python stage0_sources.py           # the three extra Ewe sources go in da
 
 `stage5_distilgpt2.py` was run in its own environment (Python 3.12, `requirements-distilgpt2.txt`); its data split is reproducible with `uv run python stage5_distilgpt2.py prepare`.
 
-`data/` is not in the repository (about 20 GB: splits, tokenisers, base models, adapters, WikiText). The scripts recreate everything except the trained LSTM and transformer weights, which were scored and discarded.
+**Data and models.** Small files are in the repository under `data/`: the BPE tokenisers (`data/bpe/`, `data/wikitext/bpe_4000.json`), the English Section C splits (`data/domain/*/`) and the SmolLM2-135M adapters (`data/domain/adapters/SmolLM2-135M/`). The big files are on Google Drive: https://drive.google.com/drive/folders/1MsJ24hAK_nxFcqwV6GUNiWeM7IZ3ic6B
+
+| Drive folder | What | Put it at |
+|---|---|---|
+| `ewe_ngram/` | The final Ewe model: modified Kneser-Ney, order 5, ARPA format (383 MB) | `data/models/` |
+| `ewe_splits/` | The 15 frozen train/dev/test splits of the cleaned Ewe corpus (not committed: the Ewe sources' licences are unclear) | `data/splits/` |
+| `domain_adapters/Qwen2.5-0.5B/` | The Qwen2.5-0.5B adapters: LoRA rank 2/8/32, DoRA, full fine-tuning, seed repeats (644 MB) | `data/domain/adapters/Qwen2.5-0.5B/` |
+
+The scripts can also recreate all of these. Base models, the raw Ewe corpus and WikiText-103 are downloaded from their sources (see `DATASHEET.md`). The trained LSTM and transformer weights were scored and discarded.
 
 Stage 3.5b compares our Kneser-Ney with KenLM, built from source into `.tools/kenlm`; the cell skips itself if KenLM is absent.
