@@ -1,0 +1,11 @@
+# The environment the recorded distilgpt2 results (results/distilgpt2_*.json) were produced with: Python 3.12.
+# torch 2.2.2 is the last release with Intel-Mac wheels and holds transformers, peft and numpy (1.x) at these versions.
+# Only stage5_distilgpt2.py needs this; everything else uses pyproject.toml.
+torch==2.2.2
+transformers==4.38.2
+peft==0.10.0
+accelerate==0.28.0
+datasets==5.0.1
+numpy==1.26.4
+pyarrow==25.0.1
+matplotlib==3.11.2

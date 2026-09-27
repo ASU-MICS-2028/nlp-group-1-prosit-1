@@ -1,0 +1,44 @@
+{
+ "lower_punct": {
+  "orders": {
+   "4": {
+    "bpc_flat": 1.4622494622640116,
+    "bpc_fair": 1.549129257132615,
+    "unknown_tokens": 2345
+   },
+   "5": {
+    "bpc_flat": 1.4375095231461597,
+    "bpc_fair": 1.5243893180147536,
+    "unknown_tokens": 2345
+   },
+   "6": {
+    "bpc_flat": 1.428642398812794,
+    "bpc_fair": 1.5155221936813972,
+    "unknown_tokens": 2345
+   }
+  },
+  "vocab": 82563,
+  "tokens_per_sentence": 18.354913294797687
+ },
+ "ewe_stem": {
+  "orders": {
+   "4": {
+    "bpc_flat": 1.470021456861791,
+    "bpc_fair": 1.5536242829250246,
+    "unknown_tokens": 2244
+   },
+   "5": {
+    "bpc_flat": 1.4384261996182959,
+    "bpc_fair": 1.5220290256815439,
+    "unknown_tokens": 2244
+   },
+   "6": {
+    "bpc_flat": 1.426576346117867,
+    "bpc_fair": 1.5101791721811026,
+    "unknown_tokens": 2244
+   }
+  },
+  "vocab": 76896,
+  "tokens_per_sentence": 19.66188371302278
+ }
+}
