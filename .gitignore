@@ -15,3 +15,4 @@ data/domain/adapters/SmolLM2-135M/**/0*_adapters.safetensors
 __pycache__/
 .ipynb_checkpoints/
 .tools/
+CLAUDE.md
