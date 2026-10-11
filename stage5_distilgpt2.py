@@ -42,6 +42,7 @@ PROMPTS = [
     "Question: What farming practice helps prevent soil erosion?\nAnswer:",
     "Question: How can farmers control fall armyworm in maize?\nAnswer:",
 ]
+N_SAMPLES = 5  # seeds per (prompt, strategy) in the decoding benchmark; greedy search is deterministic and runs once
 
 
 # ---------------------------------------------------------------- data (no ML libraries needed)
@@ -95,11 +96,6 @@ def _ml():
 
 
 # ---------------------------------------------------------------- training and scoring
-def lora_config() -> LoraConfig:
-    # c_attn is GPT-2's fused query/key/value projection, stored as a Conv1D (hence fan_in_fan_out)
-    return LoraConfig(task_type=TaskType.CAUSAL_LM, r=8, lora_alpha=32, lora_dropout=0.05, fan_in_fan_out=True)
-
-
 def prompt_len(text: str) -> int:
     """Tokens up to and including 'Answer:', the part the masked model gets no loss on."""
     return len(tokenizer(text[: text.index("\nAnswer:") + len("\nAnswer:")]).input_ids)
@@ -123,7 +119,7 @@ def perplexity(model, texts, answer_only=False, max_length=MAX_LENGTH) -> float:
     return round(math.exp(nll / count), 2)
 
 
-def encode(texts, mask_prompt: bool) -> Dataset:
+def encode(texts, mask_prompt: bool):
     enc = tokenizer(texts, truncation=True, max_length=MAX_LENGTH, padding="max_length")
     labels = []
     for text, ids, attention in zip(texts, enc["input_ids"], enc["attention_mask"]):
@@ -156,7 +152,10 @@ def evaluate(model, test_texts, wiki) -> dict:
 
 def train(mask_prompt: bool, train_texts, val_texts):
     set_seed(RANDOM_SEED)
-    model = get_peft_model(AutoModelForCausalLM.from_pretrained(BASE_MODEL), lora_config())
+    # LoRA goes on c_attn (peft's default for GPT-2): the fused query/key/value projection, stored as a Conv1D
+    # (hence fan_in_fan_out)
+    lora = LoraConfig(task_type=TaskType.CAUSAL_LM, r=8, lora_alpha=32, lora_dropout=0.05, fan_in_fan_out=True)
+    model = get_peft_model(AutoModelForCausalLM.from_pretrained(BASE_MODEL), lora)
     args = TrainingArguments(
         output_dir=str(MODELS / "trainer_tmp"),  # scratch: save_strategy="no" keeps no checkpoints
         num_train_epochs=3,
@@ -252,47 +251,24 @@ def train_all():
 
 
 # ---------------------------------------------------------------- decoding benchmark
+def distinct_n(words, n):
+    """Unique word n-grams / all word n-grams: 1.0 means nothing repeats. 0.0 when the text has no n-gram at all."""
+    ngrams = [tuple(words[i:i + n]) for i in range(len(words) - n + 1)]
+    return round(len(set(ngrams)) / max(len(ngrams), 1), 4)
+
+
 def calculate_repetition_metrics(text: str):
-    """Calculate distinct-1, distinct-2, and distinct-3 ratios to quantify repetition."""
     words = text.lower().split()
-    if not words:
-        return {"distinct_1": 0.0, "distinct_2": 0.0, "distinct_3": 0.0, "word_count": 0}
-    
-    unigrams = words
-    bigrams = [tuple(words[i:i+2]) for i in range(len(words)-1)]
-    trigrams = [tuple(words[i:i+3]) for i in range(len(words)-2)]
-    
-    d1 = len(set(unigrams)) / max(len(unigrams), 1)
-    d2 = len(set(bigrams)) / max(len(bigrams), 1)
-    d3 = len(set(trigrams)) / max(len(trigrams), 1)
-    
-    return {
-        "distinct_1": round(d1, 4),
-        "distinct_2": round(d2, 4),
-        "distinct_3": round(d3, 4),
-        "word_count": len(words)
-    }
+    return {"distinct_1": distinct_n(words, 1), "distinct_2": distinct_n(words, 2), "distinct_3": distinct_n(words, 3),
+            "word_count": len(words)}
 
 
 def decoding():
     _ml()
-    print("=== Benchmarking Decoding Strategies for LoRA-Adapted LLM ===")
-    
-    print(f"Loading checkpoint from: {MODEL_DIRS["standard"]}")
-    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-        
     base_model = AutoModelForCausalLM.from_pretrained(BASE_MODEL)
     adapted_model = PeftModel.from_pretrained(base_model, str(MODEL_DIRS["standard"]))
     adapted_model.eval()
-
-    prompts = [
-        "Question: why is crop rotation important in farming?\nAnswer:",
-        "Question: What farming practice helps prevent soil erosion?\nAnswer:",
-        "Question: How can farmers control fall armyworm in maize?\nAnswer:",
-        "Question: What are the signs of nitrogen deficiency in crops?\nAnswer:",
-    ]
+    prompts = PROMPTS + ["Question: What are the signs of nitrogen deficiency in crops?\nAnswer:"]
 
     strategies = {
         "unpenalized_sampling": {
@@ -326,12 +302,8 @@ def decoding():
     }
 
     for prompt in prompts:
-        prompt_entry = {
-            "prompt": prompt.strip(),
-            "evaluations": {}
-        }
+        prompt_entry = {"prompt": prompt.strip(), "evaluations": {}}
         input_ids = tokenizer.encode(prompt, return_tensors="pt")
-        
         for strat_id, strat in strategies.items():
             samples = []
             for i in range(N_SAMPLES if strat["params"]["do_sample"] else 1):
@@ -351,7 +323,6 @@ def decoding():
                 "samples": samples,
                 "mean_distinct_3": round(sum(x["metrics"]["distinct_3"] for x in samples) / len(samples), 4),
             }
-            
         benchmark_data["results"].append(prompt_entry)
 
     # Compute average distinct-3 across all prompts per strategy
@@ -368,8 +339,7 @@ def decoding():
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump(benchmark_data, f, indent=2)
 
-    print(f"\nBenchmark completed successfully! Saved to: {out_file}")
-    print("\nSummary of Distinct-3 Ratios (Higher = Less Repetitive):")
+    print(f"Saved {out_file}. Distinct-3 (higher = less repetitive):")
     for s_id, s_info in strategy_averages.items():
         print(f"  - {s_info['name']}: {s_info['avg_distinct_3'] * 100:.1f}% unique trigrams")
 

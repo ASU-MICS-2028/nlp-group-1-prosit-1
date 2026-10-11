@@ -20,10 +20,10 @@ def train_bpe(sentences, vocab_size, path):
     return tok
 
 
-def register(sentences, sizes=SIZES):
+def register(sentences):
     """Train (or reload) one BPE tokeniser per size; returns the names added to TOKENIZERS ('bpe1k', ...)."""
     names = []
-    for size in sizes:
+    for size in SIZES:
         path = DIR / f"bpe_{size}.json"
         tok = Tokenizer.from_file(str(path)) if path.exists() else train_bpe(sentences, size, path)
         name = f"bpe{size / 1000:g}k"  # 1000 -> bpe1k, 1500 -> bpe1.5k

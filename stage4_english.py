@@ -10,13 +10,13 @@ from pathlib import Path
 
 from stage2_ngram import TOKENIZERS
 from stage3_smoothing import Smoothed
+from stage4_neural import read_split
 
-SPLIT, RESULTS, TOK, BUDGET = Path("data/splits/90-5-5"), Path("results/stage4_english.json"), "punct", 1_000_000
+RESULTS, TOK, BUDGET = Path("results/stage4_english.json"), "punct", 1_000_000
 
 
 def profile(lang):
-    train = (SPLIT / f"train.{lang}.txt").read_text(encoding="utf-8").splitlines()
-    dev = (SPLIT / f"dev.{lang}.txt").read_text(encoding="utf-8").splitlines()
+    train, dev = read_split(lang)
     tokens = [w for s in train for w in TOKENIZERS[TOK](s)]
     counts = Counter(tokens)
     first = Counter(tokens[:BUDGET])  # type/token ratio depends on corpus size, so compare at the same token count
@@ -34,8 +34,7 @@ def profile(lang):
 
 def ladder(lang):
     """The Stage 3 comparison on this language: every smoothing method at order 5, and Kneser-Ney at orders 2-5."""
-    train = (SPLIT / f"train.{lang}.txt").read_text(encoding="utf-8").splitlines()
-    dev = (SPLIT / f"dev.{lang}.txt").read_text(encoding="utf-8").splitlines()
+    train, dev = read_split(lang)
     m = Smoothed(train, 5, TOK, method="mkn", k=1e-5, lam=0.45, discount=0.8)
     out = {"methods": {}, "kn_by_order": {}}
     for method in ("add_k", "gt", "jm", "katz", "kn", "mkn"):

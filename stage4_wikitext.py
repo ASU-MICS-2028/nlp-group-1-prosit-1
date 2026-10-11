@@ -17,6 +17,7 @@ from pathlib import Path
 
 import pyarrow.parquet as pq
 
+import stage4_neural as s4
 from stage3_smoothing import Smoothed
 
 ROOT = Path("data/wikitext")
@@ -93,9 +94,10 @@ def ngram():
         if size <= OWN_CODE_MAX:
             t1 = time.time()
             m = Smoothed(subset, 5, "whitespace", method="mkn", unk="floor")
-            row["own_pp"] = m.evaluate(dev)[0]
+            pp, bpc, _ = m.evaluate(dev)
+            row["own_pp"] = pp
             row["own_pp_known"] = m.evaluate(dev, known_only=True)[0]
-            row["own_bpc"] = m.evaluate(dev)[1]
+            row["own_bpc"] = bpc
             row["own_seconds"] = round(time.time() - t1)
             del m
         results["ngram"][str(size)] = row
@@ -106,31 +108,10 @@ def ngram():
 
 def neural():
     """LSTM and transformer at the Ewe sizes, on English, same recipe (stage4_neural)."""
-    import stage4_neural as s4
-    from tokenizers import Tokenizer
-    from bpe import train_bpe
-    import stage2_ngram
     train_s, dev_s = load("train"), load("dev", 20_000)
-    path = ROOT / "bpe_4000.json"
-    if not path.exists():
-        train_bpe(train_s[:300_000], 4000, path)
-    tok = Tokenizer.from_file(str(path))
-    stage2_ngram.TOKENIZERS["bpe4k_wt"] = lambda x, t=tok: t.encode(x).tokens
-    enc = s4.Encoder(str(path))
+    enc = s4.register_bpe_file("bpe4k_wt", ROOT / "bpe_4000.json", train_s[:300_000])
     results = json.loads(RESULTS.read_text()) if RESULTS.exists() else {}
-    results.setdefault("neural", {})
-    for size in s4.SIZES:
-        row = results["neural"].setdefault(str(size), {})
-        subset = train_s[:size]
-        if "ngram" not in row:
-            row["ngram"], row["tokens"] = s4.best_ngram(subset, dev_s, "bpe4k_wt")
-            print(f"WT {size:>7,} | n-gram (order {row['ngram']['order']}): perplexity {row['ngram']['pp']:,.1f}", flush=True)
-        for arch in s4.ARCHS:
-            if arch not in row:
-                row[arch], tokens = s4.fit_and_score(arch, subset, dev_s, enc, log=lambda *_: None)
-                assert tokens == row["tokens"]
-                print(f"{'':>11}| {arch:<11} perplexity {row[arch]['pp']:,.1f} ({row[arch]['epochs']} epochs, {row[arch]['seconds']}s)", flush=True)
-            RESULTS.write_text(json.dumps(results, indent=1))
+    s4.scaling_curve(results, "neural", RESULTS, train_s, dev_s, "bpe4k_wt", enc, log=lambda msg: print(msg, flush=True))
 
 
 if __name__ == "__main__":

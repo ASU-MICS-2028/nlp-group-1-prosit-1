@@ -6,7 +6,7 @@ leaves some probability for it. No <UNK> substitution in training, which keeps S
 import math
 from collections import Counter, defaultdict
 
-from stage2_ngram import BOS, TOKENIZERS, pad, train
+from stage2_ngram import TOKENIZERS, pad, train
 
 METHODS = ("add_k", "jm", "gt", "katz", "kn", "mkn")
 GT_K = 5  # Good-Turing only adjusts counts up to this; bigger counts are trusted as they are (Katz's rule)
@@ -139,8 +139,7 @@ class Smoothed:
             p, keep = 1 / (self.vocab_size - 1), 1 - self.p_unk
         else:
             p, keep = 1 / self.vocab_size, 1.0  # "all tokens equally likely" floor, unknown slot included
-        p = self._interpolate(context, token, p)  # build the estimate from the unigram level up to the top order
-        return keep * p                            # scale so known-token mass + the unknown share sums to 1
+        return keep * self._interpolate(context, token, p)  # scale so known-token mass + the unknown share sums to 1
 
     def _interpolate(self, context, token, p):
         """Build the estimate from the unigram level up to the top order, starting from the floor `p`."""
@@ -196,16 +195,17 @@ class Smoothed:
 def selfcheck():
     """Probabilities must add up to 1 over the whole vocabulary, and nothing may be impossible."""
     toy = ["Aƒetɔ, dzɔ nye.", "Aƒetɔ, va kaba!", "Si va ɖe mí,", "Xɔ mí, ɖe mí", "Eya ɖe mí vavã."]
-    for method, unk in [(m, u) for m in METHODS for u in ("gt", "floor")]:
-        for n in (1, 2, 3):
-            m = Smoothed(toy, n, method=method, k=0.1, lam=0.6, unk=unk)
-            vocab = list(m.models[1].counts[()]) + ["A-WORD-NEVER-SEEN"]
-            for context in [("ɖe",) * (n - 1), ("ZZZ",) * (n - 1)]:  # a seen context and an unseen one
-                total = sum(m.prob(context, w) for w in vocab)
-                assert abs(total - 1) < 1e-9, f"{method} n={n} context={context} sums to {total}"
-                assert m.prob(context, "A-WORD-NEVER-SEEN") > 0
-            pp, bpc, _ = m.evaluate(["Aƒetɔ, ɖe mí"])  # the sentence MLE called impossible
-            assert math.isfinite(pp) and bpc > 0
+    for method in METHODS:
+        for unk in ("gt", "floor"):
+            for n in (1, 2, 3):
+                m = Smoothed(toy, n, method=method, k=0.1, lam=0.6, unk=unk)
+                vocab = list(m.models[1].counts[()]) + ["A-WORD-NEVER-SEEN"]
+                for context in [("ɖe",) * (n - 1), ("ZZZ",) * (n - 1)]:  # a seen context and an unseen one
+                    total = sum(m.prob(context, w) for w in vocab)
+                    assert abs(total - 1) < 1e-9, f"{method} n={n} context={context} sums to {total}"
+                    assert m.prob(context, "A-WORD-NEVER-SEEN") > 0
+                pp, bpc, _ = m.evaluate(["Aƒetɔ, ɖe mí"])  # the sentence MLE called impossible
+                assert math.isfinite(pp) and bpc > 0
     # one big model scored at a lower order must equal a model built at that order
     big = Smoothed(toy, 3, method="mkn")
     big.set_order(2)

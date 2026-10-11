@@ -22,13 +22,13 @@ from pathlib import Path
 
 from openpyxl import load_workbook
 
-from stage0_audit import OUT, bucket, clean, fix_eth, is_ewe, nfc
+from stage0_audit import bucket, clean, fix_eth, is_ewe, nfc
+from stage0_splits import read
 from stage3_smoothing import Smoothed
 
 RAW = Path("data/raw")
 SPLITS = Path("data/splits_sources")
 RESULTS = Path("results/multisource.json")
-MAIN = OUT / "90-5-5"
 
 BINARY = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]|\\[0-9A-F]{2}")  # control bytes / escaped binary (broken CSV rows)
 MARKUP = re.compile(r"<[^>]+>|https?://\S+|www\.\S+")                     # HTML tags and URLs
@@ -89,9 +89,9 @@ def score(train, devs):
 
 
 def main():
-    main_train = (MAIN / "train.ewe.txt").read_text(encoding="utf-8").splitlines()
-    main_dev = (MAIN / "dev.ewe.txt").read_text(encoding="utf-8").splitlines()
-    seen = {s.lower() for p in ("train", "dev", "test") for s in (MAIN / f"{p}.ewe.txt").read_text(encoding="utf-8").splitlines()}
+    main_train = read("90-5-5", "train")
+    main_dev = read("90-5-5", "dev")
+    seen = {s.lower() for p in ("train", "dev", "test") for s in read("90-5-5", p)}
 
     stats, parts = {}, {}
     for name, raw in read_sources().items():
@@ -133,7 +133,8 @@ def main():
     for n in parts:
         s = stats[n]
         md += f"| {n} | {s['raw']:,} | {s['unique_new']:,} | {s['train']:,} / {s['dev']:,} / {s['test']:,} | {s['religious_share']:.1%} | {s['passes_letter_filter']:.1%} |\n"
-    md += f"| web (main corpus) | | | {stats['web (main corpus)']['train']:,} / {stats['web (main corpus)']['dev']:,} / … | {stats['web (main corpus)']['religious_share']:.1%} | 100% (filtered) |\n"
+    web = stats["web (main corpus)"]
+    md += f"| web (main corpus) | | | {web['train']:,} / {web['dev']:,} / … | {web['religious_share']:.1%} | 100% (filtered) |\n"
     md += "\n## Bits per character on each source's dev set (lower is better)\n\n| trained on | " + " | ".join(devs) + " |\n|---|" + "---:|" * len(devs) + "\n"
     for label, r in scores.items():
         md += f"| {label} ({r['train_sentences']:,}) | " + " | ".join(f"{r['dev'][d]['bpc']:.3f}" for d in devs) + " |\n"

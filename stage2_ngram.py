@@ -78,6 +78,7 @@ def generate(model, rng, max_tokens=40):
     """Sample a sentence: pick each next token at random, weighted by how often it followed this context."""
     context, out = [BOS] * (model.n - 1), []
     while len(out) < max_tokens:
+        # the last n-1 tokens; not context[-(n-1):], which for n=1 would be context[-0:] = the whole list
         followers = model.counts[tuple(context[len(context) - model.n + 1:])]
         token = rng.choices(list(followers), weights=list(followers.values()))[0]
         if token == EOS:

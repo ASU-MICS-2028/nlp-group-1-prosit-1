@@ -34,7 +34,7 @@ def main():
         known = m.models[1].counts[()]
         row = {"train": len(train), "dev": len(dev), "test": len(test)}
         for name, data in (("dev", dev), ("test", test), ("common", common)):
-            pp, bpc, n = m.evaluate(data)
+            pp, bpc, _ = m.evaluate(data)
             toks = [w for s in data for w in s.split()]
             row[name + "_pp"], row[name + "_bpc"], row[name + "_oov"] = pp, bpc, sum(w not in known for w in toks) / len(toks)
         if f == "90-5-5":  # 3. dev-size wobble, on the main split's model

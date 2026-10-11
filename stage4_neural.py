@@ -14,6 +14,7 @@ import torch.nn as nn
 from tokenizers import Tokenizer
 
 import bpe
+import stage2_ngram
 from stage3_smoothing import Smoothed
 
 TOKENIZER, BPE_FILE = "bpe4k", "data/bpe/bpe_4000.json"  # same vocabulary at every size, so perplexities are comparable
@@ -66,8 +67,8 @@ class TinyTransformer(nn.Module):
 
 
 ARCHS = {  # name: (how to build it, learning rate)
-    "lstm": (lambda vocab, dim: LSTMLM(vocab, dim), 2e-3),
-    "transformer": (lambda vocab, dim: TinyTransformer(vocab, dim), 5e-4),
+    "lstm": (LSTMLM, 2e-3),
+    "transformer": (TinyTransformer, 5e-4),
 }
 
 
@@ -159,32 +160,51 @@ def fit_and_score(arch, subset, dev_s, enc, dim=256, log=print):
     return {"pp": pp, "bpc": bpc, "epochs": epochs, "seconds": round(time.time() - t0), "params": params}, tokens
 
 
-def run_scaling(sizes=SIZES, archs=tuple(ARCHS), log=print):
-    """Main experiment: n-gram vs each neural model at every training size, all on bpe4k tokens."""
-    train_s = (SPLIT / "train.ewe.txt").read_text(encoding="utf-8").splitlines()
-    dev_s = (SPLIT / "dev.ewe.txt").read_text(encoding="utf-8").splitlines()
-    bpe.register(train_s)  # loads the saved BPE tokenisers
-    enc = Encoder()
-    results = json.loads(RESULTS.read_text()) if RESULTS.exists() else {"scaling": {}, "width": {}, "tokenizer": {}}
+def read_split(lang):
+    """(train, dev) sentences of one language of the 90/5/5 split."""
+    train_s = (SPLIT / f"train.{lang}.txt").read_text(encoding="utf-8").splitlines()
+    dev_s = (SPLIT / f"dev.{lang}.txt").read_text(encoding="utf-8").splitlines()
+    return train_s, dev_s
+
+
+def register_bpe_file(name, path, sentences):
+    """A 4k BPE tokeniser kept at `path` (trained on `sentences` the first time), added to TOKENIZERS as `name`."""
+    if not path.exists():
+        bpe.train_bpe(sentences, 4000, path)
+    tok = Tokenizer.from_file(str(path))
+    stage2_ngram.TOKENIZERS[name] = lambda s, t=tok: t.encode(s).tokens
+    return Encoder(str(path))
+
+
+def scaling_curve(results, key, path, train_s, dev_s, tokenizer, enc, sizes=SIZES, archs=tuple(ARCHS), log=print):
+    """n-gram vs each neural model at every training size, stored in results[key][size]; saved after every model."""
+    table = results.setdefault(key, {})
     for size in sizes:
-        row = results["scaling"].setdefault(str(size), {})
+        row = table.setdefault(str(size), {})
         subset = train_s[:size]  # the split files are in a fixed pseudo-random order, so "first N" is a fair sample
         if "ngram" not in row:
-            row["ngram"], row["tokens"] = best_ngram(subset, dev_s, TOKENIZER)
+            row["ngram"], row["tokens"] = best_ngram(subset, dev_s, tokenizer)
             log(f"{size:>7,} sentences | n-gram (best order {row['ngram']['order']}): perplexity {row['ngram']['pp']:,.1f}, bits/char {row['ngram']['bpc']:.3f}")
         for arch in archs:
             if arch not in row:
                 row[arch], tokens = fit_and_score(arch, subset, dev_s, enc, log=lambda *_: None)
                 assert tokens == row["tokens"], "every model must be graded on exactly the same tokens"
                 log(f"{'':>17} | {arch:<11} perplexity {row[arch]['pp']:,.1f}, bits/char {row[arch]['bpc']:.3f}  ({row[arch]['epochs']} epochs, {row[arch]['seconds']}s)")
-            save(results)
+            save(results, path)
     return results
+
+
+def run_scaling(sizes=SIZES, archs=tuple(ARCHS), log=print):
+    """Main experiment: n-gram vs each neural model at every training size, all on bpe4k tokens."""
+    train_s, dev_s = read_split("ewe")
+    bpe.register(train_s)  # loads the saved BPE tokenisers
+    results = json.loads(RESULTS.read_text()) if RESULTS.exists() else {"scaling": {}, "width": {}, "tokenizer": {}}
+    return scaling_curve(results, "scaling", RESULTS, train_s, dev_s, TOKENIZER, Encoder(), sizes, archs, log)
 
 
 def run_fans(size=30000, arch="lstm", log=print):
     """Side experiments at one training size: how wide the model is, and which BPE vocabulary it reads."""
-    train_s = (SPLIT / "train.ewe.txt").read_text(encoding="utf-8").splitlines()
-    dev_s = (SPLIT / "dev.ewe.txt").read_text(encoding="utf-8").splitlines()
+    train_s, dev_s = read_split("ewe")
     bpe.register(train_s)
     subset = train_s[:size]
     results = json.loads(RESULTS.read_text())
@@ -203,8 +223,11 @@ def run_fans(size=30000, arch="lstm", log=print):
             if DEVICE == "mps":
                 torch.mps.empty_cache()
             neural, _ = fit_and_score(arch, subset, dev_s, Encoder(f"data/bpe/bpe_{vocab}.json"), log=lambda *_: None)
-            ngram, _ = best_ngram(subset, dev_s, name) if arch == "lstm" else (results["tokenizer"][name]["ngram"], None)
-            tokz[name] = {"lstm" if arch == "lstm" else arch: neural, "ngram": ngram}
+            if arch == "lstm":
+                ngram, _ = best_ngram(subset, dev_s, name)
+            else:  # the n-gram side does not depend on the neural model: reuse the one the LSTM run computed
+                ngram = results["tokenizer"][name]["ngram"]
+            tokz[name] = {arch: neural, "ngram": ngram}
             log(f"{name}: {arch} bits/char {neural['bpc']:.3f} | n-gram bits/char {ngram['bpc']:.3f}")
             save(results)
     return results
@@ -212,42 +235,20 @@ def run_fans(size=30000, arch="lstm", log=print):
 
 def run_english(sizes=SIZES, archs=tuple(ARCHS), log=print):
     """The scaling experiment on the ENGLISH side of the same split: high-resource language, same recipe."""
-    from tokenizers import Tokenizer as _T
-    from bpe import train_bpe
-    train_s = (SPLIT / "train.en.txt").read_text(encoding="utf-8").splitlines()
-    dev_s = (SPLIT / "dev.en.txt").read_text(encoding="utf-8").splitlines()
-    path = Path("data/bpe/bpe_en_4000.json")
-    if not path.exists():
-        train_bpe(train_s, 4000, path)
-    import stage2_ngram
-    tok = _T.from_file(str(path))
-    stage2_ngram.TOKENIZERS["bpe4k_en"] = lambda x, t=tok: t.encode(x).tokens
-    enc = Encoder(str(path))
-    results_path = Path("results/stage4_scaling_english.json")
-    results = json.loads(results_path.read_text()) if results_path.exists() else {"scaling": {}}
-    for size in sizes:
-        row = results["scaling"].setdefault(str(size), {})
-        subset = train_s[:size]
-        if "ngram" not in row:
-            row["ngram"], row["tokens"] = best_ngram(subset, dev_s, "bpe4k_en")
-            log(f"EN {size:>7,} sentences | n-gram (best order {row['ngram']['order']}): perplexity {row['ngram']['pp']:,.1f}, bits/char {row['ngram']['bpc']:.3f}")
-        for arch in archs:
-            if arch not in row:
-                row[arch], tokens = fit_and_score(arch, subset, dev_s, enc, log=lambda *_: None)
-                assert tokens == row["tokens"]
-                log(f"{'':>20} | {arch:<11} perplexity {row[arch]['pp']:,.1f}, bits/char {row[arch]['bpc']:.3f}  ({row[arch]['epochs']} epochs, {row[arch]['seconds']}s)")
-            results_path.write_text(json.dumps(results, indent=1))
-    return results
+    train_s, dev_s = read_split("en")
+    enc = register_bpe_file("bpe4k_en", Path("data/bpe/bpe_en_4000.json"), train_s)
+    path = Path("results/stage4_scaling_english.json")
+    results = json.loads(path.read_text()) if path.exists() else {"scaling": {}}
+    return scaling_curve(results, "scaling", path, train_s, dev_s, "bpe4k_en", enc, sizes, archs, log)
 
 
 def run_scaled(sizes=(30000, 100000), dim=512, log=print):
     """Does a wider LSTM keep up at the large sizes? (The 256-wide one stalled at 100k.)"""
-    train_s = (SPLIT / "train.ewe.txt").read_text(encoding="utf-8").splitlines()
-    dev_s = (SPLIT / "dev.ewe.txt").read_text(encoding="utf-8").splitlines()
+    train_s, dev_s = read_split("ewe")
     bpe.register(train_s)
     results = json.loads(RESULTS.read_text())
+    key = f"lstm_{dim}"
     for size in sizes:
-        key = f"lstm_{dim}"
         row = results["scaling"][str(size)]
         if key not in row:
             row[key], _ = fit_and_score("lstm", train_s[:size], dev_s, Encoder(), dim=dim, log=lambda *_: None)
@@ -255,9 +256,9 @@ def run_scaled(sizes=(30000, 100000), dim=512, log=print):
             save(results)
 
 
-def save(results):
-    RESULTS.parent.mkdir(exist_ok=True)
-    RESULTS.write_text(json.dumps(results, indent=1))
+def save(results, path=RESULTS):
+    path.parent.mkdir(exist_ok=True)
+    path.write_text(json.dumps(results, indent=1))
 
 
 if __name__ == "__main__":

@@ -94,13 +94,15 @@ def mlx(model, *args):
     return out.stdout + out.stderr
 
 
+def test_ppl(model, data, adapter=None):
+    """Perplexity of the model (plus adapter, if any) on the test.jsonl in folder `data`, as printed by mlx_lm."""
+    args = ["--data", str(data), "--test", "--test-batches", "-1", "--batch-size", str(BATCH), "--max-seq-length", str(MAX_LEN),
+            "--adapter-path", str(adapter) if adapter else ""]  # an empty path tells mlx_lm to test the untouched base model
+    return float(re.search(r"Test ppl ([\d.]*\d)", mlx(model, *args)).group(1))
+
+
 def test_all(model, adapter=None):
-    scores = {}
-    for data in EVAL_SETS:
-        args = ["--data", str(ROOT / data), "--test", "--test-batches", "-1", "--batch-size", str(BATCH), "--max-seq-length", str(MAX_LEN),
-                "--adapter-path", str(adapter) if adapter else ""]  # an empty path tells mlx_lm to test the untouched base model
-        scores[data] = float(re.search(r"Test ppl ([\d.]*\d)", mlx(model, *args)).group(1))
-    return scores
+    return {data: test_ppl(model, ROOT / data, adapter) for data in EVAL_SETS}
 
 
 def valid_ppl(model, domain, adapter):
@@ -109,8 +111,7 @@ def valid_ppl(model, domain, adapter):
     folder.mkdir(exist_ok=True)
     for split in ("train", "valid", "test"):
         (folder / f"{split}.jsonl").write_text((ROOT / domain / "valid.jsonl").read_text(encoding="utf-8"), encoding="utf-8")
-    args = ["--data", str(folder), "--test", "--test-batches", "-1", "--batch-size", str(BATCH), "--max-seq-length", str(MAX_LEN), "--adapter-path", str(adapter)]
-    return float(re.search(r"Test ppl ([\d.]*\d)", mlx(model, *args)).group(1))
+    return test_ppl(model, folder, adapter)
 
 
 def adapt(results, model, domain, name, lr, seed=0):
@@ -118,9 +119,9 @@ def adapt(results, model, domain, name, lr, seed=0):
     runs = results["runs"][model]
     tag = f"{name}@{lr:g}" + (f"#seed{seed}" if seed else "")
     key = f"{domain}/{tag}"
+    adapter = ROOT / "adapters" / model.split("/")[-1] / domain / tag
     if key not in runs:
         kind, rank = METHODS[name]
-        adapter = ROOT / "adapters" / model.split("/")[-1] / domain / tag
         args = ["--train", "--data", str(ROOT / domain), "--fine-tune-type", kind, "--iters", str(ITERS), "--batch-size", str(BATCH),
                 "--num-layers", str(LAYERS), "--max-seq-length", str(MAX_LEN), "--learning-rate", str(lr),
                 "--adapter-path", str(adapter), "--steps-per-eval", "300", "--seed", str(seed)]
@@ -138,7 +139,6 @@ def adapt(results, model, domain, name, lr, seed=0):
         print(model, key, runs[key], flush=True)
         save(results)
     elif "valid" not in runs[key]:  # a run kept from the first attempt: add its validation score
-        adapter = ROOT / "adapters" / model.split("/")[-1] / domain / tag
         runs[key].update(valid=valid_ppl(model, domain, adapter), lr=lr)
         save(results)
     return runs[key]
@@ -186,5 +186,4 @@ def run_seeds(seeds=(1, 2), settings=(("agriculture", "lora_r2"), ("agriculture"
 
 
 if __name__ == "__main__":
-    import sys
     run_seeds() if "seeds" in sys.argv else run()

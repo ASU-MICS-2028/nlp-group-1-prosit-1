@@ -17,6 +17,7 @@ from pathlib import Path
 import pyarrow.parquet as pq
 
 from stage0_audit import SRC, bucket, clean, fix_eth, is_ewe, nfc
+from stage0_splits import read
 from stage3_smoothing import Smoothed
 
 RESULTS = Path("results/filter_test.json")
@@ -27,9 +28,8 @@ RELIGIOUS = re.compile(r"\b(Yehowa|Mawu|Yesu|Kristo|Biblia|Israel|Mose|Paulo|Ða
 
 def main():
     out = {}
-    split = Path("data/splits/90-5-5")
-    train = (split / "train.ewe.txt").read_text(encoding="utf-8").splitlines()
-    dev = (split / "dev.ewe.txt").read_text(encoding="utf-8").splitlines()
+    train = read("90-5-5", "train")
+    dev = read("90-5-5", "dev")
 
     # ---- A. religious skew ----
     hits = sum(bool(RELIGIOUS.search(s)) for s in train)
@@ -49,10 +49,9 @@ def main():
     if LID.exists():
         import fasttext
         m = fasttext.load_model(str(LID))
-        lid = lambda s: m.f.predict(s.replace("\n", " "), 1, 0.0, "strict")[0]
         verdict = {}
         for s in uniq:
-            p, label = lid(s)
+            p, label = m.f.predict(s.replace("\n", " "), 1, 0.0, "strict")[0]
             verdict[s] = (label[9:], p)
         kept = [s for s in uniq if is_ewe(s)]
         rejected = [s for s in uniq if not is_ewe(s)]
@@ -82,7 +81,10 @@ def main():
     # ---- C. filter on vs off (and GlotLID filter), same exam: the filtered dev set ----
     unfiltered_train = [s for s in uniq if bucket(s) >= 10]  # everything that would land in train, Ewe or not
     rows = {}
-    for name, corpus in (("letter filter (ours)", train), ("no filter", unfiltered_train)) + ((("GlotLID filter", glot_train),) if glot_train else ()):
+    corpora = {"letter filter (ours)": train, "no filter": unfiltered_train}
+    if glot_train:
+        corpora["GlotLID filter"] = glot_train
+    for name, corpus in corpora.items():
         mdl = Smoothed(corpus, ORDER, "whitespace", method="mkn")
         pp, bpc, _ = mdl.evaluate(dev)
         known = mdl.evaluate(dev, known_only=True)[0]

@@ -61,16 +61,16 @@ def main():
 
     run("baseline (all steps)", base_train, base_dev, "the Stage 0 pipeline")
 
-    s = pipeline(raw, do_nfc=False); t, d = split_by_group(s)
+    t, d = split_by_group(pipeline(raw, do_nfc=False))
     run("without NFC", t, d, "NFC changed 0 rows, so this is identical")
 
-    s = pipeline(raw, do_clean=False); t, d = split_by_group(s)
+    t, d = split_by_group(pipeline(raw, do_clean=False))
     run("without whitespace cleanup", t, d, "extra/leading spaces kept; ' s' and 's' no longer merge in dedupe or the split key")
 
-    s = pipeline(raw, do_eth=False); t, d = split_by_group(s)
+    t, d = split_by_group(pipeline(raw, do_eth=False))
     run("without the Ð→Ɖ fix", t, d, "Ð-spelled words stay separate vocabulary entries")
 
-    s = pipeline(raw, do_dedupe=False); t, d = split_by_group(s)
+    t, d = split_by_group(pipeline(raw, do_dedupe=False))
     d = list(dict.fromkeys(d))  # the exam stays unique sentences; the training set keeps every copy
     run("without dedupe", t, d, "training keeps all copies (a hub sentence 1,000+ times); dev is deduped so the exam is the same")
 

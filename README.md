@@ -21,8 +21,6 @@ ICS554 Natural Language Processing, Ashesi University. Two models: an **n-gram l
 | `ewe_stemmer.py`, `stage3_stemmer.py` | A rule-based Ewe tokenizer that splits affixes off words and keeps them as tokens, and its fair comparison |
 | `stage5_distilgpt2.py` | A CPU-sized second Section C experiment: distilgpt2 + LoRA with the loss on all tokens vs on answers only, answer-only perplexity, and a decoding benchmark; its adapters are in `models/distilgpt2_agriculture/` |
 | `stage0_splits.py`, `stage0_ablation.py`, `stage0_filter_test.py`, `stage2_samples.py`, `stage3_extra.py`, `rescore_agri.py` | Follow-up experiments: every split ratio, every cleaning step left out, the filter graded by a language identifier, a leak-free re-score of the agriculture models, and more |
-| `notebook_stage45.py`, `notebook_extras.py` | Rebuild the notebook's Stage 4/5 and follow-up sections from `results/` |
-| `build_slides.py` | Builds `presentation.pptx` from `results/` |
 | `results/` | Every table, chart and generated sample the report cites |
 | `DATASHEET.md` | Where every corpus comes from, what is in it, personal data, licences and limits |
 | `tests/` | Fast checks of the core logic (`uv run --with pytest python -m pytest`) |

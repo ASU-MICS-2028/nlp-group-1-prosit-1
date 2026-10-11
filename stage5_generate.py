@@ -1,6 +1,5 @@
 """What does domain adaptation change in the text the model writes? Same prompts, base model vs each adapter.
 Writes results/stage5_generation.md. Greedy decoding (temperature 0) so the comparison is repeatable."""
-import re
 import subprocess
 import sys
 from pathlib import Path
